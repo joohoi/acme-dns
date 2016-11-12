@@ -5,7 +5,7 @@ import (
 	"unicode/utf8"
 )
 
-func NormalizeString(s string, len int) string {
+func NormalizeString(s string, length int) string {
 	var ret string
 	re, err := regexp.Compile("[^A-Za-z\\-0-9]+")
 	if err != nil {
@@ -13,8 +13,8 @@ func NormalizeString(s string, len int) string {
 		return ""
 	}
 	ret = re.ReplaceAllString(s, "")
-	if utf8.RuneCountInString(ret) > len {
-		ret = ret[0:len]
+	if utf8.RuneCountInString(ret) > length {
+		ret = ret[0:length]
 	}
 	return ret
 }
