@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/miekg/dns"
+	"strings"
 	"time"
 )
 
@@ -20,7 +21,7 @@ func readQuery(m *dns.Msg) {
 func answerTXT(q dns.Question) ([]dns.RR, int, error) {
 	var ra []dns.RR
 	var rcode int = dns.RcodeNameError
-	var domain string = q.Name
+	var domain string = strings.ToLower(q.Name)
 
 	atxt, err := DB.GetByDomain(SanitizeDomainQuestion(domain))
 	if err != nil {
@@ -46,7 +47,7 @@ func answer(q dns.Question) ([]dns.RR, int, error) {
 	}
 	var r []dns.RR
 	var rcode int = dns.RcodeSuccess
-	var domain string = q.Name
+	var domain string = strings.ToLower(q.Name)
 	var rtype uint16 = q.Qtype
 	r, ok := RR.Records[rtype][domain]
 	if !ok {
@@ -71,7 +72,7 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 func (r *Records) Parse(recs []string) {
 	rrmap := make(map[uint16]map[string][]dns.RR)
 	for _, v := range recs {
-		rr, err := dns.NewRR(v)
+		rr, err := dns.NewRR(strings.ToLower(v))
 		if err != nil {
 			log.Errorf("Could not parse RR from config: [%v] for RR: [%s]", err, v)
 			continue
@@ -82,7 +83,7 @@ func (r *Records) Parse(recs []string) {
 	// Create serial
 	serial := time.Now().Format("2006010215")
 	// Add SOA
-	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 86400", DnsConf.General.Domain, DnsConf.General.Nsname, DnsConf.General.Nsadmin, serial)
+	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 86400", strings.ToLower(DnsConf.General.Domain), strings.ToLower(DnsConf.General.Nsname), strings.ToLower(DnsConf.General.Nsadmin), serial)
 	soarr, err := dns.NewRR(SOAstring)
 	if err != nil {
 		log.Errorf("Error [%v] while trying to add SOA record: [%s]", err, SOAstring)
