@@ -22,7 +22,7 @@ func answerTXT(q dns.Question) ([]dns.RR, int, error) {
 	var rcode int = dns.RcodeNameError
 	var domain string = q.Name
 
-	atxt, err := DB.GetByDomain(domain)
+	atxt, err := DB.GetByDomain(SanitizeDomainQuestion(domain))
 	if err != nil {
 		log.Errorf("Error while trying to get record [%v]", err)
 		return ra, dns.RcodeNameError, err

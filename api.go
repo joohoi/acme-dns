@@ -19,6 +19,24 @@ func PostHandlerMap() map[string]func(*iris.Context) {
 	}
 }
 
+func (a AuthMiddleware) Serve(ctx *iris.Context) {
+	username_str := ctx.RequestHeader("X-Api-User")
+	password := ctx.RequestHeader("X-Api-Key")
+
+	username, err := GetValidUsername(username_str)
+	if err == nil && ValidKey(password) {
+		au, err := DB.GetByUsername(username)
+		if err == nil && CorrectPassword(password, au.Password) {
+			log.Debugf("Accepted authentication from [%s]", username_str)
+			ctx.Next()
+			return
+		}
+		// To protect against timed side channel (never gonna give you up)
+		CorrectPassword(password, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
+	}
+	ctx.JSON(iris.StatusUnauthorized, iris.Map{"error": "unauthorized"})
+}
+
 func WebRegisterPost(ctx *iris.Context) {
 	// Create new user
 	nu, err := DB.Register()
@@ -33,6 +51,7 @@ func WebRegisterPost(ctx *iris.Context) {
 		reg_json = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DnsConf.General.Domain, "subdomain": nu.Subdomain}
 		reg_status = iris.StatusCreated
 	}
+	log.Debugf("Successful registration, created user [%s]", nu.Username)
 	ctx.JSON(reg_status, reg_json)
 }
 
@@ -42,52 +61,36 @@ func WebRegisterGet(ctx *iris.Context) {
 }
 
 func WebUpdatePost(ctx *iris.Context) {
-	var username, password string
-	var a ACMETxtPost = ACMETxtPost{}
-	username = ctx.RequestHeader("X-API-User")
-	password = ctx.RequestHeader("X-API-Key")
+	// User auth done in middleware
+	var a ACMETxt = ACMETxt{}
+	user_string := ctx.RequestHeader("X-API-User")
+	username, err := GetValidUsername(user_string)
+	if err != nil {
+		log.Warningf("Error while getting username [%s]. This should never happen because of auth middlware.", user_string)
+		WebUpdatePostError(ctx, err, iris.StatusUnauthorized)
+		return
+	}
 	if err := ctx.ReadJSON(&a); err != nil {
 		// Handle bad post data
+		log.Warningf("Could not unmarshal: [%v]", err)
 		WebUpdatePostError(ctx, err, iris.StatusBadRequest)
 		return
 	}
-	// Sanitized by db function
-	euser, err := DB.GetByUsername(username)
-	if err != nil {
-		// DB error
-		WebUpdatePostError(ctx, err, iris.StatusInternalServerError)
-		return
-	}
-	if len(euser) == 0 {
-		// User not found
-		// TODO: do bcrypt to avoid side channel
-		WebUpdatePostError(ctx, errors.New("invalid user or api key"), iris.StatusUnauthorized)
-		return
-	}
-	// Get first (and the only) user
-	upduser := euser[0]
-	// Validate password
-	if upduser.Password != password {
-		// Invalid password
-		WebUpdatePostError(ctx, errors.New("invalid user or api key"), iris.StatusUnauthorized)
-		return
-	} else {
-		// Do update
-		if len(a.Value) == 0 {
-			WebUpdatePostError(ctx, errors.New("missing txt value"), iris.StatusBadRequest)
+	a.Username = username
+	// Do update
+	if ValidSubdomain(a.Subdomain) && ValidTXT(a.Value) {
+		err := DB.Update(a)
+		if err != nil {
+			log.Warningf("Error trying to update [%v]", err)
+			WebUpdatePostError(ctx, errors.New("internal error"), iris.StatusInternalServerError)
 			return
-		} else {
-			upduser.Value = a.Value
-			err = DB.Update(upduser)
-			if err != nil {
-				WebUpdatePostError(ctx, err, iris.StatusInternalServerError)
-				return
-			}
-			// All ok
-			ctx.JSON(iris.StatusOK, iris.Map{"txt": upduser.Value})
 		}
+		ctx.JSON(iris.StatusOK, iris.Map{"txt": a.Value})
+	} else {
+		log.Warningf("Bad data, subdomain: [%s], txt: [%s]", a.Subdomain, a.Value)
+		WebUpdatePostError(ctx, errors.New("bad data"), iris.StatusBadRequest)
+		return
 	}
-
 }
 
 func WebUpdatePostError(ctx *iris.Context, err error, status int) {

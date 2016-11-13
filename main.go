@@ -9,7 +9,6 @@ import (
 )
 
 // Logging config
-var logfile_path = "acme-dns.log"
 var log = logging.MustGetLogger("acme-dns")
 
 // Global configuration struct
@@ -21,41 +20,45 @@ var DB Database
 var RR Records
 
 func main() {
-	// Setup logging
-	var stdout_format = logging.MustStringFormatter(
-		`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
-	)
-	var file_format = logging.MustStringFormatter(
-		`%{time:15:04:05.000} %{shortfunc} - %{level:.4s} %{id:03x} %{message}`,
-	)
-	// Setup logging - stdout
-	logStdout := logging.NewLogBackend(os.Stdout, "", 0)
-	logStdoutFormatter := logging.NewBackendFormatter(logStdout, stdout_format)
-	// Setup logging - file
-	// Logging to file
-	logfh, err := os.OpenFile(logfile_path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		fmt.Printf("Could not open log file %s\n", logfile_path)
-		os.Exit(1)
-	}
-	defer logfh.Close()
-	logFile := logging.NewLogBackend(logfh, "", 0)
-	logFileFormatter := logging.NewBackendFormatter(logFile, file_format)
-	/* To limit logging to a level
-	logFileLeveled := logging.AddModuleLevel(logFile)
-	logFileLeveled.SetLevel(logging.ERROR, "")
-	*/
-
-	// Start logging
-	logging.SetBackend(logStdoutFormatter, logFileFormatter)
-	log.Debug("Starting up...")
-
 	// Read global config
-	if DnsConf, err = ReadConfig("config.cfg"); err != nil {
-		log.Errorf("Got error %v", err)
+	config_tmp, err := ReadConfig("config.cfg")
+	if err != nil {
+		fmt.Printf("Got error %v\n", DnsConf.Logconfig.File)
 		os.Exit(1)
 	}
-	RR.Parse(DnsConf.General.StaticRecords)
+	DnsConf = config_tmp
+	// Setup logging
+	var logformat = logging.MustStringFormatter(DnsConf.Logconfig.Format)
+	var logBackend *logging.LogBackend
+	switch DnsConf.Logconfig.Logtype {
+	default:
+		// Setup logging - stdout
+		logBackend = logging.NewLogBackend(os.Stdout, "", 0)
+	case "file":
+		// Logging to file
+		logfh, err := os.OpenFile(DnsConf.Logconfig.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Printf("Could not open log file %s\n", DnsConf.Logconfig.File)
+			os.Exit(1)
+		}
+		defer logfh.Close()
+		logBackend = logging.NewLogBackend(logfh, "", 0)
+	}
+
+	logLevel := logging.AddModuleLevel(logBackend)
+	switch DnsConf.Logconfig.Level {
+	case "warning":
+		logLevel.SetLevel(logging.WARNING, "")
+	case "error":
+		logLevel.SetLevel(logging.ERROR, "")
+	case "info":
+		logLevel.SetLevel(logging.INFO, "")
+	}
+	logFormatter := logging.NewBackendFormatter(logLevel, logformat)
+	logging.SetBackend(logFormatter)
+
+	// Read the default records in
+	RR.Parse(DnsConf.Api.StaticRecords)
 
 	// Open database
 	err = DB.Init("acme-dns.db")
@@ -76,14 +79,27 @@ func main() {
 		}
 	}()
 
-	// API server
+	// API server and endpoints
 	api := iris.New()
-	for path, handlerfunc := range GetHandlerMap() {
-		api.Get(path, handlerfunc)
+	var ForceAuth AuthMiddleware = AuthMiddleware{}
+	api.Get("/register", WebRegisterGet)
+	api.Post("/register", WebRegisterPost)
+	api.Post("/update", ForceAuth.Serve, WebUpdatePost)
+	// TODO: migrate to api.Serve(iris.LETSENCRYPTPROD("mydomain.com"))
+	switch DnsConf.Api.Tls {
+	case "letsencrypt":
+		host := DnsConf.Api.Domain + ":" + DnsConf.Api.Port
+		api.Listen(host)
+	case "cert":
+		host := DnsConf.Api.Domain + ":" + DnsConf.Api.Port
+		api.ListenTLS(host, DnsConf.Api.Tls_cert_fullchain, DnsConf.Api.Tls_cert_privkey)
+
+	default:
+		host := DnsConf.Api.Domain + ":" + DnsConf.Api.Port
+		api.Listen(host)
 	}
-	for path, handlerfunc := range PostHandlerMap() {
-		api.Post(path, handlerfunc)
+	if err != nil {
+		log.Errorf("Error in HTTP server [%v]", err)
 	}
-	api.Listen(":8080")
 	log.Debugf("Shutting down...")
 }

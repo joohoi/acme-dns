@@ -2,10 +2,10 @@ package main
 
 import (
 	"database/sql"
-	//"encoding/json"
-	//"github.com/boltdb/bolt"
+	"errors"
 	_ "github.com/mattn/go-sqlite3"
-	//"strings"
+	"github.com/satori/go.uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Database struct {
@@ -35,7 +35,11 @@ func (d *Database) Init(filename string) error {
 }
 
 func (d *Database) Register() (ACMETxt, error) {
-	a := NewACMETxt()
+	a, err := NewACMETxt()
+	if err != nil {
+		return ACMETxt{}, err
+	}
+	password_hash, err := bcrypt.GenerateFromPassword([]byte(a.Password), 10)
 	reg_sql := `
     INSERT INTO records(
         Username,
@@ -49,54 +53,54 @@ func (d *Database) Register() (ACMETxt, error) {
 		return a, err
 	}
 	defer sm.Close()
-	_, err = sm.Exec(a.Username, a.Password, a.Subdomain, a.Value)
+	_, err = sm.Exec(a.Username, password_hash, a.Subdomain, a.Value)
 	if err != nil {
 		return a, err
 	}
-	// Do an insert check
-	/*
-		id, err := status.LastInsertId()
-		if err != nil {
-			return a, err
-		}*/
-
 	return a, nil
 }
 
-func (d *Database) GetByUsername(u string) ([]ACMETxt, error) {
-	u = NormalizeString(u, 36)
-	log.Debugf("Trying to select by user [%s] from table", u)
+func (d *Database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	var results []ACMETxt
 	get_sql := `
-	SELECT Username, Password, Subdomain, Value
+	SELECT Username, Password, Subdomain, Value, LastActive
 	FROM records
 	WHERE Username=? LIMIT 1
 	`
 	sm, err := d.DB.Prepare(get_sql)
 	if err != nil {
-		return nil, err
+		return ACMETxt{}, err
 	}
 	defer sm.Close()
-	rows, err := sm.Query(u)
+	rows, err := sm.Query(u.String())
 	if err != nil {
-		return nil, err
+		return ACMETxt{}, err
 	}
 	defer rows.Close()
 
 	// It will only be one row though
 	for rows.Next() {
 		var a ACMETxt = ACMETxt{}
-		err = rows.Scan(&a.Username, &a.Password, &a.Subdomain, &a.Value)
+		var uname string
+		err = rows.Scan(&uname, &a.Password, &a.Subdomain, &a.Value, &a.LastActive)
 		if err != nil {
-			return nil, err
+			return ACMETxt{}, err
+		}
+		a.Username, err = uuid.FromString(uname)
+		if err != nil {
+			return ACMETxt{}, err
 		}
 		results = append(results, a)
 	}
-	return results, nil
+	if len(results) > 0 {
+		return results[0], nil
+	} else {
+		return ACMETxt{}, errors.New("no user")
+	}
 }
 
 func (d *Database) GetByDomain(domain string) ([]ACMETxt, error) {
-	domain = NormalizeString(domain, 36)
+	domain = SanitizeString(domain)
 	log.Debugf("Trying to select domain [%s] from table", domain)
 	var a []ACMETxt
 	get_sql := `
@@ -144,46 +148,3 @@ func (d *Database) Update(a ACMETxt) error {
 	}
 	return nil
 }
-
-/*
-func addTXT(txt ACMETxt) error {
-
-	err := db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("domains"))
-		if err != nil {
-			return err
-		}
-		jtxt, err := json.Marshal(txt)
-		if err != nil {
-			return err
-		}
-
-		// put returns nil if successful, nil return commits db.Update
-		return bucket.Put([]byte(strings.ToLower(txt.Domain)), jtxt)
-	})
-	return err
-
-}
-
-func getTXT(domain string) (ACMETxt, error) {
-	var atxt ACMETxt
-	err := db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte("domains"))
-		value := bucket.Get([]byte(strings.ToLower(domain)))
-		if len(value) == 0 {
-			// Not found
-			log.Debugf("Record for [%s] not found", domain)
-			atxt = ACMETxt{}
-		} else {
-			if err := json.Unmarshal(value, &atxt); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return ACMETxt{}, err
-	}
-	return atxt, err
-}
-*/

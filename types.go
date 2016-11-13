@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/miekg/dns"
+	"github.com/satori/go.uuid"
+	"time"
 )
 
 // Static records
@@ -11,16 +13,48 @@ type Records struct {
 
 // Config file main struct
 type DnsConfig struct {
-	General general
+	General   general
+	Api       httpapi
+	Logconfig logconfig
 }
+
+// Auth middleware
+type AuthMiddleware struct{}
 
 // Config file general section
 type general struct {
+	Domain  string
+	Nsname  string
+	Nsadmin string
+}
+
+// API config
+type httpapi struct {
 	Domain             string
-	Nsname             string
-	Nsadmin            string
+	Port               string
 	Tls                string
 	Tls_cert_privkey   string
 	Tls_cert_fullchain string
 	StaticRecords      []string `toml:"records"`
+}
+
+// Logging config
+type logconfig struct {
+	Level   string `toml:"loglevel"`
+	Logtype string `toml:"logtype"`
+	File    string `toml:"logfile"`
+	Format  string `toml:"logformat"`
+}
+
+// The default object
+type ACMETxt struct {
+	Username uuid.UUID
+	Password string
+	ACMETxtPost
+	LastActive time.Time
+}
+
+type ACMETxtPost struct {
+	Subdomain string `json:"subdomain"`
+	Value     string `json:"txt"`
 }
