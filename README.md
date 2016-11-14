@@ -31,6 +31,7 @@ Features
 How does it work?
 --------------------------
 **1) Register an account**
+
 Sounds more fancy than it is, basically means: do a GET request and recieve credentials, and your unique subdomain.
 >$ curl https://auth.acme-dns.io/register
 >
