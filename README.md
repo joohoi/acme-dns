@@ -69,3 +69,65 @@ Make your ACME client to update the TXT record on ACME-DNS when requesting / ren
 >         "txt": "'"$DNS_AUTHENTICATION_TOKEN"'"}'
 >         
 >{"txt":"70ymFptYJA_Cz63ADEaES5-8NqNV74NbEqD62Ap_dMo"}%
+
+Self-hosted setup
+===========
+
+You decided to host your own, that's awesome! However there's some details you should prepare first before getting on with the actual software installation.
+
+Now, we're going to install a DNS server that will take care of serving DNS for your domain, or most likely subdomain. We really suggest using delegated subdomain, because ACME-DNS really isn't designed to be used as an actual DNS server.
+
+#### Subdomain NS
+
+You'll need to create two records to your existing zone. For this example, I'm using the setup of hosted ACME-DNS.io
+
+Create A record for your to-become-acme-dns-server to your domain zone:
+`ns1.auth.acme-dns.io.     A     10.1.1.53`
+Create a NS record to delegate everything under your subdomain to the ACME-DNS server:
+`auth.acme-dns.io.  NS  ns1.auth.acme-dns.io.`
+
+You'll want to make sure you have the NS records in your actual ACME-DNS configuration as well:
+
+> ...
+> records = [
+>   # default A
+>   "auth.acme-dns.io. A 10.1.1.53",
+>   # A
+>   "ns1.auth.acme-dns.io. A 10.1.1.53",
+>   # NS
+>   "auth.acme-dns.io. NS ns1.auth.acme-dns.io.",
+>]
+>...
+
+
+Installation
+------------
+
+1) Install [Go](https://golang.org/doc/install) and set your `$GOPATH` environment variable
+2) Clone this repo: `git clone https://github.com/joohoi/acme-dns $GOPATH/src/acme-dns`
+3) Get dependencies:  `cd $GOPATH/src/acme-dns` and `go get -u`
+4) Build ACME-DNS: `go build`
+5) Edit config.cfg to suit your needs (see [configuration](#configuration))
+6) Run acme-dns `sudo ./acme-dns` in most cases you need to run it as privileged user, because we usually need privileged ports.
+
+Configuration
+-------------------
+
+...
+
+
+TODO
+----
+
+- PostgreSQL support
+- Let user to POST to registration with CIDR masks to allow updates from
+
+Contributing
+------------
+
+ACME-DNS is open for contributions. So please if you have something you would wish to see improved, or would like to improve yourself, submit an issue or pull request!
+
+License
+--------
+
+ACME-DNS is released under the [MIT License](http://www.opensource.org/licenses/MIT).
