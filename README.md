@@ -61,10 +61,10 @@ CNAME works like a link when CA queries your DNS for authentication token.
 
 Make your ACME client to update the TXT record on ACME-DNS when requesting / renewing a certficate. For example:
 
-> $ curl -X POST https://auth.acme-dns.io/update \
->-H "X-Api-User: e9afe5a9-d3c5-b57f-d3c5-25975fa367c5" \
->-H "X-Api-Key: DoVJaBgx0ps2bxy7UoffZ41KcgT15oLCZj1k353q" \
->--data '{"subdomain": "23752ef1-118a-4ed8-912d-74dcad2178d9", \
+> $ curl -X POST https://auth.acme-dns.io/update
+>-H "X-Api-User: e9afe5a9-d3c5-b57f-d3c5-25975fa367c5" 
+>-H "X-Api-Key: DoVJaBgx0ps2bxy7UoffZ41KcgT15oLCZj1k353q" 
+>--data '{"subdomain": "23752ef1-118a-4ed8-912d-74dcad2178d9", 
 >         "txt": "'"$DNS_AUTHENTICATION_TOKEN"'"}'
 >         
 >{"txt":"70ymFptYJA_Cz63ADEaES5-8NqNV74NbEqD62Ap_dMo"}%
