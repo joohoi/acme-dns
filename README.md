@@ -104,10 +104,15 @@ Installation
 ------------
 
 1) Install [Go](https://golang.org/doc/install) and set your `$GOPATH` environment variable
+
 2) Clone this repo: `git clone https://github.com/joohoi/acme-dns $GOPATH/src/acme-dns`
+
 3) Get dependencies:  `cd $GOPATH/src/acme-dns` and `go get -u`
+
 4) Build ACME-DNS: `go build`
+
 5) Edit config.cfg to suit your needs (see [configuration](#configuration))
+
 6) Run acme-dns `sudo ./acme-dns` in most cases you need to run it as privileged user, because we usually need privileged ports.
 
 Configuration
