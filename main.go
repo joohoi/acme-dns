@@ -58,7 +58,7 @@ func main() {
 	logging.SetBackend(logFormatter)
 
 	// Read the default records in
-	RR.Parse(DnsConf.Api.StaticRecords)
+	RR.Parse(DnsConf.General.StaticRecords)
 
 	// Open database
 	err = DB.Init("acme-dns.db")

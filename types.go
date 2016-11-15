@@ -23,9 +23,10 @@ type AuthMiddleware struct{}
 
 // Config file general section
 type general struct {
-	Domain  string
-	Nsname  string
-	Nsadmin string
+	Domain        string
+	Nsname        string
+	Nsadmin       string
+	StaticRecords []string `toml:"records"`
 }
 
 // API config
@@ -35,7 +36,6 @@ type httpapi struct {
 	Tls                string
 	Tls_cert_privkey   string
 	Tls_cert_fullchain string
-	StaticRecords      []string `toml:"records"`
 }
 
 // Logging config
