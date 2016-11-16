@@ -13,7 +13,7 @@ import (
 var log = logging.MustGetLogger("acme-dns")
 
 // Global configuration struct
-var DnsConf DnsConfig
+var DNSConf DNSConfig
 
 var DB Database
 
@@ -22,24 +22,24 @@ var RR Records
 
 func main() {
 	// Read global config
-	config_tmp, err := ReadConfig("config.cfg")
+	configTmp, err := readConfig("config.cfg")
 	if err != nil {
-		fmt.Printf("Got error %v\n", DnsConf.Logconfig.File)
+		fmt.Printf("Got error %v\n", DNSConf.Logconfig.File)
 		os.Exit(1)
 	}
-	DnsConf = config_tmp
+	DNSConf = configTmp
 	// Setup logging
-	var logformat = logging.MustStringFormatter(DnsConf.Logconfig.Format)
+	var logformat = logging.MustStringFormatter(DNSConf.Logconfig.Format)
 	var logBackend *logging.LogBackend
-	switch DnsConf.Logconfig.Logtype {
+	switch DNSConf.Logconfig.Logtype {
 	default:
 		// Setup logging - stdout
 		logBackend = logging.NewLogBackend(os.Stdout, "", 0)
 	case "file":
 		// Logging to file
-		logfh, err := os.OpenFile(DnsConf.Logconfig.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		logfh, err := os.OpenFile(DNSConf.Logconfig.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			fmt.Printf("Could not open log file %s\n", DnsConf.Logconfig.File)
+			fmt.Printf("Could not open log file %s\n", DNSConf.Logconfig.File)
 			os.Exit(1)
 		}
 		defer logfh.Close()
@@ -47,7 +47,7 @@ func main() {
 	}
 
 	logLevel := logging.AddModuleLevel(logBackend)
-	switch DnsConf.Logconfig.Level {
+	switch DNSConf.Logconfig.Level {
 	case "warning":
 		logLevel.SetLevel(logging.WARNING, "")
 	case "error":
@@ -59,7 +59,7 @@ func main() {
 	logging.SetBackend(logFormatter)
 
 	// Read the default records in
-	RR.Parse(DnsConf.General.StaticRecords)
+	RR.Parse(DNSConf.General.StaticRecords)
 
 	// Open database
 	err = DB.Init("acme-dns.db")
@@ -83,26 +83,26 @@ func main() {
 	// API server and endpoints
 	api := iris.New()
 	crs := cors.New(cors.Options{
-		AllowedOrigins:     DnsConf.Api.CorsOrigins,
+		AllowedOrigins:     DNSConf.API.CorsOrigins,
 		AllowedMethods:     []string{"GET", "POST"},
 		OptionsPassthrough: false,
-		Debug:              DnsConf.General.Debug,
+		Debug:              DNSConf.General.Debug,
 	})
 	api.Use(crs)
-	var ForceAuth AuthMiddleware = AuthMiddleware{}
+	var ForceAuth = AuthMiddleware{}
 	api.Get("/register", WebRegisterGet)
 	api.Post("/register", WebRegisterPost)
 	api.Post("/update", ForceAuth.Serve, WebUpdatePost)
 	// TODO: migrate to api.Serve(iris.LETSENCRYPTPROD("mydomain.com"))
-	switch DnsConf.Api.Tls {
+	switch DNSConf.API.TLS {
 	case "letsencrypt":
-		host := DnsConf.Api.Domain + ":" + DnsConf.Api.Port
+		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
 		api.Listen(host)
 	case "cert":
-		host := DnsConf.Api.Domain + ":" + DnsConf.Api.Port
-		api.ListenTLS(host, DnsConf.Api.Tls_cert_fullchain, DnsConf.Api.Tls_cert_privkey)
+		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
+		api.ListenTLS(host, DNSConf.API.TLSCertFullchain, DNSConf.API.TLSCertPrivkey)
 	default:
-		host := DnsConf.Api.Domain + ":" + DnsConf.Api.Port
+		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
 		api.Listen(host)
 	}
 	if err != nil {

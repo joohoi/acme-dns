@@ -10,10 +10,10 @@ import (
 	"strings"
 )
 
-func ReadConfig(fname string) (DnsConfig, error) {
-	var conf DnsConfig
+func readConfig(fname string) (DNSConfig, error) {
+	var conf DNSConfig
 	if _, err := toml.DecodeFile(fname, &conf); err != nil {
-		return DnsConfig{}, errors.New("Malformed configuration file")
+		return DNSConfig{}, errors.New("Malformed configuration file")
 	}
 	return conf, nil
 }
@@ -45,9 +45,9 @@ func GeneratePassword(length int) (string, error) {
 
 func SanitizeDomainQuestion(d string) string {
 	var dom string
-	dns_suff := DnsConf.General.Domain + "."
-	if strings.HasSuffix(d, dns_suff) {
-		dom = d[0 : len(d)-len(dns_suff)]
+	suffix := DNSConf.General.Domain + "."
+	if strings.HasSuffix(d, suffix) {
+		dom = d[0 : len(d)-len(suffix)]
 	} else {
 		dom = d
 	}
@@ -55,7 +55,7 @@ func SanitizeDomainQuestion(d string) string {
 }
 
 func NewACMETxt() (ACMETxt, error) {
-	var a ACMETxt = ACMETxt{}
+	var a = ACMETxt{}
 	password, err := GeneratePassword(40)
 	if err != nil {
 		return a, err

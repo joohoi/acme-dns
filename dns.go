@@ -21,7 +21,7 @@ func readQuery(m *dns.Msg) {
 func answerTXT(q dns.Question) ([]dns.RR, int, error) {
 	var ra []dns.RR
 	var rcode int = dns.RcodeNameError
-	var domain string = strings.ToLower(q.Name)
+	var domain = strings.ToLower(q.Name)
 
 	atxt, err := DB.GetByDomain(SanitizeDomainQuestion(domain))
 	if err != nil {
@@ -47,7 +47,7 @@ func answer(q dns.Question) ([]dns.RR, int, error) {
 	}
 	var r []dns.RR
 	var rcode int = dns.RcodeSuccess
-	var domain string = strings.ToLower(q.Name)
+	var domain = strings.ToLower(q.Name)
 	var rtype uint16 = q.Qtype
 	r, ok := RR.Records[rtype][domain]
 	if !ok {
@@ -83,7 +83,7 @@ func (r *Records) Parse(recs []string) {
 	// Create serial
 	serial := time.Now().Format("2006010215")
 	// Add SOA
-	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 86400", strings.ToLower(DnsConf.General.Domain), strings.ToLower(DnsConf.General.Nsname), strings.ToLower(DnsConf.General.Nsadmin), serial)
+	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 86400", strings.ToLower(DNSConf.General.Domain), strings.ToLower(DNSConf.General.Nsname), strings.ToLower(DNSConf.General.Nsadmin), serial)
 	soarr, err := dns.NewRR(SOAstring)
 	if err != nil {
 		log.Errorf("Error [%v] while trying to add SOA record: [%s]", err, SOAstring)

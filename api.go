@@ -20,14 +20,14 @@ func PostHandlerMap() map[string]func(*iris.Context) {
 }
 
 func (a AuthMiddleware) Serve(ctx *iris.Context) {
-	username_str := ctx.RequestHeader("X-Api-User")
+	usernameStr := ctx.RequestHeader("X-Api-User")
 	password := ctx.RequestHeader("X-Api-Key")
 
-	username, err := GetValidUsername(username_str)
+	username, err := GetValidUsername(usernameStr)
 	if err == nil && ValidKey(password) {
 		au, err := DB.GetByUsername(username)
 		if err == nil && CorrectPassword(password, au.Password) {
-			log.Debugf("Accepted authentication from [%s]", username_str)
+			log.Debugf("Accepted authentication from [%s]", usernameStr)
 			ctx.Next()
 			return
 		}
@@ -40,19 +40,18 @@ func (a AuthMiddleware) Serve(ctx *iris.Context) {
 func WebRegisterPost(ctx *iris.Context) {
 	// Create new user
 	nu, err := DB.Register()
-	var reg_json iris.Map
-	var reg_status int
+	var regJSON iris.Map
+	var regStatus int
 	if err != nil {
 		errstr := fmt.Sprintf("%v", err)
-
-		reg_json = iris.Map{"username": "", "password": "", "domain": "", "error": errstr}
-		reg_status = iris.StatusInternalServerError
+		regJSON = iris.Map{"username": "", "password": "", "domain": "", "error": errstr}
+		regStatus = iris.StatusInternalServerError
 	} else {
-		reg_json = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DnsConf.General.Domain, "subdomain": nu.Subdomain}
-		reg_status = iris.StatusCreated
+		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain}
+		regStatus = iris.StatusCreated
 	}
 	log.Debugf("Successful registration, created user [%s]", nu.Username)
-	ctx.JSON(reg_status, reg_json)
+	ctx.JSON(regStatus, regJSON)
 }
 
 func WebRegisterGet(ctx *iris.Context) {
@@ -62,11 +61,11 @@ func WebRegisterGet(ctx *iris.Context) {
 
 func WebUpdatePost(ctx *iris.Context) {
 	// User auth done in middleware
-	var a ACMETxt = ACMETxt{}
-	user_string := ctx.RequestHeader("X-API-User")
-	username, err := GetValidUsername(user_string)
+	a := ACMETxt{}
+	userStr := ctx.RequestHeader("X-API-User")
+	username, err := GetValidUsername(userStr)
 	if err != nil {
-		log.Warningf("Error while getting username [%s]. This should never happen because of auth middlware.", user_string)
+		log.Warningf("Error while getting username [%s]. This should never happen because of auth middlware.", userStr)
 		WebUpdatePostError(ctx, err, iris.StatusUnauthorized)
 		return
 	}
@@ -94,7 +93,7 @@ func WebUpdatePost(ctx *iris.Context) {
 }
 
 func WebUpdatePostError(ctx *iris.Context, err error, status int) {
-	err_str := fmt.Sprintf("%v", err)
-	upd_json := iris.Map{"error": err_str}
-	ctx.JSON(status, upd_json)
+	errStr := fmt.Sprintf("%v", err)
+	updJSON := iris.Map{"error": errStr}
+	ctx.JSON(status, updJSON)
 }

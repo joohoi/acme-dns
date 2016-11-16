@@ -12,9 +12,9 @@ type Records struct {
 }
 
 // Config file main struct
-type DnsConfig struct {
+type DNSConfig struct {
 	General   general
-	Api       httpapi
+	API       httpapi
 	Logconfig logconfig
 }
 
@@ -32,12 +32,12 @@ type general struct {
 
 // API config
 type httpapi struct {
-	Domain             string
-	Port               string
-	Tls                string
-	Tls_cert_privkey   string
-	Tls_cert_fullchain string
-	CorsOrigins        []string
+	Domain           string
+	Port             string
+	TLS              string
+	TLSCertPrivkey   string `toml:"tls_cert_privkey"`
+	TLSCertFullchain string `toml:"tls_cert_fullchain"`
+	CorsOrigins      []string
 }
 
 // Logging config
