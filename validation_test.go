@@ -43,7 +43,7 @@ func TestValidKey(t *testing.T) {
 	} {
 		ret := ValidKey(test.key)
 		if ret != test.output {
-			t.Errorf("Test %d: Expected return value %b, but got %b", i, test.output, ret)
+			t.Errorf("Test %d: Expected return value %t, but got %t", i, test.output, ret)
 		}
 	}
 }
@@ -60,7 +60,7 @@ func TestGetValidSubdomain(t *testing.T) {
 	} {
 		ret := ValidSubdomain(test.subdomain)
 		if ret != test.output {
-			t.Errorf("Test %d: Expected return value %b, but got %b", i, test.output, ret)
+			t.Errorf("Test %d: Expected return value %t, but got %t", i, test.output, ret)
 		}
 	}
 }
@@ -78,7 +78,7 @@ func TestValidTXT(t *testing.T) {
 	} {
 		ret := ValidTXT(test.txt)
 		if ret != test.output {
-			t.Errorf("Test %d: Expected return value %b, but got %b", i, test.output, ret)
+			t.Errorf("Test %d: Expected return value %t, but got %t", i, test.output, ret)
 		}
 	}
 }
@@ -102,7 +102,7 @@ func TestCorrectPassword(t *testing.T) {
 	} {
 		ret := CorrectPassword(test.pw, test.hash)
 		if ret != test.output {
-			t.Errorf("Test %d: Expected return value %b, but got %b", i, test.output, ret)
+			t.Errorf("Test %d: Expected return value %t, but got %t", i, test.output, ret)
 		}
 	}
 }
