@@ -2,11 +2,21 @@ package main
 
 import (
 	"crypto/rand"
+	"errors"
+	"github.com/BurntSushi/toml"
 	"github.com/satori/go.uuid"
 	"math/big"
 	"regexp"
 	"strings"
 )
+
+func ReadConfig(fname string) (DnsConfig, error) {
+	var conf DnsConfig
+	if _, err := toml.DecodeFile(fname, &conf); err != nil {
+		return DnsConfig{}, errors.New("Malformed configuration file")
+	}
+	return conf, nil
+}
 
 func SanitizeString(s string) string {
 	// URL safe base64 alphabet without padding as defined in ACME
