@@ -26,6 +26,7 @@ type general struct {
 	Domain        string
 	Nsname        string
 	Nsadmin       string
+	Debug         bool
 	StaticRecords []string `toml:"records"`
 }
 
@@ -36,6 +37,7 @@ type httpapi struct {
 	Tls                string
 	Tls_cert_privkey   string
 	Tls_cert_fullchain string
+	CorsOrigins        []string
 }
 
 // Logging config

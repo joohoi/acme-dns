@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
 	"github.com/miekg/dns"
 	"github.com/op/go-logging"
@@ -81,6 +82,13 @@ func main() {
 
 	// API server and endpoints
 	api := iris.New()
+	crs := cors.New(cors.Options{
+		AllowedOrigins:     DnsConf.Api.CorsOrigins,
+		AllowedMethods:     []string{"GET", "POST"},
+		OptionsPassthrough: false,
+		Debug:              DnsConf.General.Debug,
+	})
+	api.Use(crs)
 	var ForceAuth AuthMiddleware = AuthMiddleware{}
 	api.Get("/register", WebRegisterGet)
 	api.Post("/register", WebRegisterPost)
@@ -93,7 +101,6 @@ func main() {
 	case "cert":
 		host := DnsConf.Api.Domain + ":" + DnsConf.Api.Port
 		api.ListenTLS(host, DnsConf.Api.Tls_cert_fullchain, DnsConf.Api.Tls_cert_privkey)
-
 	default:
 		host := DnsConf.Api.Domain + ":" + DnsConf.Api.Port
 		api.Listen(host)
