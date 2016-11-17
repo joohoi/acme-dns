@@ -46,11 +46,13 @@ func WebRegisterPost(ctx *iris.Context) {
 		errstr := fmt.Sprintf("%v", err)
 		regJSON = iris.Map{"username": "", "password": "", "domain": "", "error": errstr}
 		regStatus = iris.StatusInternalServerError
+		log.Debugf("Error in registration, [%v]", err)
 	} else {
 		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain}
 		regStatus = iris.StatusCreated
+
+		log.Debugf("Successful registration, created user [%s]", nu.Username)
 	}
-	log.Debugf("Successful registration, created user [%s]", nu.Username)
 	ctx.JSON(regStatus, regJSON)
 }
 

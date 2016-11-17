@@ -3,9 +3,12 @@ package main
 import (
 	"database/sql"
 	"errors"
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
+	"regexp"
+	"time"
 )
 
 type Database struct {
@@ -18,11 +21,21 @@ var recordsTable = `
         Password TEXT UNIQUE NOT NULL,
         Subdomain TEXT UNIQUE NOT NULL,
         Value   TEXT,
-        LastActive DATETIME
+        LastActive INT
     );`
 
-func (d *Database) Init(filename string) error {
-	db, err := sql.Open("sqlite3", filename)
+// getSQLiteStmt replaces all PostgreSQL prepared statement placeholders (eg. $1, $2) with SQLite variant "?"
+func getSQLiteStmt(s string) string {
+	re, err := regexp.Compile("\\$[0-9]")
+	if err != nil {
+		log.Errorf("%v", err)
+		return s
+	}
+	return re.ReplaceAllString(s, "?")
+}
+
+func (d *Database) Init(engine string, connection string) error {
+	db, err := sql.Open(engine, connection)
 	if err != nil {
 		return err
 	}
@@ -40,20 +53,24 @@ func (d *Database) Register() (ACMETxt, error) {
 		return ACMETxt{}, err
 	}
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(a.Password), 10)
+	timenow := time.Now().Unix()
 	regSQL := `
     INSERT INTO records(
         Username,
         Password,
         Subdomain,
-        Value,
-        LastActive)
-        values(?, ?, ?, ?, CURRENT_TIMESTAMP)`
+		Value,
+        LastActive) 
+        values($1, $2, $3, '', $4)`
+	if DNSConf.Database.Engine == "sqlite3" {
+		regSQL = getSQLiteStmt(regSQL)
+	}
 	sm, err := d.DB.Prepare(regSQL)
 	if err != nil {
 		return a, err
 	}
 	defer sm.Close()
-	_, err = sm.Exec(a.Username, passwordHash, a.Subdomain, a.Value)
+	_, err = sm.Exec(a.Username.String(), passwordHash, a.Subdomain, timenow)
 	if err != nil {
 		return a, err
 	}
@@ -65,8 +82,12 @@ func (d *Database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	getSQL := `
 	SELECT Username, Password, Subdomain, Value, LastActive
 	FROM records
-	WHERE Username=? LIMIT 1
+	WHERE Username=$1 LIMIT 1
 	`
+	if DNSConf.Database.Engine == "sqlite3" {
+		getSQL = getSQLiteStmt(getSQL)
+	}
+
 	sm, err := d.DB.Prepare(getSQL)
 	if err != nil {
 		return ACMETxt{}, err
@@ -105,8 +126,12 @@ func (d *Database) GetByDomain(domain string) ([]ACMETxt, error) {
 	getSQL := `
 	SELECT Username, Password, Subdomain, Value
 	FROM records
-	WHERE Subdomain=? LIMIT 1
+	WHERE Subdomain=$1 LIMIT 1
 	`
+	if DNSConf.Database.Engine == "sqlite3" {
+		getSQL = getSQLiteStmt(getSQL)
+	}
+
 	sm, err := d.DB.Prepare(getSQL)
 	if err != nil {
 		return a, err
@@ -132,16 +157,21 @@ func (d *Database) GetByDomain(domain string) ([]ACMETxt, error) {
 func (d *Database) Update(a ACMETxt) error {
 	// Data in a is already sanitized
 	log.Debugf("Trying to update domain [%s] with TXT data [%s]", a.Subdomain, a.Value)
+	timenow := time.Now().Unix()
 	updSQL := `
-	UPDATE records SET Value=?
-	WHERE Username=? AND Subdomain=?
+	UPDATE records SET Value=$1, LastActive=$2
+	WHERE Username=$3 AND Subdomain=$4
 	`
+	if DNSConf.Database.Engine == "sqlite3" {
+		updSQL = getSQLiteStmt(updSQL)
+	}
+
 	sm, err := d.DB.Prepare(updSQL)
 	if err != nil {
 		return err
 	}
 	defer sm.Close()
-	_, err = sm.Exec(a.Value, a.Username, a.Subdomain)
+	_, err = sm.Exec(a.Value, timenow, a.Username, a.Subdomain)
 	if err != nil {
 		return err
 	}

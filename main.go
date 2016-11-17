@@ -62,7 +62,7 @@ func main() {
 	RR.Parse(DNSConf.General.StaticRecords)
 
 	// Open database
-	err = DB.Init("acme-dns.db")
+	err = DB.Init(DNSConf.Database.Engine, DNSConf.Database.Connection)
 	if err != nil {
 		log.Errorf("Could not open database [%v]", err)
 		os.Exit(1)

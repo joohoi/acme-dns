@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/miekg/dns"
 	"github.com/satori/go.uuid"
-	"time"
 )
 
 // Static records
@@ -14,6 +13,7 @@ type Records struct {
 // Config file main struct
 type DNSConfig struct {
 	General   general
+	Database  dbsettings
 	API       httpapi
 	Logconfig logconfig
 }
@@ -28,6 +28,11 @@ type general struct {
 	Nsadmin       string
 	Debug         bool
 	StaticRecords []string `toml:"records"`
+}
+
+type dbsettings struct {
+	Engine     string
+	Connection string
 }
 
 // API config
@@ -53,7 +58,7 @@ type ACMETxt struct {
 	Username uuid.UUID
 	Password string
 	ACMETxtPost
-	LastActive time.Time
+	LastActive int64
 }
 
 type ACMETxtPost struct {

@@ -1,11 +1,27 @@
 package main
 
 import (
+	"flag"
 	"testing"
 )
 
+var (
+	postgres = flag.Bool("postgres", false, "run integration tests against PostgreSQL")
+)
+
 func TestRegister(t *testing.T) {
-	_ = DB.Init(":memory:")
+	flag.Parse()
+	if *postgres {
+		DNSConf.Database.Engine = "postgres"
+		err := DB.Init("postgres", "postgres://acmedns:acmedns@localhost/acmedns")
+		if err != nil {
+			t.Errorf("PostgreSQL integration tests expect database \"acmedns\" running in localhost, with username and password set to \"acmedns\"")
+			return
+		}
+	} else {
+		DNSConf.Database.Engine = "sqlite3"
+		_ = DB.Init("sqlite3", ":memory:")
+	}
 	defer DB.DB.Close()
 
 	// Register tests
@@ -16,7 +32,18 @@ func TestRegister(t *testing.T) {
 }
 
 func TestGetByUsername(t *testing.T) {
-	_ = DB.Init(":memory:")
+	flag.Parse()
+	if *postgres {
+		DNSConf.Database.Engine = "postgres"
+		err := DB.Init("postgres", "postgres://acmedns:acmedns@localhost/acmedns")
+		if err != nil {
+			t.Errorf("PostgreSQL integration tests expect database \"acmedns\" running in localhost, with username and password set to \"acmedns\"")
+			return
+		}
+	} else {
+		DNSConf.Database.Engine = "sqlite3"
+		_ = DB.Init("sqlite3", ":memory:")
+	}
 	defer DB.DB.Close()
 
 	// Create  reg to refer to
@@ -45,7 +72,18 @@ func TestGetByUsername(t *testing.T) {
 }
 
 func TestGetByDomain(t *testing.T) {
-	_ = DB.Init(":memory:")
+	flag.Parse()
+	if *postgres {
+		DNSConf.Database.Engine = "postgres"
+		err := DB.Init("postgres", "postgres://acmedns:acmedns@localhost/acmedns")
+		if err != nil {
+			t.Errorf("PostgreSQL integration tests expect database \"acmedns\" running in localhost, with username and password set to \"acmedns\"")
+			return
+		}
+	} else {
+		DNSConf.Database.Engine = "sqlite3"
+		_ = DB.Init("sqlite3", ":memory:")
+	}
 	defer DB.DB.Close()
 
 	var regDomain = ACMETxt{}
@@ -87,7 +125,18 @@ func TestGetByDomain(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	_ = DB.Init(":memory:")
+	flag.Parse()
+	if *postgres {
+		DNSConf.Database.Engine = "postgres"
+		err := DB.Init("postgres", "postgres://acmedns:acmedns@localhost/acmedns")
+		if err != nil {
+			t.Errorf("PostgreSQL integration tests expect database \"acmedns\" running in localhost, with username and password set to \"acmedns\"")
+			return
+		}
+	} else {
+		DNSConf.Database.Engine = "sqlite3"
+		_ = DB.Init("sqlite3", ":memory:")
+	}
 	defer DB.DB.Close()
 
 	// Create  reg to refer to
