@@ -8,7 +8,8 @@ VAGRANTFILE_API_VERSION = "2"
 $ubuntu_setup_script = <<SETUP_SCRIPT
 apt-get update
 apt-get install -y vim build-essential postgresql postgresql-contrib git
-curl -o /tmp/go.tar.gz https://storage.googleapis.com/golang/go1.7.3.linux-amd64.tar.gz
+echo "Downloading and installing Go 1.7.3"
+curl -s -o /tmp/go.tar.gz https://storage.googleapis.com/golang/go1.7.3.linux-amd64.tar.gz
 tar -C /usr/local -xzf /tmp/go.tar.gz
 echo "export PATH=$PATH:/usr/local/go/bin" >> /home/vagrant/.profile
 echo "export GOPATH=/home/vagrant" >> /home/vagrant/.profile
@@ -16,7 +17,8 @@ mkdir -p /home/vagrant/src/acme-dns
 chown -R vagrant /home/vagrant/src
 cp /vagrant/test/run_integration.sh /home/vagrant
 bash /vagrant/test/pgsql.sh
-echo "To run integration tests run /home/vagrant/run_integration.sh"
+echo "\n-------------------------------------------------------------"
+echo "To run integration tests run, /home/vagrant/run_integration.sh"
 SETUP_SCRIPT
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|

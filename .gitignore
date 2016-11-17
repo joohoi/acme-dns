@@ -1,3 +1,4 @@
 acme-dns
 acme-dns.db
 acme-dns.log
+.vagrant
