@@ -124,7 +124,6 @@ Configuration
 TODO
 ----
 
-- PostgreSQL support
 - Let user to POST to registration with CIDR masks to allow updates from
 
 Contributing
