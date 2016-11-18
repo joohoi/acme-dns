@@ -40,6 +40,7 @@ func (d *Database) Init(engine string, connection string) error {
 		return err
 	}
 	d.DB = db
+	d.DB.SetMaxOpenConns(1)
 	_, err = d.DB.Exec(recordsTable)
 	if err != nil {
 		return err
