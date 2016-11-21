@@ -29,7 +29,7 @@ func (a AuthMiddleware) Serve(ctx *iris.Context) {
 		au, err := DB.GetByUsername(username)
 		if err == nil && CorrectPassword(password, au.Password) {
 			// Password ok
-			if err := ctx.ReadJSON(&postData); err != nil {
+			if err := ctx.ReadJSON(&postData); err == nil {
 				// Check that the subdomain belongs to the user
 				if au.Subdomain == postData.Subdomain {
 					log.Debugf("Accepted authentication from [%s]", usernameStr)
