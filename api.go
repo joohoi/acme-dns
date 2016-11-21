@@ -22,14 +22,21 @@ func PostHandlerMap() map[string]func(*iris.Context) {
 func (a AuthMiddleware) Serve(ctx *iris.Context) {
 	usernameStr := ctx.RequestHeader("X-Api-User")
 	password := ctx.RequestHeader("X-Api-Key")
+	postData := ACMETxt{}
 
 	username, err := GetValidUsername(usernameStr)
 	if err == nil && ValidKey(password) {
 		au, err := DB.GetByUsername(username)
 		if err == nil && CorrectPassword(password, au.Password) {
-			log.Debugf("Accepted authentication from [%s]", usernameStr)
-			ctx.Next()
-			return
+			// Password ok
+			if err := ctx.ReadJSON(&postData); err != nil {
+				// Check that the subdomain belongs to the user
+				if au.Subdomain == postData.Subdomain {
+					log.Debugf("Accepted authentication from [%s]", usernameStr)
+					ctx.Next()
+					return
+				}
+			}
 		}
 		// To protect against timed side channel (never gonna give you up)
 		CorrectPassword(password, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
