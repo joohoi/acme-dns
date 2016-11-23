@@ -3,9 +3,12 @@ package main
 import (
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"github.com/BurntSushi/toml"
+	"github.com/op/go-logging"
 	"github.com/satori/go.uuid"
 	"math/big"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -18,7 +21,7 @@ func readConfig(fname string) (DNSConfig, error) {
 	return conf, nil
 }
 
-func SanitizeString(s string) string {
+func sanitizeString(s string) string {
 	// URL safe base64 alphabet without padding as defined in ACME
 	re, err := regexp.Compile("[^A-Za-z\\-\\_0-9]+")
 	if err != nil {
@@ -28,7 +31,7 @@ func SanitizeString(s string) string {
 	return re.ReplaceAllString(s, "")
 }
 
-func GeneratePassword(length int) (string, error) {
+func generatePassword(length int) (string, error) {
 	ret := make([]byte, length)
 	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_"
 	alphalen := big.NewInt(int64(len(alphabet)))
@@ -43,7 +46,7 @@ func GeneratePassword(length int) (string, error) {
 	return string(ret), nil
 }
 
-func SanitizeDomainQuestion(d string) string {
+func sanitizeDomainQuestion(d string) string {
 	var dom string
 	suffix := DNSConf.General.Domain + "."
 	if strings.HasSuffix(d, suffix) {
@@ -54,9 +57,9 @@ func SanitizeDomainQuestion(d string) string {
 	return dom
 }
 
-func NewACMETxt() (ACMETxt, error) {
+func newACMETxt() (ACMETxt, error) {
 	var a = ACMETxt{}
-	password, err := GeneratePassword(40)
+	password, err := generatePassword(40)
 	if err != nil {
 		return a, err
 	}
@@ -64,4 +67,37 @@ func NewACMETxt() (ACMETxt, error) {
 	a.Password = password
 	a.Subdomain = uuid.NewV4().String()
 	return a, nil
+}
+
+func setupLogging() {
+	var logformat = logging.MustStringFormatter(DNSConf.Logconfig.Format)
+	var logBackend *logging.LogBackend
+	switch DNSConf.Logconfig.Logtype {
+	default:
+		// Setup logging - stdout
+		logBackend = logging.NewLogBackend(os.Stdout, "", 0)
+	case "file":
+		// Logging to file
+		logfh, err := os.OpenFile(DNSConf.Logconfig.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Printf("Could not open log file %s\n", DNSConf.Logconfig.File)
+			os.Exit(1)
+		}
+		defer logfh.Close()
+		logBackend = logging.NewLogBackend(logfh, "", 0)
+	}
+	logFormatter := logging.NewBackendFormatter(logBackend, logformat)
+	logLevel := logging.AddModuleLevel(logFormatter)
+	switch DNSConf.Logconfig.Level {
+	default:
+		logLevel.SetLevel(logging.DEBUG, "")
+	case "warning":
+		logLevel.SetLevel(logging.WARNING, "")
+	case "error":
+		logLevel.SetLevel(logging.ERROR, "")
+	case "info":
+		logLevel.SetLevel(logging.INFO, "")
+	}
+	logging.SetBackend(logFormatter)
+
 }

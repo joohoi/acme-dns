@@ -17,7 +17,7 @@ func TestGetValidUsername(t *testing.T) {
 		{"", uuid.UUID{}, true},
 		{"&!#!25123!%!'%", uuid.UUID{}, true},
 	} {
-		ret, err := GetValidUsername(test.uname)
+		ret, err := getValidUsername(test.uname)
 		if test.shouldErr && err == nil {
 			t.Errorf("Test %d: Expected error, but there was none", i)
 		}
@@ -41,7 +41,7 @@ func TestValidKey(t *testing.T) {
 		{"aaaaaaaa-aaa-aaaaaa#aaaaaaaa-aaa_aacaaaa", false},
 		{"aaaaaaaa-aaa-aaaaaa-aaaaaaaa-aaa_aacaaaaa", false},
 	} {
-		ret := ValidKey(test.key)
+		ret := validKey(test.key)
 		if ret != test.output {
 			t.Errorf("Test %d: Expected return value %t, but got %t", i, test.output, ret)
 		}
@@ -58,7 +58,7 @@ func TestGetValidSubdomain(t *testing.T) {
 		{"", false},
 		{"&!#!25123!%!'%", false},
 	} {
-		ret := ValidSubdomain(test.subdomain)
+		ret := validSubdomain(test.subdomain)
 		if ret != test.output {
 			t.Errorf("Test %d: Expected return value %t, but got %t", i, test.output, ret)
 		}
@@ -76,7 +76,7 @@ func TestValidTXT(t *testing.T) {
 		{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false},
 		{"", false},
 	} {
-		ret := ValidTXT(test.txt)
+		ret := validTXT(test.txt)
 		if ret != test.output {
 			t.Errorf("Test %d: Expected return value %t, but got %t", i, test.output, ret)
 		}
@@ -100,7 +100,7 @@ func TestCorrectPassword(t *testing.T) {
 			false},
 		{"", "", false},
 	} {
-		ret := CorrectPassword(test.pw, test.hash)
+		ret := correctPassword(test.pw, test.hash)
 		if ret != test.output {
 			t.Errorf("Test %d: Expected return value %t, but got %t", i, test.output, ret)
 		}

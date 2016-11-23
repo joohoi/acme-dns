@@ -28,36 +28,8 @@ func main() {
 		os.Exit(1)
 	}
 	DNSConf = configTmp
-	// Setup logging
-	var logformat = logging.MustStringFormatter(DNSConf.Logconfig.Format)
-	var logBackend *logging.LogBackend
-	switch DNSConf.Logconfig.Logtype {
-	default:
-		// Setup logging - stdout
-		logBackend = logging.NewLogBackend(os.Stdout, "", 0)
-	case "file":
-		// Logging to file
-		logfh, err := os.OpenFile(DNSConf.Logconfig.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			fmt.Printf("Could not open log file %s\n", DNSConf.Logconfig.File)
-			os.Exit(1)
-		}
-		defer logfh.Close()
-		logBackend = logging.NewLogBackend(logfh, "", 0)
-	}
-	logFormatter := logging.NewBackendFormatter(logBackend, logformat)
-	logLevel := logging.AddModuleLevel(logFormatter)
-	switch DNSConf.Logconfig.Level {
-	default:
-		logLevel.SetLevel(logging.DEBUG, "")
-	case "warning":
-		logLevel.SetLevel(logging.WARNING, "")
-	case "error":
-		logLevel.SetLevel(logging.ERROR, "")
-	case "info":
-		logLevel.SetLevel(logging.INFO, "")
-	}
-	logging.SetBackend(logFormatter)
+
+	setupLogging()
 
 	// Read the default records in
 	RR.Parse(DNSConf.General.StaticRecords)

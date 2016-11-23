@@ -66,7 +66,7 @@ func TestGetByUsername(t *testing.T) {
 	}
 
 	// regUser password already is a bcrypt hash
-	if !CorrectPassword(reg.Password, regUser.Password) {
+	if !correctPassword(reg.Password, regUser.Password) {
 		t.Errorf("The password [%s] does not match the hash [%s]", reg.Password, regUser.Password)
 	}
 }
@@ -113,7 +113,7 @@ func TestGetByDomain(t *testing.T) {
 	}
 
 	// regDomain password already is a bcrypt hash
-	if !CorrectPassword(reg.Password, regDomain.Password) {
+	if !correctPassword(reg.Password, regDomain.Password) {
 		t.Errorf("The password [%s] does not match the hash [%s]", reg.Password, regDomain.Password)
 	}
 

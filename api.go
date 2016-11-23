@@ -24,10 +24,10 @@ func (a AuthMiddleware) Serve(ctx *iris.Context) {
 	password := ctx.RequestHeader("X-Api-Key")
 	postData := ACMETxt{}
 
-	username, err := GetValidUsername(usernameStr)
-	if err == nil && ValidKey(password) {
+	username, err := getValidUsername(usernameStr)
+	if err == nil && validKey(password) {
 		au, err := DB.GetByUsername(username)
-		if err == nil && CorrectPassword(password, au.Password) {
+		if err == nil && correctPassword(password, au.Password) {
 			// Password ok
 			if err := ctx.ReadJSON(&postData); err == nil {
 				// Check that the subdomain belongs to the user
@@ -39,7 +39,7 @@ func (a AuthMiddleware) Serve(ctx *iris.Context) {
 			}
 		}
 		// To protect against timed side channel (never gonna give you up)
-		CorrectPassword(password, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
+		correctPassword(password, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
 	}
 	ctx.JSON(iris.StatusUnauthorized, iris.Map{"error": "unauthorized"})
 }
@@ -72,7 +72,7 @@ func WebUpdatePost(ctx *iris.Context) {
 	// User auth done in middleware
 	a := ACMETxt{}
 	userStr := ctx.RequestHeader("X-API-User")
-	username, err := GetValidUsername(userStr)
+	username, err := getValidUsername(userStr)
 	if err != nil {
 		log.Warningf("Error while getting username [%s]. This should never happen because of auth middlware.", userStr)
 		WebUpdatePostError(ctx, err, iris.StatusUnauthorized)
@@ -86,7 +86,7 @@ func WebUpdatePost(ctx *iris.Context) {
 	}
 	a.Username = username
 	// Do update
-	if ValidSubdomain(a.Subdomain) && ValidTXT(a.Value) {
+	if validSubdomain(a.Subdomain) && validTXT(a.Value) {
 		err := DB.Update(a)
 		if err != nil {
 			log.Warningf("Error trying to update [%v]", err)

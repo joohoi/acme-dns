@@ -49,7 +49,7 @@ func (d *Database) Init(engine string, connection string) error {
 }
 
 func (d *Database) Register() (ACMETxt, error) {
-	a, err := NewACMETxt()
+	a, err := newACMETxt()
 	if err != nil {
 		return ACMETxt{}, err
 	}
@@ -121,7 +121,7 @@ func (d *Database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 }
 
 func (d *Database) GetByDomain(domain string) ([]ACMETxt, error) {
-	domain = SanitizeString(domain)
+	domain = sanitizeString(domain)
 	log.Debugf("Trying to select domain [%s] from table", domain)
 	var a []ACMETxt
 	getSQL := `
