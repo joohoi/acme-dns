@@ -24,6 +24,9 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 					ctx.Next()
 					return
 				}
+			} else {
+				ctx.JSON(iris.StatusBadRequest, iris.Map{"error": "bad data"})
+				return
 			}
 		}
 		// To protect against timed side channel (never gonna give you up)
@@ -39,7 +42,7 @@ func webRegisterPost(ctx *iris.Context) {
 	var regStatus int
 	if err != nil {
 		errstr := fmt.Sprintf("%v", err)
-		regJSON = iris.Map{"username": "", "password": "", "domain": "", "error": errstr}
+		regJSON = iris.Map{"error": errstr}
 		regStatus = iris.StatusInternalServerError
 		log.Debugf("Error in registration, [%v]", err)
 	} else {
@@ -60,18 +63,10 @@ func webUpdatePost(ctx *iris.Context) {
 	// User auth done in middleware
 	a := ACMETxt{}
 	userStr := ctx.RequestHeader("X-API-User")
-	username, err := getValidUsername(userStr)
-	if err != nil {
-		log.Warningf("Error while getting username [%s]. This should never happen because of auth middlware.", userStr)
-		webUpdatePostError(ctx, err, iris.StatusUnauthorized)
-		return
-	}
-	if err := ctx.ReadJSON(&a); err != nil {
-		// Handle bad post data
-		log.Warningf("Could not unmarshal: [%v]", err)
-		webUpdatePostError(ctx, err, iris.StatusBadRequest)
-		return
-	}
+	// Already checked in auth middlware
+	username, _ := getValidUsername(userStr)
+	// Already checked in auth middleware
+	_ = ctx.ReadJSON(&a)
 	a.Username = username
 	// Do update
 	if validSubdomain(a.Subdomain) && validTXT(a.Value) {

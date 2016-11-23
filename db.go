@@ -68,7 +68,7 @@ func (d *database) Register() (ACMETxt, error) {
 	}
 	sm, err := d.DB.Prepare(regSQL)
 	if err != nil {
-		return a, err
+		return a, errors.New("SQL error")
 	}
 	defer sm.Close()
 	_, err = sm.Exec(a.Username.String(), passwordHash, a.Subdomain, timenow)
