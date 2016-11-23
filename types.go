@@ -5,12 +5,12 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// Static records
+// Records is for static records
 type Records struct {
 	Records map[uint16]map[string][]dns.RR
 }
 
-// Config file main struct
+// DNSConfig holds the config structure
 type DNSConfig struct {
 	General   general
 	Database  dbsettings
@@ -19,7 +19,7 @@ type DNSConfig struct {
 }
 
 // Auth middleware
-type AuthMiddleware struct{}
+type authMiddleware struct{}
 
 // Config file general section
 type general struct {
@@ -53,7 +53,7 @@ type logconfig struct {
 	Format  string `toml:"logformat"`
 }
 
-// The default object
+// ACMETxt is the default structure for the user controlled record
 type ACMETxt struct {
 	Username uuid.UUID
 	Password string
@@ -61,6 +61,7 @@ type ACMETxt struct {
 	LastActive int64
 }
 
+// ACMETxtPost holds the DNS part of the ACMETxt struct
 type ACMETxtPost struct {
 	Subdomain string `json:"subdomain"`
 	Value     string `json:"txt"`

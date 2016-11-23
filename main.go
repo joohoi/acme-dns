@@ -12,12 +12,13 @@ import (
 // Logging config
 var log = logging.MustGetLogger("acme-dns")
 
-// Global configuration struct
+// DNSConf is global configuration struct
 var DNSConf DNSConfig
 
-var DB Database
+// DB is used to access the database functions in acme-dns
+var DB database
 
-// Static records
+// RR holds the static DNS records
 var RR Records
 
 func main() {
@@ -63,10 +64,10 @@ func main() {
 		Debug:              DNSConf.General.Debug,
 	})
 	api.Use(crs)
-	var ForceAuth = AuthMiddleware{}
-	api.Get("/register", WebRegisterGet)
-	api.Post("/register", WebRegisterPost)
-	api.Post("/update", ForceAuth.Serve, WebUpdatePost)
+	var ForceAuth = authMiddleware{}
+	api.Get("/register", webRegisterGet)
+	api.Post("/register", webRegisterPost)
+	api.Post("/update", ForceAuth.Serve, webUpdatePost)
 	// TODO: migrate to api.Serve(iris.LETSENCRYPTPROD("mydomain.com"))
 	switch DNSConf.API.TLS {
 	case "letsencrypt":

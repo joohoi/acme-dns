@@ -20,7 +20,7 @@ func readQuery(m *dns.Msg) {
 
 func answerTXT(q dns.Question) ([]dns.RR, int, error) {
 	var ra []dns.RR
-	var rcode int = dns.RcodeNameError
+	var rcode = dns.RcodeNameError
 	var domain = strings.ToLower(q.Name)
 
 	atxt, err := DB.GetByDomain(sanitizeDomainQuestion(domain))
@@ -46,9 +46,9 @@ func answer(q dns.Question) ([]dns.RR, int, error) {
 		return answerTXT(q)
 	}
 	var r []dns.RR
-	var rcode int = dns.RcodeSuccess
+	var rcode = dns.RcodeSuccess
 	var domain = strings.ToLower(q.Name)
-	var rtype uint16 = q.Qtype
+	var rtype = q.Qtype
 	r, ok := RR.Records[rtype][domain]
 	if !ok {
 		rcode = dns.RcodeNameError
@@ -78,7 +78,7 @@ func (r *Records) Parse(recs []string) {
 			continue
 		}
 		// Add parsed RR to the list
-		rrmap = AppendRR(rrmap, rr)
+		rrmap = appendRR(rrmap, rr)
 	}
 	// Create serial
 	serial := time.Now().Format("2006010215")
@@ -88,12 +88,12 @@ func (r *Records) Parse(recs []string) {
 	if err != nil {
 		log.Errorf("Error [%v] while trying to add SOA record: [%s]", err, SOAstring)
 	} else {
-		rrmap = AppendRR(rrmap, soarr)
+		rrmap = appendRR(rrmap, soarr)
 	}
 	r.Records = rrmap
 }
 
-func AppendRR(rrmap map[uint16]map[string][]dns.RR, rr dns.RR) map[uint16]map[string][]dns.RR {
+func appendRR(rrmap map[uint16]map[string][]dns.RR, rr dns.RR) map[uint16]map[string][]dns.RR {
 	_, ok := rrmap[rr.Header().Rrtype]
 	if !ok {
 		newrr := make(map[string][]dns.RR)

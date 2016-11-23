@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type Database struct {
+type database struct {
 	DB *sql.DB
 }
 
@@ -34,7 +34,7 @@ func getSQLiteStmt(s string) string {
 	return re.ReplaceAllString(s, "?")
 }
 
-func (d *Database) Init(engine string, connection string) error {
+func (d *database) Init(engine string, connection string) error {
 	db, err := sql.Open(engine, connection)
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func (d *Database) Init(engine string, connection string) error {
 	return nil
 }
 
-func (d *Database) Register() (ACMETxt, error) {
+func (d *database) Register() (ACMETxt, error) {
 	a, err := newACMETxt()
 	if err != nil {
 		return ACMETxt{}, err
@@ -78,7 +78,7 @@ func (d *Database) Register() (ACMETxt, error) {
 	return a, nil
 }
 
-func (d *Database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
+func (d *database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	var results []ACMETxt
 	getSQL := `
 	SELECT Username, Password, Subdomain, Value, LastActive
@@ -120,7 +120,7 @@ func (d *Database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	return ACMETxt{}, errors.New("no user")
 }
 
-func (d *Database) GetByDomain(domain string) ([]ACMETxt, error) {
+func (d *database) GetByDomain(domain string) ([]ACMETxt, error) {
 	domain = sanitizeString(domain)
 	log.Debugf("Trying to select domain [%s] from table", domain)
 	var a []ACMETxt
@@ -155,7 +155,7 @@ func (d *Database) GetByDomain(domain string) ([]ACMETxt, error) {
 	return a, nil
 }
 
-func (d *Database) Update(a ACMETxt) error {
+func (d *database) Update(a ACMETxt) error {
 	// Data in a is already sanitized
 	log.Debugf("Trying to update domain [%s] with TXT data [%s]", a.Subdomain, a.Value)
 	timenow := time.Now().Unix()
