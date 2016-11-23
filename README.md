@@ -107,13 +107,15 @@ Installation
 
 2) Clone this repo: `git clone https://github.com/joohoi/acme-dns $GOPATH/src/acme-dns`
 
-3) Get dependencies:  `cd $GOPATH/src/acme-dns` and `go get -u`
+3) Install govendor.  ‘go get -u github.com/kardianos/govendor’ . This is used for dependency handling
 
-4) Build ACME-DNS: `go build`
+4) Get dependencies:  `cd $GOPATH/src/acme-dns` and `govendor sync`
 
-5) Edit config.cfg to suit your needs (see [configuration](#configuration))
+5) Build ACME-DNS: `go build`
 
-6) Run acme-dns `sudo ./acme-dns` in most cases you need to run it as privileged user, because we usually need privileged ports.
+6) Edit config.cfg to suit your needs (see [configuration](#configuration))
+
+7) Run acme-dns `sudo ./acme-dns` in most cases you need to run it as privileged user, because we usually need privileged ports.
 
 Configuration
 -------------------
