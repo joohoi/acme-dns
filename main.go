@@ -45,9 +45,11 @@ func main() {
 		defer logfh.Close()
 		logBackend = logging.NewLogBackend(logfh, "", 0)
 	}
-
-	logLevel := logging.AddModuleLevel(logBackend)
+	logFormatter := logging.NewBackendFormatter(logBackend, logformat)
+	logLevel := logging.AddModuleLevel(logFormatter)
 	switch DNSConf.Logconfig.Level {
+	default:
+		logLevel.SetLevel(logging.DEBUG, "")
 	case "warning":
 		logLevel.SetLevel(logging.WARNING, "")
 	case "error":
@@ -55,7 +57,6 @@ func main() {
 	case "info":
 		logLevel.SetLevel(logging.INFO, "")
 	}
-	logFormatter := logging.NewBackendFormatter(logLevel, logformat)
 	logging.SetBackend(logFormatter)
 
 	// Read the default records in
@@ -82,6 +83,7 @@ func main() {
 
 	// API server and endpoints
 	api := iris.New()
+	api.Config.DisableBanner = true
 	crs := cors.New(cors.Options{
 		AllowedOrigins:     DNSConf.API.CorsOrigins,
 		AllowedMethods:     []string{"GET", "POST"},
