@@ -3,12 +3,10 @@ package main
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
 	"github.com/BurntSushi/toml"
-	"github.com/op/go-logging"
+	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
 	"math/big"
-	"os"
 	"regexp"
 	"strings"
 )
@@ -70,34 +68,18 @@ func newACMETxt() (ACMETxt, error) {
 }
 
 func setupLogging() {
-	var logformat = logging.MustStringFormatter(DNSConf.Logconfig.Format)
-	var logBackend *logging.LogBackend
-	switch DNSConf.Logconfig.Logtype {
-	default:
-		// Setup logging - stdout
-		logBackend = logging.NewLogBackend(os.Stdout, "", 0)
-	case "file":
-		// Logging to file
-		logfh, err := os.OpenFile(DNSConf.Logconfig.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			fmt.Printf("Could not open log file %s\n", DNSConf.Logconfig.File)
-			os.Exit(1)
-		}
-		defer logfh.Close()
-		logBackend = logging.NewLogBackend(logfh, "", 0)
+	if DNSConf.Logconfig.Format == "json" {
+		log.SetFormatter(&log.JSONFormatter{})
 	}
-	logFormatter := logging.NewBackendFormatter(logBackend, logformat)
-	logLevel := logging.AddModuleLevel(logFormatter)
 	switch DNSConf.Logconfig.Level {
 	default:
-		logLevel.SetLevel(logging.DEBUG, "")
-	case "warning":
-		logLevel.SetLevel(logging.WARNING, "")
-	case "error":
-		logLevel.SetLevel(logging.ERROR, "")
+		log.SetLevel(log.WarnLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
 	case "info":
-		logLevel.SetLevel(logging.INFO, "")
+		log.SetLevel(log.InfoLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
 	}
-	logging.SetBackend(logFormatter)
-
+	// TODO: file logging
 }

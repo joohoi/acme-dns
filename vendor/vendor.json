@@ -9,6 +9,12 @@
 			"revisionTime": "2016-07-17T15:07:09Z"
 		},
 		{
+			"checksumSHA1": "jRtYpPa7CRuA+LP4ELF9c9CjJao=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "a437dfd2463eaedbec3dfe443e477d3b0a810b3f",
+			"revisionTime": "2016-11-18T19:45:39Z"
+		},
+		{
 			"checksumSHA1": "kMfAFLobZymMrCOm/Xi/g9gnJOU=",
 			"path": "github.com/ajg/form",
 			"revision": "523a5da1a92f01b01f840b61689c0340a0243532",
@@ -318,12 +324,6 @@
 			"path": "github.com/moul/http2curl",
 			"revision": "b1479103caacaa39319f75e7f57fc545287fca0d",
 			"revisionTime": "2016-05-20T21:31:28Z"
-		},
-		{
-			"checksumSHA1": "BoXdUBWB8UnSlFlbnuTQaPqfCGk=",
-			"path": "github.com/op/go-logging",
-			"revision": "970db520ece77730c7e4724c61121037378659d9",
-			"revisionTime": "2016-03-15T20:05:05Z"
 		},
 		{
 			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",

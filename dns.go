@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/miekg/dns"
 	"strings"
 	"time"
@@ -25,7 +26,7 @@ func answerTXT(q dns.Question) ([]dns.RR, int, error) {
 
 	atxt, err := DB.GetByDomain(sanitizeDomainQuestion(domain))
 	if err != nil {
-		log.Errorf("Error while trying to get record [%v]", err)
+		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error while trying to get record")
 		return ra, dns.RcodeNameError, err
 	}
 	for _, v := range atxt {
@@ -37,7 +38,8 @@ func answerTXT(q dns.Question) ([]dns.RR, int, error) {
 			rcode = dns.RcodeSuccess
 		}
 	}
-	log.Debugf("Answering TXT question for domain [%s]", domain)
+
+	log.WithFields(log.Fields{"domain": domain}).Info("Answering TXT question for domain")
 	return ra, rcode, nil
 }
 
@@ -53,7 +55,7 @@ func answer(q dns.Question) ([]dns.RR, int, error) {
 	if !ok {
 		rcode = dns.RcodeNameError
 	}
-	log.Debugf("Answering [%s] question for domain [%s] with rcode [%s]", dns.TypeToString[rtype], domain, dns.RcodeToString[rcode])
+	log.WithFields(log.Fields{"qtype": dns.TypeToString[rtype], "domain": domain, "rcode": dns.RcodeToString[rcode]}).Debug("Answering question for domain")
 	return r, rcode, nil
 }
 
@@ -74,7 +76,7 @@ func (r *Records) Parse(recs []string) {
 	for _, v := range recs {
 		rr, err := dns.NewRR(strings.ToLower(v))
 		if err != nil {
-			log.Errorf("Could not parse RR from config: [%v] for RR: [%s]", err, v)
+			log.WithFields(log.Fields{"error": err.Error(), "rr": v}).Warning("Could not parse RR from config")
 			continue
 		}
 		// Add parsed RR to the list
@@ -86,7 +88,7 @@ func (r *Records) Parse(recs []string) {
 	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 86400", strings.ToLower(DNSConf.General.Domain), strings.ToLower(DNSConf.General.Nsname), strings.ToLower(DNSConf.General.Nsadmin), serial)
 	soarr, err := dns.NewRR(SOAstring)
 	if err != nil {
-		log.Errorf("Error [%v] while trying to add SOA record: [%s]", err, SOAstring)
+		log.WithFields(log.Fields{"error": err.Error(), "soa": SOAstring}).Warning("Error while adding SOA record")
 	} else {
 		rrmap = appendRR(rrmap, soarr)
 	}
@@ -100,6 +102,6 @@ func appendRR(rrmap map[uint16]map[string][]dns.RR, rr dns.RR) map[uint16]map[st
 		rrmap[rr.Header().Rrtype] = newrr
 	}
 	rrmap[rr.Header().Rrtype][rr.Header().Name] = append(rrmap[rr.Header().Rrtype][rr.Header().Name], rr)
-	log.Debugf("Adding new record of type [%s] for domain [%s]", dns.TypeToString[rr.Header().Rrtype], rr.Header().Name)
+	log.WithFields(log.Fields{"recordtype": dns.TypeToString[rr.Header().Rrtype], "domain": rr.Header().Name}).Debug("Adding new record type to domain")
 	return rrmap
 }

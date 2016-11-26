@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/kataras/iris"
 )
 
@@ -20,7 +21,6 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 			if err := ctx.ReadJSON(&postData); err == nil {
 				// Check that the subdomain belongs to the user
 				if au.Subdomain == postData.Subdomain {
-					log.Debugf("Accepted authentication from [%s]", usernameStr)
 					ctx.Next()
 					return
 				}
@@ -44,12 +44,12 @@ func webRegisterPost(ctx *iris.Context) {
 		errstr := fmt.Sprintf("%v", err)
 		regJSON = iris.Map{"error": errstr}
 		regStatus = iris.StatusInternalServerError
-		log.Debugf("Error in registration, [%v]", err)
+		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error in registration")
 	} else {
 		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain}
 		regStatus = iris.StatusCreated
 
-		log.Debugf("Successful registration, created user [%s]", nu.Username)
+		log.WithFields(log.Fields{"user": nu.Username.String()}).Debug("Created new user")
 	}
 	ctx.JSON(regStatus, regJSON)
 }
@@ -72,13 +72,13 @@ func webUpdatePost(ctx *iris.Context) {
 	if validSubdomain(a.Subdomain) && validTXT(a.Value) {
 		err := DB.Update(a)
 		if err != nil {
-			log.Warningf("Error trying to update [%v]", err)
+			log.WithFields(log.Fields{"error": err.Error()}).Debug("Error while trying to update record")
 			webUpdatePostError(ctx, errors.New("internal error"), iris.StatusInternalServerError)
 			return
 		}
 		ctx.JSON(iris.StatusOK, iris.Map{"txt": a.Value})
 	} else {
-		log.Warningf("Bad data, subdomain: [%s], txt: [%s]", a.Subdomain, a.Value)
+		log.WithFields(log.Fields{"subdomain": a.Subdomain, "txt": a.Value}).Debug("Bad data for subdomain")
 		webUpdatePostError(ctx, errors.New("bad data"), iris.StatusBadRequest)
 		return
 	}

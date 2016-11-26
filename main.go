@@ -2,15 +2,12 @@ package main
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
 	"github.com/miekg/dns"
-	"github.com/op/go-logging"
 	"os"
 )
-
-// Logging config
-var log = logging.MustGetLogger("acme-dns")
 
 // DNSConf is global configuration struct
 var DNSConf DNSConfig
@@ -25,7 +22,7 @@ func main() {
 	// Read global config
 	configTmp, err := readConfig("config.cfg")
 	if err != nil {
-		fmt.Printf("Got error %v\n", DNSConf.Logconfig.File)
+		fmt.Printf("Got error %v\n", err)
 		os.Exit(1)
 	}
 	DNSConf = configTmp

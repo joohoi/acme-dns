@@ -4,10 +4,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/miekg/dns"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 var testAddr1 = "0.0.0.0:15353"
@@ -103,9 +105,9 @@ func startDNSServer(addr string) (*dns.Server, resolver) {
 		err := server.ListenAndServe()
 		if err != nil {
 			log.Errorf("%v", err)
-			os.Exit(1)
 		}
 	}()
+	time.sleep(2)
 	return server, resolver{server: addr}
 }
 

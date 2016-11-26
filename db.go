@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	log "github.com/Sirupsen/logrus"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
@@ -28,7 +29,7 @@ var recordsTable = `
 func getSQLiteStmt(s string) string {
 	re, err := regexp.Compile("\\$[0-9]")
 	if err != nil {
-		log.Errorf("%v", err)
+		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error in regexp")
 		return s
 	}
 	return re.ReplaceAllString(s, "?")
@@ -122,7 +123,6 @@ func (d *database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 
 func (d *database) GetByDomain(domain string) ([]ACMETxt, error) {
 	domain = sanitizeString(domain)
-	log.Debugf("Trying to select domain [%s] from table", domain)
 	var a []ACMETxt
 	getSQL := `
 	SELECT Username, Password, Subdomain, Value
@@ -157,7 +157,6 @@ func (d *database) GetByDomain(domain string) ([]ACMETxt, error) {
 
 func (d *database) Update(a ACMETxt) error {
 	// Data in a is already sanitized
-	log.Debugf("Trying to update domain [%s] with TXT data [%s]", a.Subdomain, a.Value)
 	timenow := time.Now().Unix()
 	updSQL := `
 	UPDATE records SET Value=$1, LastActive=$2
