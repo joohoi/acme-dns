@@ -146,14 +146,14 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 
 func TestApiManyUpdateWithCredentials(t *testing.T) {
 	// TODO: transfer to using httpexpect builder
-	// If test fails and more debuf info is needed, use SetupIris(t, true, false)
+	// If test fails and more debug info is needed, use SetupIris(t, true, false)
 	validTxtData := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 	updateJSON := map[string]interface{}{
 		"subdomain": "",
 		"txt":       ""}
 
-	e := SetupIris(t, true, false)
+	e := SetupIris(t, false, false)
 	defer DB.DB.Close()
 	newUser, err := DB.Register()
 	if err != nil {
