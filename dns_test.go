@@ -162,18 +162,46 @@ func TestResolveTXT(t *testing.T) {
 		t.Errorf("Could not update db record: [%v]", err)
 		return
 	}
-	answer, err := resolver.lookup(atxt.Subdomain+".auth.example.org", dns.TypeTXT)
-	if err != nil {
-		t.Errorf("%v", err)
-		return
-	}
 
-	if len(answer) > 0 {
-		err = hasExpectedTXTAnswer(answer, validTXT)
+	for i, test := range []struct {
+		subDomain   string
+		expTXT      string
+		getAnswer   bool
+		validAnswer bool
+	}{
+		{atxt.Subdomain, validTXT, true, true},
+		{atxt.Subdomain, "invalid", true, false},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", validTXT, false, false},
+	} {
+		answer, err := resolver.lookup(test.subDomain+".auth.example.org", dns.TypeTXT)
 		if err != nil {
-			t.Errorf("%v", err)
+			if test.getAnswer {
+				t.Errorf("Test %d: Expected answer but got: %v", i, err)
+			}
+		} else {
+			if !test.getAnswer {
+				t.Errorf("Test %d: Expected no answer, but got one.", i)
+			}
 		}
-	} else {
-		t.Error("No answer for DNS query")
+
+		if len(answer) > 0 {
+			if !test.getAnswer {
+				t.Errorf("Test %d: Expected no answer, but got: [%q]", i, answer)
+			}
+			err = hasExpectedTXTAnswer(answer, test.expTXT)
+			if err != nil {
+				if test.validAnswer {
+					t.Errorf("Test %d: %v", i, err)
+				}
+			} else {
+				if !test.validAnswer {
+					t.Errorf("Test %d: Answer was not expected to be valid, answer [%q], compared to [%s]", i, answer, test.expTXT)
+				}
+			}
+		} else {
+			if test.getAnswer {
+				t.Errorf("Test %d: Expected answer, but didn't get one", i)
+			}
+		}
 	}
 }
