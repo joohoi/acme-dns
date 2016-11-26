@@ -5,13 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"github.com/miekg/dns"
-	"github.com/op/go-logging"
 	"os"
 	"strings"
 	"testing"
 )
 
-var testAddr = "0.0.0.0:15353"
+var testAddr1 = "0.0.0.0:15353"
+var testAddr2 = "0.0.0.0:15354"
 
 var records = []string{
 	"auth.example.org. A 192.168.1.100",
@@ -96,7 +96,6 @@ func startDNSServer(addr string) (*dns.Server, resolver) {
 
 	DNSConf = dnscfg
 
-	logging.InitForTesting(logging.DEBUG)
 	// DNS server part
 	dns.HandleFunc(".", handleRequest)
 	server := &dns.Server{Addr: addr, Net: "udp"}
@@ -111,9 +110,9 @@ func startDNSServer(addr string) (*dns.Server, resolver) {
 }
 
 func TestResolveA(t *testing.T) {
-	server, resolver := startDNSServer(testAddr)
-	defer server.Shutdown()
 	RR.Parse(records)
+	server, resolver := startDNSServer(testAddr1)
+	defer server.Shutdown()
 	answer, err := resolver.lookup("auth.example.org", dns.TypeA)
 	if err != nil {
 		t.Errorf("%v", err)
@@ -128,6 +127,7 @@ func TestResolveA(t *testing.T) {
 	} else {
 		t.Error("No answer for DNS query")
 	}
+	server.Shutdown()
 }
 
 func TestResolveTXT(t *testing.T) {
@@ -145,9 +145,8 @@ func TestResolveTXT(t *testing.T) {
 	}
 	defer DB.DB.Close()
 
-	server, resolver := startDNSServer(testAddr)
+	server, resolver := startDNSServer(testAddr2)
 	defer server.Shutdown()
-	RR.Parse(records)
 
 	validTXT := "______________valid_response_______________"
 
@@ -204,4 +203,5 @@ func TestResolveTXT(t *testing.T) {
 			}
 		}
 	}
+	server.Shutdown()
 }

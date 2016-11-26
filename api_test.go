@@ -5,7 +5,6 @@ import (
 	"github.com/gavv/httpexpect"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/httptest"
-	"github.com/op/go-logging"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 	"testing"
 )
@@ -27,7 +26,7 @@ func SetupIris(t *testing.T, debug bool, noauth bool) *httpexpect.Expect {
 	}
 	DNSConf = dnscfg
 	// In memory logger
-	logging.InitForTesting(logging.DEBUG)
+	//logging.InitForTesting(logging.DEBUG)
 	err := DB.Init(DNSConf.Database.Engine, DNSConf.Database.Connection)
 	if err != nil {
 		panic(err)
