@@ -6,14 +6,12 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/miekg/dns"
-	"os"
 	"strings"
 	"testing"
-	"time"
 )
 
-var testAddr1 = "0.0.0.0:15353"
-var testAddr2 = "0.0.0.0:15354"
+var resolv resolver
+var server *dns.Server
 
 var records = []string{
 	"auth.example.org. A 192.168.1.100",
@@ -77,8 +75,7 @@ func findRecordFromMemory(rrstr string, host string, qtype uint16) error {
 	return errors.New(errmsg)
 }
 
-func startDNSServer(addr string) (*dns.Server, resolver) {
-
+func setupConfig() {
 	var dbcfg = dbsettings{
 		Engine:     "sqlite3",
 		Connection: ":memory:",
@@ -97,6 +94,9 @@ func startDNSServer(addr string) (*dns.Server, resolver) {
 	}
 
 	DNSConf = dnscfg
+}
+
+func startDNSServer(addr string) (*dns.Server, resolver) {
 
 	// DNS server part
 	dns.HandleFunc(".", handleRequest)
@@ -107,15 +107,13 @@ func startDNSServer(addr string) (*dns.Server, resolver) {
 			log.Errorf("%v", err)
 		}
 	}()
-	time.sleep(2)
 	return server, resolver{server: addr}
 }
 
 func TestResolveA(t *testing.T) {
 	RR.Parse(records)
-	server, resolver := startDNSServer(testAddr1)
-	defer server.Shutdown()
-	answer, err := resolver.lookup("auth.example.org", dns.TypeA)
+	setupConfig()
+	answer, err := resolv.lookup("auth.example.org", dns.TypeA)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
@@ -129,11 +127,11 @@ func TestResolveA(t *testing.T) {
 	} else {
 		t.Error("No answer for DNS query")
 	}
-	server.Shutdown()
 }
 
 func TestResolveTXT(t *testing.T) {
 	flag.Parse()
+	setupConfig()
 	if *postgres {
 		DNSConf.Database.Engine = "postgres"
 		err := DB.Init("postgres", "postgres://acmedns:acmedns@localhost/acmedns")
@@ -146,9 +144,6 @@ func TestResolveTXT(t *testing.T) {
 		_ = DB.Init("sqlite3", ":memory:")
 	}
 	defer DB.DB.Close()
-
-	server, resolver := startDNSServer(testAddr2)
-	defer server.Shutdown()
 
 	validTXT := "______________valid_response_______________"
 
@@ -174,10 +169,10 @@ func TestResolveTXT(t *testing.T) {
 		{atxt.Subdomain, "invalid", true, false},
 		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", validTXT, false, false},
 	} {
-		answer, err := resolver.lookup(test.subDomain+".auth.example.org", dns.TypeTXT)
+		answer, err := resolv.lookup(test.subDomain+".auth.example.org", dns.TypeTXT)
 		if err != nil {
 			if test.getAnswer {
-				t.Errorf("Test %d: Expected answer but got: %v", i, err)
+				t.Fatalf("Test %d: Expected answer but got: %v", i, err)
 			}
 		} else {
 			if !test.getAnswer {
@@ -205,5 +200,4 @@ func TestResolveTXT(t *testing.T) {
 			}
 		}
 	}
-	server.Shutdown()
 }
