@@ -503,6 +503,12 @@
 			"revisionTime": "2016-10-28T04:02:39Z"
 		},
 		{
+			"checksumSHA1": "MeXzn+OFdrU9/TGeMVz0GsRX+dM=",
+			"path": "gopkg.in/DATA-DOG/go-sqlmock.v1",
+			"revision": "d4cd2ca2ad1cc2130bba385aab072218f131f636",
+			"revisionTime": "2016-11-02T12:49:59Z"
+		},
+		{
 			"checksumSHA1": "vSlztt3rfYwwDDKEiqUDWXl2LGw=",
 			"path": "gopkg.in/square/go-jose.v1/cipher",
 			"revision": "aa2e30fdd1fe9dd3394119af66451ae790d50e0d",
