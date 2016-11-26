@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-var testAddr = ":15353"
+var testAddr = "0.0.0.0:15353"
 
 var records = []string{
 	"auth.example.org. A 192.168.1.100",
