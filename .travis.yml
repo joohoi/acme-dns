@@ -5,6 +5,11 @@ env:
   - "PATH=/home/travis/gopath/bin:$PATH"
 before_install:
   - go get -u github.com/kardianos/govendor
+  - go get github.com/golang/lint/golint
+  - go get github.com/mattn/goveralls
   - govendor sync
 script:
-    - go test -race -v
+  - go vet 
+  - golint
+  - go test -race -v
+  - $HOME/gopath/bin/goveralls -service=travis-ci
