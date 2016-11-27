@@ -50,13 +50,13 @@ func sanitizeDomainQuestion(d string) string {
 	return dom
 }
 
-func newACMETxt() (ACMETxt, error) {
+func newACMETxt() ACMETxt {
 	var a = ACMETxt{}
 	password := generatePassword(40)
 	a.Username = uuid.NewV4()
 	a.Password = password
 	a.Subdomain = uuid.NewV4().String()
-	return a, nil
+	return a
 }
 
 func setupLogging(format string, level string) {

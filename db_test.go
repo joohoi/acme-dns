@@ -1,8 +1,45 @@
 package main
 
 import (
+	"database/sql"
+	"database/sql/driver"
+	"errors"
+	"github.com/erikstmartin/go-testdb"
 	"testing"
 )
+
+type testResult struct {
+	lastID       int64
+	affectedRows int64
+}
+
+func (r testResult) LastInsertId() (int64, error) {
+	return r.lastID, nil
+}
+
+func (r testResult) RowsAffected() (int64, error) {
+	return r.affectedRows, nil
+}
+
+func TestDBInit(t *testing.T) {
+	fakeDB := new(acmedb)
+	err := fakeDB.Init("notarealegine", "connectionstring")
+	if err == nil {
+		t.Errorf("Was expecting error, didn't get one.")
+	}
+
+	testdb.SetExecWithArgsFunc(func(query string, args []driver.Value) (result driver.Result, err error) {
+		return testResult{1, 0}, errors.New("Prepared query error")
+	})
+	defer testdb.Reset()
+
+	errorDB := new(acmedb)
+	err = errorDB.Init("testdb", "")
+	if err == nil {
+		t.Errorf("Was expecting DB initiation error but got none")
+	}
+	errorDB.Close()
+}
 
 func TestRegister(t *testing.T) {
 	// Register tests
@@ -35,6 +72,136 @@ func TestGetByUsername(t *testing.T) {
 	// regUser password already is a bcrypt hash
 	if !correctPassword(reg.Password, regUser.Password) {
 		t.Errorf("The password [%s] does not match the hash [%s]", reg.Password, regUser.Password)
+	}
+}
+
+func TestPrepareErrors(t *testing.T) {
+	reg, _ := DB.Register()
+	tdb, err := sql.Open("testdb", "")
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+	oldDb := DB.GetBackend()
+	DB.SetBackend(tdb)
+	defer DB.SetBackend(oldDb)
+	defer testdb.Reset()
+
+	_, err = DB.GetByUsername(reg.Username)
+	if err == nil {
+		t.Errorf("Expected error, but didn't get one")
+	}
+
+	_, err = DB.GetByDomain(reg.Subdomain)
+	if err == nil {
+		t.Errorf("Expected error, but didn't get one")
+	}
+}
+
+func TestQueryExecErrors(t *testing.T) {
+	reg, _ := DB.Register()
+	testdb.SetExecWithArgsFunc(func(query string, args []driver.Value) (result driver.Result, err error) {
+		return testResult{1, 0}, errors.New("Prepared query error")
+	})
+
+	testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
+		columns := []string{"Username", "Password", "Subdomain", "Value", "LastActive"}
+		return testdb.RowsFromSlice(columns, [][]driver.Value{}), errors.New("Prepared query error")
+	})
+
+	defer testdb.Reset()
+
+	tdb, err := sql.Open("testdb", "")
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+	oldDb := DB.GetBackend()
+
+	DB.SetBackend(tdb)
+	defer DB.SetBackend(oldDb)
+
+	_, err = DB.GetByUsername(reg.Username)
+	if err == nil {
+		t.Errorf("Expected error from exec, but got none")
+	}
+
+	_, err = DB.GetByDomain(reg.Subdomain)
+	if err == nil {
+		t.Errorf("Expected error from exec in GetByDomain, but got none")
+	}
+
+	_, err = DB.Register()
+	if err == nil {
+		t.Errorf("Expected error from exec in Register, but got none")
+	}
+	reg.Value = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+	err = DB.Update(reg)
+	if err == nil {
+		t.Errorf("Expected error from exec in Update, but got none")
+	}
+
+}
+
+func TestQueryScanErrors(t *testing.T) {
+	reg, _ := DB.Register()
+
+	testdb.SetExecWithArgsFunc(func(query string, args []driver.Value) (result driver.Result, err error) {
+		return testResult{1, 0}, errors.New("Prepared query error")
+	})
+
+	testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
+		columns := []string{"Only one"}
+		resultrows := "this value"
+		return testdb.RowsFromCSVString(columns, resultrows), nil
+	})
+
+	defer testdb.Reset()
+	tdb, err := sql.Open("testdb", "")
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+	oldDb := DB.GetBackend()
+
+	DB.SetBackend(tdb)
+	defer DB.SetBackend(oldDb)
+
+	_, err = DB.GetByUsername(reg.Username)
+	if err == nil {
+		t.Errorf("Expected error from scan in, but got none")
+	}
+
+	_, err = DB.GetByDomain(reg.Subdomain)
+	if err == nil {
+		t.Errorf("Expected error from scan in GetByDomain, but got none")
+	}
+}
+
+func TestBadDBValues(t *testing.T) {
+	reg, _ := DB.Register()
+
+	testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
+		columns := []string{"Username", "Password", "Subdomain", "Value", "LastActive"}
+		resultrows := "invalid,invalid,invalid,invalid,"
+		return testdb.RowsFromCSVString(columns, resultrows), nil
+	})
+
+	defer testdb.Reset()
+	tdb, err := sql.Open("testdb", "")
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+	oldDb := DB.GetBackend()
+
+	DB.SetBackend(tdb)
+	defer DB.SetBackend(oldDb)
+
+	_, err = DB.GetByUsername(reg.Username)
+	if err == nil {
+		t.Errorf("Expected error from scan in, but got none")
+	}
+
+	_, err = DB.GetByDomain(reg.Subdomain)
+	if err == nil {
+		t.Errorf("Expected error from scan in GetByDomain, but got none")
 	}
 }
 

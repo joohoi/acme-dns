@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"errors"
-	log "github.com/Sirupsen/logrus"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
@@ -23,11 +22,7 @@ var recordsTable = `
 
 // getSQLiteStmt replaces all PostgreSQL prepared statement placeholders (eg. $1, $2) with SQLite variant "?"
 func getSQLiteStmt(s string) string {
-	re, err := regexp.Compile("\\$[0-9]")
-	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error in regexp")
-		return s
-	}
+	re, _ := regexp.Compile("\\$[0-9]")
 	return re.ReplaceAllString(s, "?")
 }
 
@@ -50,10 +45,7 @@ func (d *acmedb) Init(engine string, connection string) error {
 func (d *acmedb) Register() (ACMETxt, error) {
 	d.Lock()
 	defer d.Unlock()
-	a, err := newACMETxt()
-	if err != nil {
-		return ACMETxt{}, err
-	}
+	a := newACMETxt()
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(a.Password), 10)
 	timenow := time.Now().Unix()
 	regSQL := `
@@ -106,12 +98,7 @@ func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	// It will only be one row though
 	for rows.Next() {
 		a := ACMETxt{}
-		var uname string
-		err = rows.Scan(&uname, &a.Password, &a.Subdomain, &a.Value, &a.LastActive)
-		if err != nil {
-			return ACMETxt{}, err
-		}
-		a.Username, err = uuid.FromString(uname)
+		err = rows.Scan(&a.Username, &a.Password, &a.Subdomain, &a.Value, &a.LastActive)
 		if err != nil {
 			return ACMETxt{}, err
 		}
