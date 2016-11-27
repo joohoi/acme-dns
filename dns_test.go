@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/miekg/dns"
@@ -75,27 +74,6 @@ func findRecordFromMemory(rrstr string, host string, qtype uint16) error {
 	return errors.New(errmsg)
 }
 
-func setupConfig() {
-	var dbcfg = dbsettings{
-		Engine:     "sqlite3",
-		Connection: ":memory:",
-	}
-
-	var generalcfg = general{
-		Domain:  "auth.example.org",
-		Nsname:  "ns1.auth.example.org",
-		Nsadmin: "admin.example.org",
-		Debug:   false,
-	}
-
-	var dnscfg = DNSConfig{
-		Database: dbcfg,
-		General:  generalcfg,
-	}
-
-	DNSConf = dnscfg
-}
-
 func startDNSServer(addr string) (*dns.Server, resolver) {
 
 	// DNS server part
@@ -111,7 +89,6 @@ func startDNSServer(addr string) (*dns.Server, resolver) {
 }
 
 func TestResolveA(t *testing.T) {
-	RR.Parse(records)
 	setupConfig()
 	answer, err := resolv.lookup("auth.example.org", dns.TypeA)
 	if err != nil {
@@ -130,20 +107,7 @@ func TestResolveA(t *testing.T) {
 }
 
 func TestResolveTXT(t *testing.T) {
-	flag.Parse()
 	setupConfig()
-	if *postgres {
-		DNSConf.Database.Engine = "postgres"
-		err := DB.Init("postgres", "postgres://acmedns:acmedns@localhost/acmedns")
-		if err != nil {
-			t.Errorf("PostgreSQL integration tests expect database \"acmedns\" running in localhost, with username and password set to \"acmedns\"")
-			return
-		}
-	} else {
-		DNSConf.Database.Engine = "sqlite3"
-		_ = DB.Init("sqlite3", ":memory:")
-	}
-	defer DB.DB.Close()
 
 	validTXT := "______________valid_response_______________"
 

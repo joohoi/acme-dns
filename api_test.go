@@ -9,28 +9,8 @@ import (
 	"testing"
 )
 
-func SetupIris(t *testing.T, debug bool, noauth bool) *httpexpect.Expect {
+func setupIris(t *testing.T, debug bool, noauth bool) *httpexpect.Expect {
 	iris.ResetDefault()
-	var dbcfg = dbsettings{
-		Engine:     "sqlite3",
-		Connection: ":memory:"}
-	var httpapicfg = httpapi{
-		Domain:      "",
-		Port:        "8080",
-		TLS:         "none",
-		CorsOrigins: []string{"*"},
-	}
-	var dnscfg = DNSConfig{
-		API:      httpapicfg,
-		Database: dbcfg,
-	}
-	DNSConf = dnscfg
-	// In memory logger
-	//logging.InitForTesting(logging.DEBUG)
-	err := DB.Init(DNSConf.Database.Engine, DNSConf.Database.Connection)
-	if err != nil {
-		panic(err)
-	}
 	var ForceAuth = authMiddleware{}
 	iris.Get("/register", webRegisterGet)
 	iris.Post("/register", webRegisterPost)
@@ -45,8 +25,7 @@ func SetupIris(t *testing.T, debug bool, noauth bool) *httpexpect.Expect {
 }
 
 func TestApiRegister(t *testing.T) {
-	e := SetupIris(t, false, false)
-	defer DB.DB.Close()
+	e := setupIris(t, false, false)
 	e.GET("/register").Expect().
 		Status(iris.StatusCreated).
 		JSON().Object().
@@ -66,22 +45,22 @@ func TestApiRegister(t *testing.T) {
 }
 
 func TestApiRegisterWithMockDB(t *testing.T) {
-	e := SetupIris(t, false, false)
-	DB.DB.Close()
+	e := setupIris(t, false, false)
+	old_db := DB.DB
 	db, mock, _ := sqlmock.New()
 	DB.DB = db
-	defer DB.DB.Close()
+	defer db.Close()
 	mock.ExpectBegin()
 	mock.ExpectPrepare("INSERT INTO records").WillReturnError(errors.New("error"))
 	e.GET("/register").Expect().
 		Status(iris.StatusInternalServerError).
 		JSON().Object().
 		ContainsKey("error")
+	DB.DB = old_db
 }
 
 func TestApiUpdateWithoutCredentials(t *testing.T) {
-	e := SetupIris(t, false, false)
-	defer DB.DB.Close()
+	e := setupIris(t, false, false)
 	e.POST("/update").Expect().
 		Status(iris.StatusUnauthorized).
 		JSON().Object().
@@ -96,8 +75,7 @@ func TestApiUpdateWithCredentials(t *testing.T) {
 		"subdomain": "",
 		"txt":       ""}
 
-	e := SetupIris(t, false, false)
-	defer DB.DB.Close()
+	e := setupIris(t, false, false)
 	newUser, err := DB.Register()
 	if err != nil {
 		t.Errorf("Could not create new user, got error [%v]", err)
@@ -128,11 +106,11 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 	updateJSON["subdomain"] = "a097455b-52cc-4569-90c8-7a4b97c6eba8"
 	updateJSON["txt"] = validTxtData
 
-	e := SetupIris(t, false, true)
-	DB.DB.Close()
+	e := setupIris(t, false, true)
+	old_db := DB.DB
 	db, mock, _ := sqlmock.New()
 	DB.DB = db
-	defer DB.DB.Close()
+	defer db.Close()
 	mock.ExpectBegin()
 	mock.ExpectPrepare("UPDATE records").WillReturnError(errors.New("error"))
 	e.POST("/update").
@@ -141,19 +119,19 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 		Status(iris.StatusInternalServerError).
 		JSON().Object().
 		ContainsKey("error")
+	DB.DB = old_db
 }
 
 func TestApiManyUpdateWithCredentials(t *testing.T) {
 	// TODO: transfer to using httpexpect builder
-	// If test fails and more debug info is needed, use SetupIris(t, true, false)
+	// If test fails and more debug info is needed, use setupIris(t, true, false)
 	validTxtData := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 	updateJSON := map[string]interface{}{
 		"subdomain": "",
 		"txt":       ""}
 
-	e := SetupIris(t, false, false)
-	defer DB.DB.Close()
+	e := setupIris(t, false, false)
 	newUser, err := DB.Register()
 	if err != nil {
 		t.Errorf("Could not create new user, got error [%v]", err)

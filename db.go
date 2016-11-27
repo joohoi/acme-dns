@@ -9,10 +9,12 @@ import (
 	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 	"regexp"
+	"sync"
 	"time"
 )
 
 type database struct {
+	sync.Mutex
 	DB *sql.DB
 }
 
@@ -36,12 +38,14 @@ func getSQLiteStmt(s string) string {
 }
 
 func (d *database) Init(engine string, connection string) error {
+	d.Lock()
+	defer d.Unlock()
 	db, err := sql.Open(engine, connection)
 	if err != nil {
 		return err
 	}
 	d.DB = db
-	d.DB.SetMaxOpenConns(1)
+	//d.DB.SetMaxOpenConns(1)
 	_, err = d.DB.Exec(recordsTable)
 	if err != nil {
 		return err
@@ -50,6 +54,8 @@ func (d *database) Init(engine string, connection string) error {
 }
 
 func (d *database) Register() (ACMETxt, error) {
+	d.Lock()
+	defer d.Unlock()
 	a, err := newACMETxt()
 	if err != nil {
 		return ACMETxt{}, err
@@ -80,6 +86,8 @@ func (d *database) Register() (ACMETxt, error) {
 }
 
 func (d *database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
+	d.Lock()
+	defer d.Unlock()
 	var results []ACMETxt
 	getSQL := `
 	SELECT Username, Password, Subdomain, Value, LastActive
@@ -122,6 +130,8 @@ func (d *database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 }
 
 func (d *database) GetByDomain(domain string) ([]ACMETxt, error) {
+	d.Lock()
+	defer d.Unlock()
 	domain = sanitizeString(domain)
 	var a []ACMETxt
 	getSQL := `
@@ -156,6 +166,8 @@ func (d *database) GetByDomain(domain string) ([]ACMETxt, error) {
 }
 
 func (d *database) Update(a ACMETxt) error {
+	d.Lock()
+	defer d.Unlock()
 	// Data in a is already sanitized
 	timenow := time.Now().Unix()
 	updSQL := `

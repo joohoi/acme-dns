@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
@@ -45,13 +46,12 @@ func generatePassword(length int) (string, error) {
 }
 
 func sanitizeDomainQuestion(d string) string {
-	var dom string
-	suffix := DNSConf.General.Domain + "."
-	if strings.HasSuffix(d, suffix) {
-		dom = d[0 : len(d)-len(suffix)]
-	} else {
-		dom = d
+	dom := strings.ToLower(d)
+	firstDot := strings.Index(d, ".")
+	if firstDot > 0 {
+		dom = dom[0:firstDot]
 	}
+	fmt.Printf("%s\n", dom)
 	return dom
 }
 
