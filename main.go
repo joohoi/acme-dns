@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/iris-contrib/middleware/cors"
-	"github.com/kataras/iris"
 	"os"
 )
 
@@ -42,34 +40,8 @@ func main() {
 	// DNS server
 	startDNS(DNSConf.General.Listen)
 
-	// API server and endpoints
-	api := iris.New()
-	api.Config.DisableBanner = true
-	crs := cors.New(cors.Options{
-		AllowedOrigins:     DNSConf.API.CorsOrigins,
-		AllowedMethods:     []string{"GET", "POST"},
-		OptionsPassthrough: false,
-		Debug:              DNSConf.General.Debug,
-	})
-	api.Use(crs)
-	var ForceAuth = authMiddleware{}
-	api.Get("/register", webRegisterGet)
-	api.Post("/register", webRegisterPost)
-	api.Post("/update", ForceAuth.Serve, webUpdatePost)
-	// TODO: migrate to api.Serve(iris.LETSENCRYPTPROD("mydomain.com"))
-	switch DNSConf.API.TLS {
-	case "letsencrypt":
-		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
-		api.Listen(host)
-	case "cert":
-		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
-		api.ListenTLS(host, DNSConf.API.TLSCertFullchain, DNSConf.API.TLSCertPrivkey)
-	default:
-		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
-		api.Listen(host)
-	}
-	if err != nil {
-		log.Errorf("Error in HTTP server [%v]", err)
-	}
+	// HTTP API
+	startHTTPAPI()
+
 	log.Debugf("Shutting down...")
 }

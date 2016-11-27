@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
+	"github.com/iris-contrib/middleware/cors"
+	"github.com/kataras/iris"
 	"github.com/miekg/dns"
 	"github.com/satori/go.uuid"
 	"math/big"
@@ -63,7 +65,7 @@ func setupLogging(format string, level string) {
 	if DNSConf.Logconfig.Format == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
-	switch DNSConf.Logconfig.Level {
+	switch level {
 	default:
 		log.SetLevel(log.WarnLevel)
 	case "debug":
@@ -88,4 +90,34 @@ func startDNS(listen string) *dns.Server {
 		}
 	}()
 	return server
+}
+
+func startHTTPAPI() {
+	api := iris.New()
+	api.Config.DisableBanner = true
+	crs := cors.New(cors.Options{
+		AllowedOrigins:     DNSConf.API.CorsOrigins,
+		AllowedMethods:     []string{"GET", "POST"},
+		OptionsPassthrough: false,
+		Debug:              DNSConf.General.Debug,
+	})
+	api.Use(crs)
+	var ForceAuth = authMiddleware{}
+	api.Get("/register", webRegisterGet)
+	api.Post("/register", webRegisterPost)
+	api.Post("/update", ForceAuth.Serve, webUpdatePost)
+	switch DNSConf.API.TLS {
+	case "letsencrypt":
+		listener, err := iris.LETSENCRYPTPROD(DNSConf.API.Domain)
+		err = api.Serve(listener)
+		if err != nil {
+			log.Errorf("Error in HTTP server [%v]", err)
+		}
+	case "cert":
+		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
+		api.ListenTLS(host, DNSConf.API.TLSCertFullchain, DNSConf.API.TLSCertPrivkey)
+	default:
+		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
+		api.Listen(host)
+	}
 }
