@@ -5,7 +5,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
-	"github.com/miekg/dns"
 	"os"
 )
 
@@ -27,7 +26,7 @@ func main() {
 	}
 	DNSConf = configTmp
 
-	setupLogging()
+	setupLogging(DNSConf.Logconfig.Format, DNSConf.Logconfig.Level)
 
 	// Read the default records in
 	RR.Parse(DNSConf.General.StaticRecords)
@@ -40,16 +39,8 @@ func main() {
 	}
 	defer DB.DB.Close()
 
-	// DNS server part
-	dns.HandleFunc(".", handleRequest)
-	server := &dns.Server{Addr: ":53", Net: "udp"}
-	go func() {
-		err = server.ListenAndServe()
-		if err != nil {
-			log.Errorf("%v", err)
-			os.Exit(1)
-		}
-	}()
+	// DNS server
+	startDNS(DNSConf.General.Listen)
 
 	// API server and endpoints
 	api := iris.New()

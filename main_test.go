@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 		_ = DB.Init("sqlite3", ":memory:")
 	}
 
-	server, resolv = startDNSServer("0.0.0.0:15353")
+	server := startDNS("0.0.0.0:15353")
 	exitval := m.Run()
 	server.Shutdown()
 	DB.DB.Close()

@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
+	"github.com/miekg/dns"
 	"github.com/satori/go.uuid"
 	"math/big"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -22,27 +24,20 @@ func readConfig(fname string) (DNSConfig, error) {
 
 func sanitizeString(s string) string {
 	// URL safe base64 alphabet without padding as defined in ACME
-	re, err := regexp.Compile("[^A-Za-z\\-\\_0-9]+")
-	if err != nil {
-		log.Errorf("%v", err)
-		return ""
-	}
+	re, _ := regexp.Compile("[^A-Za-z\\-\\_0-9]+")
 	return re.ReplaceAllString(s, "")
 }
 
-func generatePassword(length int) (string, error) {
+func generatePassword(length int) string {
 	ret := make([]byte, length)
 	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_"
 	alphalen := big.NewInt(int64(len(alphabet)))
 	for i := 0; i < length; i++ {
-		c, err := rand.Int(rand.Reader, alphalen)
-		if err != nil {
-			return "", err
-		}
+		c, _ := rand.Int(rand.Reader, alphalen)
 		r := int(c.Int64())
 		ret[i] = alphabet[r]
 	}
-	return string(ret), nil
+	return string(ret)
 }
 
 func sanitizeDomainQuestion(d string) string {
@@ -57,17 +52,14 @@ func sanitizeDomainQuestion(d string) string {
 
 func newACMETxt() (ACMETxt, error) {
 	var a = ACMETxt{}
-	password, err := generatePassword(40)
-	if err != nil {
-		return a, err
-	}
+	password := generatePassword(40)
 	a.Username = uuid.NewV4()
 	a.Password = password
 	a.Subdomain = uuid.NewV4().String()
 	return a, nil
 }
 
-func setupLogging() {
+func setupLogging(format string, level string) {
 	if DNSConf.Logconfig.Format == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
@@ -82,4 +74,18 @@ func setupLogging() {
 		log.SetLevel(log.ErrorLevel)
 	}
 	// TODO: file logging
+}
+
+func startDNS(listen string) *dns.Server {
+	// DNS server part
+	dns.HandleFunc(".", handleRequest)
+	server := &dns.Server{Addr: listen, Net: "udp"}
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			log.Errorf("%v", err)
+			os.Exit(1)
+		}
+	}()
+	return server
 }

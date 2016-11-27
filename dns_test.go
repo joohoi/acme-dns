@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"github.com/miekg/dns"
 	"strings"
 	"testing"
@@ -74,22 +73,8 @@ func findRecordFromMemory(rrstr string, host string, qtype uint16) error {
 	return errors.New(errmsg)
 }
 
-func startDNSServer(addr string) (*dns.Server, resolver) {
-
-	// DNS server part
-	dns.HandleFunc(".", handleRequest)
-	server := &dns.Server{Addr: addr, Net: "udp"}
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil {
-			log.Errorf("%v", err)
-		}
-	}()
-	return server, resolver{server: addr}
-}
-
 func TestResolveA(t *testing.T) {
-	setupConfig()
+	resolv := resolver{server: "0.0.0.0:15353"}
 	answer, err := resolv.lookup("auth.example.org", dns.TypeA)
 	if err != nil {
 		t.Errorf("%v", err)
@@ -107,8 +92,7 @@ func TestResolveA(t *testing.T) {
 }
 
 func TestResolveTXT(t *testing.T) {
-	setupConfig()
-
+	resolv := resolver{server: "0.0.0.0:15353"}
 	validTXT := "______________valid_response_______________"
 
 	atxt, err := DB.Register()
