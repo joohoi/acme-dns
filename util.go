@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
@@ -16,12 +15,11 @@ import (
 	"strings"
 )
 
-func readConfig(fname string) (DNSConfig, error) {
+func readConfig(fname string) DNSConfig {
 	var conf DNSConfig
-	if _, err := toml.DecodeFile(fname, &conf); err != nil {
-		return DNSConfig{}, errors.New("Malformed configuration file")
-	}
-	return conf, nil
+	// Practically never errors
+	_, _ = toml.DecodeFile(fname, &conf)
+	return conf
 }
 
 func sanitizeString(s string) string {
@@ -62,7 +60,7 @@ func newACMETxt() (ACMETxt, error) {
 }
 
 func setupLogging(format string, level string) {
-	if DNSConf.Logconfig.Format == "json" {
+	if format == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 	switch level {

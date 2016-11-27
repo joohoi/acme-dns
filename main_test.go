@@ -16,22 +16,24 @@ func TestMain(m *testing.M) {
 	RR.Parse(records)
 	flag.Parse()
 
+	newDb := new(acmedb)
 	if *postgres {
 		DNSConf.Database.Engine = "postgres"
-		err := DB.Init("postgres", "postgres://acmedns:acmedns@localhost/acmedns")
+		err := newDb.Init("postgres", "postgres://acmedns:acmedns@localhost/acmedns")
 		if err != nil {
 			fmt.Println("PostgreSQL integration tests expect database \"acmedns\" running in localhost, with username and password set to \"acmedns\"")
 			os.Exit(1)
 		}
 	} else {
 		DNSConf.Database.Engine = "sqlite3"
-		_ = DB.Init("sqlite3", ":memory:")
+		_ = newDb.Init("sqlite3", ":memory:")
 	}
+	DB = newDb
 
 	server := startDNS("0.0.0.0:15353")
 	exitval := m.Run()
 	server.Shutdown()
-	DB.DB.Close()
+	DB.Close()
 	os.Exit(exitval)
 }
 

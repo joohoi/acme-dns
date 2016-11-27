@@ -60,9 +60,9 @@ func TestApiRegister(t *testing.T) {
 
 func TestApiRegisterWithMockDB(t *testing.T) {
 	e := setupIris(t, false, false)
-	oldDb := DB.DB
+	oldDb := DB.GetBackend()
 	db, mock, _ := sqlmock.New()
-	DB.DB = db
+	DB.SetBackend(db)
 	defer db.Close()
 	mock.ExpectBegin()
 	mock.ExpectPrepare("INSERT INTO records").WillReturnError(errors.New("error"))
@@ -70,7 +70,7 @@ func TestApiRegisterWithMockDB(t *testing.T) {
 		Status(iris.StatusInternalServerError).
 		JSON().Object().
 		ContainsKey("error")
-	DB.DB = oldDb
+	DB.SetBackend(oldDb)
 }
 
 func TestApiUpdateWithoutCredentials(t *testing.T) {
@@ -121,9 +121,9 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 	updateJSON["txt"] = validTxtData
 
 	e := setupIris(t, false, true)
-	oldDb := DB.DB
+	oldDb := DB.GetBackend()
 	db, mock, _ := sqlmock.New()
-	DB.DB = db
+	DB.SetBackend(db)
 	defer db.Close()
 	mock.ExpectBegin()
 	mock.ExpectPrepare("UPDATE records").WillReturnError(errors.New("error"))
@@ -133,7 +133,7 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 		Status(iris.StatusInternalServerError).
 		JSON().Object().
 		ContainsKey("error")
-	DB.DB = oldDb
+	DB.SetBackend(oldDb)
 }
 
 func TestApiManyUpdateWithCredentials(t *testing.T) {

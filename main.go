@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"os"
 )
@@ -17,11 +16,7 @@ var RR Records
 
 func main() {
 	// Read global config
-	configTmp, err := readConfig("config.cfg")
-	if err != nil {
-		fmt.Printf("Got error %v\n", err)
-		os.Exit(1)
-	}
+	configTmp := readConfig("config.cfg")
 	DNSConf = configTmp
 
 	setupLogging(DNSConf.Logconfig.Format, DNSConf.Logconfig.Level)
@@ -30,12 +25,14 @@ func main() {
 	RR.Parse(DNSConf.General.StaticRecords)
 
 	// Open database
-	err = DB.Init(DNSConf.Database.Engine, DNSConf.Database.Connection)
+	newDB := new(acmedb)
+	err := newDB.Init(DNSConf.Database.Engine, DNSConf.Database.Connection)
 	if err != nil {
 		log.Errorf("Could not open database [%v]", err)
 		os.Exit(1)
 	}
-	defer DB.DB.Close()
+	DB = newDB
+	defer DB.Close()
 
 	// DNS server
 	startDNS(DNSConf.General.Listen)

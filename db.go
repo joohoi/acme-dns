@@ -9,14 +9,8 @@ import (
 	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 	"regexp"
-	"sync"
 	"time"
 )
-
-type database struct {
-	sync.Mutex
-	DB *sql.DB
-}
 
 var recordsTable = `
 	CREATE TABLE IF NOT EXISTS records(
@@ -37,7 +31,7 @@ func getSQLiteStmt(s string) string {
 	return re.ReplaceAllString(s, "?")
 }
 
-func (d *database) Init(engine string, connection string) error {
+func (d *acmedb) Init(engine string, connection string) error {
 	d.Lock()
 	defer d.Unlock()
 	db, err := sql.Open(engine, connection)
@@ -53,7 +47,7 @@ func (d *database) Init(engine string, connection string) error {
 	return nil
 }
 
-func (d *database) Register() (ACMETxt, error) {
+func (d *acmedb) Register() (ACMETxt, error) {
 	d.Lock()
 	defer d.Unlock()
 	a, err := newACMETxt()
@@ -85,7 +79,7 @@ func (d *database) Register() (ACMETxt, error) {
 	return a, nil
 }
 
-func (d *database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
+func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	d.Lock()
 	defer d.Unlock()
 	var results []ACMETxt
@@ -129,7 +123,7 @@ func (d *database) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	return ACMETxt{}, errors.New("no user")
 }
 
-func (d *database) GetByDomain(domain string) ([]ACMETxt, error) {
+func (d *acmedb) GetByDomain(domain string) ([]ACMETxt, error) {
 	d.Lock()
 	defer d.Unlock()
 	domain = sanitizeString(domain)
@@ -165,7 +159,7 @@ func (d *database) GetByDomain(domain string) ([]ACMETxt, error) {
 	return a, nil
 }
 
-func (d *database) Update(a ACMETxt) error {
+func (d *acmedb) Update(a ACMETxt) error {
 	d.Lock()
 	defer d.Unlock()
 	// Data in a is already sanitized
@@ -188,4 +182,16 @@ func (d *database) Update(a ACMETxt) error {
 		return err
 	}
 	return nil
+}
+
+func (d *acmedb) Close() {
+	d.DB.Close()
+}
+
+func (d *acmedb) GetBackend() *sql.DB {
+	return d.DB
+}
+
+func (d *acmedb) SetBackend(backend *sql.DB) {
+	d.DB = backend
 }

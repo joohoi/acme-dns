@@ -1,8 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"github.com/miekg/dns"
 	"github.com/satori/go.uuid"
+	"sync"
 )
 
 // Records is for static records
@@ -38,7 +40,7 @@ type dbsettings struct {
 
 // API config
 type httpapi struct {
-	Domain           string
+	Domain           string `toml:"api_domain"`
 	Port             string
 	TLS              string
 	TLSCertPrivkey   string `toml:"tls_cert_privkey"`
@@ -66,4 +68,22 @@ type ACMETxt struct {
 type ACMETxtPost struct {
 	Subdomain string `json:"subdomain"`
 	Value     string `json:"txt"`
+}
+
+type acmedb struct {
+	sync.Mutex
+	DB *sql.DB
+}
+
+type database interface {
+	Init(string, string) error
+	Register() (ACMETxt, error)
+	GetByUsername(uuid.UUID) (ACMETxt, error)
+	GetByDomain(string) ([]ACMETxt, error)
+	Update(ACMETxt) error
+	GetBackend() *sql.DB
+	SetBackend(*sql.DB)
+	Close()
+	Lock()
+	Unlock()
 }
