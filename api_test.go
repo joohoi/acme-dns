@@ -11,6 +11,20 @@ import (
 
 func setupIris(t *testing.T, debug bool, noauth bool) *httpexpect.Expect {
 	iris.ResetDefault()
+	var dbcfg = dbsettings{
+		Engine:     "sqlite3",
+		Connection: ":memory:"}
+	var httpapicfg = httpapi{
+		Domain:      "",
+		Port:        "8080",
+		TLS:         "none",
+		CorsOrigins: []string{"*"},
+	}
+	var dnscfg = DNSConfig{
+		API:      httpapicfg,
+		Database: dbcfg,
+	}
+	DNSConf = dnscfg
 	var ForceAuth = authMiddleware{}
 	iris.Get("/register", webRegisterGet)
 	iris.Post("/register", webRegisterPost)
@@ -46,7 +60,7 @@ func TestApiRegister(t *testing.T) {
 
 func TestApiRegisterWithMockDB(t *testing.T) {
 	e := setupIris(t, false, false)
-	old_db := DB.DB
+	oldDb := DB.DB
 	db, mock, _ := sqlmock.New()
 	DB.DB = db
 	defer db.Close()
@@ -56,7 +70,7 @@ func TestApiRegisterWithMockDB(t *testing.T) {
 		Status(iris.StatusInternalServerError).
 		JSON().Object().
 		ContainsKey("error")
-	DB.DB = old_db
+	DB.DB = oldDb
 }
 
 func TestApiUpdateWithoutCredentials(t *testing.T) {
@@ -107,7 +121,7 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 	updateJSON["txt"] = validTxtData
 
 	e := setupIris(t, false, true)
-	old_db := DB.DB
+	oldDb := DB.DB
 	db, mock, _ := sqlmock.New()
 	DB.DB = db
 	defer db.Close()
@@ -119,7 +133,7 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 		Status(iris.StatusInternalServerError).
 		JSON().Object().
 		ContainsKey("error")
-	DB.DB = old_db
+	DB.DB = oldDb
 }
 
 func TestApiManyUpdateWithCredentials(t *testing.T) {
