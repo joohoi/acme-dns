@@ -7,7 +7,6 @@ import (
 	"github.com/miekg/dns"
 	"github.com/satori/go.uuid"
 	"math/big"
-	"os"
 	"regexp"
 	"strings"
 )
@@ -72,16 +71,10 @@ func setupLogging(format string, level string) {
 	// TODO: file logging
 }
 
-func startDNS(listen string) *dns.Server {
+func startDNS(listen string, proto string) *dns.Server {
 	// DNS server part
 	dns.HandleFunc(".", handleRequest)
-	server := &dns.Server{Addr: listen, Net: "udp"}
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil {
-			log.Errorf("%v", err)
-			os.Exit(1)
-		}
-	}()
+	server := &dns.Server{Addr: listen, Net: proto}
+	go server.ListenAndServe()
 	return server
 }

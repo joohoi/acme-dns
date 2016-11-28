@@ -42,8 +42,7 @@ func TestMain(m *testing.M) {
 		_ = newDb.Init("sqlite3", ":memory:")
 	}
 	DB = newDb
-
-	server := startDNS("0.0.0.0:15353")
+	server := startDNS("0.0.0.0:15353", "udp")
 	exitval := m.Run()
 	server.Shutdown()
 	DB.Close()
@@ -83,4 +82,13 @@ func setupConfig() {
 func setupTestLogger() {
 	log.SetOutput(ioutil.Discard)
 	log.AddHook(loghook)
+}
+
+func loggerHasEntryWithMessage(message string) bool {
+	for _, v := range loghook.Entries {
+		if v.Message == message {
+			return true
+		}
+	}
+	return false
 }

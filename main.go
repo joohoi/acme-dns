@@ -30,7 +30,7 @@ func main() {
 	defer DB.Close()
 
 	// DNS server
-	startDNS(DNSConf.General.Listen)
+	startDNS(DNSConf.General.Listen, DNSConf.General.Proto)
 
 	// HTTP API
 	startHTTPAPI()

@@ -35,6 +35,7 @@ type authMiddleware struct{}
 // Config file general section
 type general struct {
 	Listen        string
+	Proto         string `toml:"protocol"`
 	Domain        string
 	Nsname        string
 	Nsadmin       string
