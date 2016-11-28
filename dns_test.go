@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/erikstmartin/go-testdb"
 	"github.com/miekg/dns"
 	"strings"
@@ -106,7 +107,14 @@ func TestParse(t *testing.T) {
 		Debug:         false,
 	}
 	var testRR Records
+	loghook.Reset()
 	testRR.Parse(testcfg)
+	if len(loghook.Entries) != 1 {
+		t.Errorf("Expected exactly one logged line, instead there was %d line(s)", len(loghook.Entries))
+	}
+	if loghook.LastEntry().Level != log.ErrorLevel {
+		t.Error("Expected error level of ERROR from last message")
+	}
 }
 
 func TestResolveA(t *testing.T) {

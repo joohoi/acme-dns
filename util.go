@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"fmt"
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
 	"github.com/miekg/dns"
@@ -44,7 +43,6 @@ func sanitizeDomainQuestion(d string) string {
 	if firstDot > 0 {
 		dom = dom[0:firstDot]
 	}
-	fmt.Printf("%s\n", dom)
 	return dom
 }
 

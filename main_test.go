@@ -3,9 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
+	logrustest "github.com/Sirupsen/logrus/hooks/test"
+	"io/ioutil"
 	"os"
 	"testing"
 )
+
+var loghook = new(logrustest.Hook)
 
 var (
 	postgres = flag.Bool("postgres", false, "run integration tests against PostgreSQL")
@@ -19,6 +24,7 @@ var records = []string{
 }
 
 func TestMain(m *testing.M) {
+	setupTestLogger()
 	setupConfig()
 	RR.Parse(DNSConf.General)
 	flag.Parse()
@@ -72,4 +78,9 @@ func setupConfig() {
 	}
 
 	DNSConf = dnscfg
+}
+
+func setupTestLogger() {
+	log.SetOutput(ioutil.Discard)
+	log.AddHook(loghook)
 }

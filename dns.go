@@ -87,7 +87,7 @@ func (r *Records) Parse(config general) {
 	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 86400", strings.ToLower(config.Domain), strings.ToLower(config.Nsname), strings.ToLower(config.Nsadmin), serial)
 	soarr, err := dns.NewRR(SOAstring)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error(), "soa": SOAstring}).Warning("Error while adding SOA record")
+		log.WithFields(log.Fields{"error": err.Error(), "soa": SOAstring}).Error("Error while adding SOA record")
 	} else {
 		rrmap = appendRR(rrmap, soarr)
 	}
