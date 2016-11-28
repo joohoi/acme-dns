@@ -2,16 +2,6 @@
 
 A simplified DNS server with a RESTful HTTP API to provide a simple way to automate ACME DNS challenges.
 
-## Usage
-
-Using acme-dns is a three-step process (provided you already have the server set up, or are using a service):
-
-- Get credentials and unique subdomain (simple GET request to https://auth.exmaple.org/register)
-- Create a (ACME magic) CNAME record to your existing zone, pointing to the subdomain you got from the registration. (eg. `_acme-challenge.domainiwantcertfor.tld. CNAME a097455b-52cc-4569-90c8-7a4b97c6eba8.auth.example.org` )
-- Use your credentials to POST a new DNS challenge values to an acme-dns server for the CA to validate them off of.
-
-After that, crontab and forget.
-
 ## Why?
 
 Many DNS servers do not provide an API to enable automation for the ACME DNS challenges. And those which do, give the keys way too much power to leave them laying around your random boxes, which sadly would be required to have a meaningful way to automate the process.
@@ -24,6 +14,16 @@ So basically it boils down to **accessibility** and **security**
 - HTTP API automatically acquires and uses Let's Encrypt TLS certificate
 - Simple deployment (it's Go after all)
 - Supports SQLite & PostgreSQL as DB backends
+
+## Usage
+
+Using acme-dns is a three-step process (provided you already have the server set up, or are using a service):
+
+- Get credentials and unique subdomain (simple GET request to https://auth.exmaple.org/register)
+- Create a (ACME magic) CNAME record to your existing zone, pointing to the subdomain you got from the registration. (eg. `_acme-challenge.domainiwantcertfor.tld. CNAME a097455b-52cc-4569-90c8-7a4b97c6eba8.auth.example.org` )
+- Use your credentials to POST a new DNS challenge values to an acme-dns server for the CA to validate them off of.
+
+After that, crontab and forget.
 
 ## API
 
