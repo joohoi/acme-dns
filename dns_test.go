@@ -28,7 +28,7 @@ func (r *resolver) lookup(host string, qtype uint16) ([]dns.RR, error) {
 		return []dns.RR{}, fmt.Errorf("Error querying the server [%v]", err)
 	}
 	if in != nil && in.Rcode != dns.RcodeSuccess {
-		return []dns.RR{}, fmt.Errorf("Recieved error from the server [%s]", dns.RcodeToString[in.Rcode])
+		return []dns.RR{}, fmt.Errorf("Received error from the server [%s]", dns.RcodeToString[in.Rcode])
 	}
 
 	return in.Answer, nil
