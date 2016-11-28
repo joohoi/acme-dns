@@ -11,5 +11,5 @@ before_install:
 script:
   - go vet 
   - golint -set_exit_status
-  - go test -race -v
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - go test -race -v -tags test -covermode=atomic -coverprofile=profile.cov
+  - $HOME/gopath/bin/goveralls -coverprofile=profile.cov -service=travis-ci
