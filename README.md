@@ -6,11 +6,9 @@ A simplified DNS server with a RESTful HTTP API to provide a simple way to autom
 
 Using acme-dns is a three-step process (provided you already have the server set up, or are using a service):
 
-    - Get credentials and unique subdomain (simple GET request to https://auth.exmaple.org/register)
-
-    - Create a (ACME magic) CNAME record to your existing zone, pointing to the subdomain you got from the registration. (eg. `_acme-challenge.domainiwantcertfor.tld. CNAME a097455b-52cc-4569-90c8-7a4b97c6eba8.auth.example.org` )
-
-    - Use your credentials to POST a new DNS challenge values to an acme-dns server for the CA to validate them off of.
+- Get credentials and unique subdomain (simple GET request to https://auth.exmaple.org/register)
+- Create a (ACME magic) CNAME record to your existing zone, pointing to the subdomain you got from the registration. (eg. `_acme-challenge.domainiwantcertfor.tld. CNAME a097455b-52cc-4569-90c8-7a4b97c6eba8.auth.example.org` )
+- Use your credentials to POST a new DNS challenge values to an acme-dns server for the CA to validate them off of.
 
 After that, crontab and forget.
 
@@ -109,7 +107,7 @@ I am runnin an acme-dns instance as a service for everyone wanting to get on in 
 
 ## Configuration
 
-    ```
+```
 [general]
 # dns interface
 listen = ":53"
@@ -175,7 +173,8 @@ logformat = "text"
 
 ## Contributing
 
-acme-dns is open for contributions. So if you have an improvement, please open a Pull Request.
+acme-dns is open for contributions. 
+If you have an improvement, please open a Pull Request.
 
 ## License
 
