@@ -7,15 +7,6 @@ import (
 	"os"
 )
 
-// DNSConf is global configuration struct
-var DNSConf DNSConfig
-
-// DB is used to access the database functions in acme-dns
-var DB database
-
-// RR holds the static DNS records
-var RR Records
-
 func main() {
 	// Read global config
 	configTmp := readConfig("config.cfg")
