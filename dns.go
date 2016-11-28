@@ -70,9 +70,9 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 // Parse config records
-func (r *Records) Parse(recs []string) {
+func (r *Records) Parse(config general) {
 	rrmap := make(map[uint16]map[string][]dns.RR)
-	for _, v := range recs {
+	for _, v := range config.StaticRecords {
 		rr, err := dns.NewRR(strings.ToLower(v))
 		if err != nil {
 			log.WithFields(log.Fields{"error": err.Error(), "rr": v}).Warning("Could not parse RR from config")
@@ -84,7 +84,7 @@ func (r *Records) Parse(recs []string) {
 	// Create serial
 	serial := time.Now().Format("2006010215")
 	// Add SOA
-	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 86400", strings.ToLower(DNSConf.General.Domain), strings.ToLower(DNSConf.General.Nsname), strings.ToLower(DNSConf.General.Nsadmin), serial)
+	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 86400", strings.ToLower(config.Domain), strings.ToLower(config.Nsname), strings.ToLower(config.Nsadmin), serial)
 	soarr, err := dns.NewRR(SOAstring)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error(), "soa": SOAstring}).Warning("Error while adding SOA record")

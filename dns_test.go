@@ -1,8 +1,11 @@
 package main
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
+	"github.com/erikstmartin/go-testdb"
 	"github.com/miekg/dns"
 	"strings"
 	"testing"
@@ -10,13 +13,6 @@ import (
 
 var resolv resolver
 var server *dns.Server
-
-var records = []string{
-	"auth.example.org. A 192.168.1.100",
-	"ns1.auth.example.org. A 192.168.1.101",
-	"!''b', unparseable ",
-	"ns2.auth.example.org. A 192.168.1.102",
-}
 
 type resolver struct {
 	server string
@@ -72,6 +68,45 @@ func findRecordFromMemory(rrstr string, host string, qtype uint16) error {
 		errmsg = "No records for this type in DB"
 	}
 	return errors.New(errmsg)
+}
+
+func TestQuestionDBError(t *testing.T) {
+	testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
+		columns := []string{"Username", "Password", "Subdomain", "Value", "LastActive"}
+		return testdb.RowsFromSlice(columns, [][]driver.Value{}), errors.New("Prepared query error")
+	})
+
+	defer testdb.Reset()
+
+	tdb, err := sql.Open("testdb", "")
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+	oldDb := DB.GetBackend()
+
+	DB.SetBackend(tdb)
+	defer DB.SetBackend(oldDb)
+
+	q := dns.Question{Name: dns.Fqdn("whatever.tld"), Qtype: dns.TypeTXT, Qclass: dns.ClassINET}
+	_, rcode, err := answerTXT(q)
+	if err == nil {
+		t.Errorf("Expected error but got none")
+	}
+	if rcode != dns.RcodeNameError {
+		t.Errorf("Expected [%s] rcode, but got [%s]", dns.RcodeToString[dns.RcodeNameError], dns.RcodeToString[rcode])
+	}
+}
+
+func TestParse(t *testing.T) {
+	var testcfg = general{
+		Domain:        ")",
+		Nsname:        "ns1.auth.example.org",
+		Nsadmin:       "admin.example.org",
+		StaticRecords: []string{},
+		Debug:         false,
+	}
+	var testRR Records
+	testRR.Parse(testcfg)
 }
 
 func TestResolveA(t *testing.T) {

@@ -17,7 +17,7 @@ func main() {
 	setupLogging(DNSConf.Logconfig.Format, DNSConf.Logconfig.Level)
 
 	// Read the default records in
-	RR.Parse(DNSConf.General.StaticRecords)
+	RR.Parse(DNSConf.General)
 
 	// Open database
 	newDB := new(acmedb)

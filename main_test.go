@@ -11,9 +11,16 @@ var (
 	postgres = flag.Bool("postgres", false, "run integration tests against PostgreSQL")
 )
 
+var records = []string{
+	"auth.example.org. A 192.168.1.100",
+	"ns1.auth.example.org. A 192.168.1.101",
+	"!''b', unparseable ",
+	"ns2.auth.example.org. A 192.168.1.102",
+}
+
 func TestMain(m *testing.M) {
 	setupConfig()
-	RR.Parse(records)
+	RR.Parse(DNSConf.General)
 	flag.Parse()
 
 	newDb := new(acmedb)
@@ -44,10 +51,11 @@ func setupConfig() {
 	}
 
 	var generalcfg = general{
-		Domain:  "auth.example.org",
-		Nsname:  "ns1.auth.example.org",
-		Nsadmin: "admin.example.org",
-		Debug:   false,
+		Domain:        "auth.example.org",
+		Nsname:        "ns1.auth.example.org",
+		Nsadmin:       "admin.example.org",
+		StaticRecords: records,
+		Debug:         false,
 	}
 
 	var httpapicfg = httpapi{
