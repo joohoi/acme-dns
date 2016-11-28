@@ -14,6 +14,7 @@ var server *dns.Server
 var records = []string{
 	"auth.example.org. A 192.168.1.100",
 	"ns1.auth.example.org. A 192.168.1.101",
+	"!''b', unparseable ",
 	"ns2.auth.example.org. A 192.168.1.102",
 }
 
@@ -88,6 +89,11 @@ func TestResolveA(t *testing.T) {
 
 	} else {
 		t.Error("No answer for DNS query")
+	}
+
+	_, err = resolv.lookup("nonexistent.domain.tld", dns.TypeA)
+	if err == nil {
+		t.Errorf("Was expecting error because of NXDOMAIN but got none")
 	}
 }
 
