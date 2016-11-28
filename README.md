@@ -1,139 +1,179 @@
-ACME-DNS.io
-===========
+# acme-dns
 
-Simplified DNS server with convinient HTTP API for ACME DNS authentication handling in large environments or in environments with DNS servers without API.
+A simplified DNS server with a RESTful HTTP API to provide a simple way to automate ACME DNS challenges.
 
-Problems ACME-DNS is addressing
--------------------------------------------------
-**Enabling ACME DNS authentication for domains hosted in environment without convinient API**
+## Usage
 
-Many DNS servers don't provide good enough API for this kind record management. And/or support is finicky or experimental.
+Using acme-dns is a three-step process (provided you already have the server set up, or are using a service):
+    - Get credentials and unique subdomain (simple GET request to https://auth.exmaple.org/register)
+    - Create a (ACME magic) CNAME record to your existing zone, pointing to the subdomain you got from the registration. (eg. \_acme-challenge.domainiwantcertfor.tld. CNAME a097455b-52cc-4569-90c8-7a4b97c6eba8.auth.example.org )
+    - Use your credentials to POST a new DNS challenge values to an acme-dns server for the CA to validate them off of.
 
-**Making automating DNS authenticated renewal more secure**
+After that, crontab and forget.
 
-Traditional DNS servers / services that have a good API just are not designed around this kind of a need, and using them would require leaving your API credentials laying around every box that uses them. Completely compromising your whole zone, and possibly more (through compromising your email using MX record)
+## Why?
 
+    Many DNS servers do not provide an API to enable automation for the ACME DNS challenges. And those which do, give the keys way too much power to leave them laying around your random boxes, which sadly would be required to have a meaningful way to automate the process.
 
-Self-hosted of as a service?
---------------------------------------
-ACME-DNS is open source with appropriate license, and you are encouraged to host an instance yourself. If however you would like to use it as a service, we're hosting. 
+    So basically it boils down to **accessibility** and **security**
 
+## Features
+    - Simplified DNS server, serving your ACME DNS challenges (TXT)
+    - Custom records (have your required A, AAAA, NS, etc. records served)
+    - HTTP API automatically acquires and uses Let's Encrypt TLS certificate
+    - Simple deployment (it's Go after all)
+    - Supports SQLite & PostgreSQL as DB backends
 
-Features
-------------
-* Simplified DNS server, serving your ACME DNS challenges (TXT)
-* Custom records (have your required A, AAAA, NS, whatever records served)
-* HTTP API automatically gets and uses Let's Encrypt certificate
-* Written in GO, so super simple deployment
-* Easy configuration
-* Supports SQLite & PostgreSQL
+## API
 
-How does it work?
---------------------------
-**1) Register an account**
+### Register endpoint
 
-Sounds more fancy than it is, basically means: do a GET request and recieve credentials, and your unique subdomain.
->$ curl https://auth.acme-dns.io/register
->
->{
->    "fulldomain": "23752ef1-118a-4ed8-912d-74dcad2178d9.auth.acme-dns.io",
->    "username": "e9afe5a9-d3c5-b57f-d3c5-25975fa367c5",
->    "password": "DoVJaBgx0ps2bxy7UoffZ41KcgT15oLCZj1k353q",
->    "subdomain": "23752ef1-118a-4ed8-912d-74dcad2178d9"
->}
+    The method returns a new unique subdomain to point the CNAME record to, along with credentials needed to update its TXT response.
 
-And recieve your account:
+    ```GET /register```
 
-- "fulldomain" - Your CNAME alias target
-- "username" - Your username, send this in "X-Api-User" - HTTP header with update requests
-- "password" - Your password, send this in "X-Api-Key" - HTTP header with update requests
-- "subdomain" - This is your subdomain, provided for more easily crafting update request data
+    #### Parameters
 
-**2) Point your _acme-challenge.example.org magic subdomain CNAME to the "fulldomain" received from the registration above.**
+    None
 
-This has to be done only once, when setting the domain up for the first time. 
+    ```Status: 201 Created```
+    ```
+    {
+        "fulldomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a.auth.acme-dns.io",
+        "password": "htB9mR9DYgcu9bX_afHF62erXaH2TS7bg9KW3F7Z",
+        "subdomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a",
+        "username": "c36f50e8-4632-44f0-83fe-e070fef28a10"
+    }
+    ```
 
-Here, if I would like to get certificate for domain "my.example.org", I would create a CNAME record "_acme-challenge.my.example.org" for zone "example.org" pointing to the fulldomain I recieved earlier, like this: 
->_acme-challenge.my.example.org. CNAME 23752ef1-118a-4ed8-912d-74dcad2178d9.auth.acme-dns.io.
+### Update endpoint
 
-CNAME works like a link when CA queries your DNS for authentication token.
+    The method allows you to update the TXT answer contents of your unique subdomain. Usually carried automatically by automated ACME client.
 
-**3) Hook it up to your ACME client**
+    ```POST /update```
 
-Make your ACME client to update the TXT record on ACME-DNS when requesting / renewing a certficate. For example:
+    #### Required headers
+    | Header name   | Description                                | Example                                               |
+    | ------------- |--------------------------------------------|-------------------------------------------------------|
+    | X-Api-User    | UUIDv4 username recieved from registration | `X-Api-User: c36f50e8-4632-44f0-83fe-e070fef28a10`    |
+    | X-Api-Key     | Password recieved from registration        | `X-Api-Key: htB9mR9DYgcu9bX_afHF62erXaH2TS7bg9KW3F7Z` |
 
-> $ curl -X POST https://auth.acme-dns.io/update
->-H "X-Api-User: e9afe5a9-d3c5-b57f-d3c5-25975fa367c5" 
->-H "X-Api-Key: DoVJaBgx0ps2bxy7UoffZ41KcgT15oLCZj1k353q" 
->--data '{"subdomain": "23752ef1-118a-4ed8-912d-74dcad2178d9", 
->         "txt": "'"$DNS_AUTHENTICATION_TOKEN"'"}'
->         
->{"txt":"70ymFptYJA_Cz63ADEaES5-8NqNV74NbEqD62Ap_dMo"}%
+    #### Example input
+    ```
+    {
+        "subdomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a",
+        "txt": "______my_43_char_dns_validation_token______"
+    }
+    ```
 
-Self-hosted setup
-===========
+    #### Response
 
-You decided to host your own, that's awesome! However there's some details you should prepare first before getting on with the actual software installation.
+    ```200 OK```
+    ```
+    {
+        "txt": "______my_43_char_dns_validation_token______"
+    }
+    ```
 
-Now, we're going to install a DNS server that will take care of serving DNS for your domain, or most likely subdomain. We really suggest using delegated subdomain, because ACME-DNS really isn't designed to be used as an actual DNS server.
+## Self-hosted
 
-#### Subdomain NS
+You are encouraged to run your own acme-dns instance, because you are effectively authorizing the acme-dns server to act on your behalf in providing the answer to challengeing CA, making the instance able to request (and get issued) a TLS certificate for the domain that has CNAME pointing to it.
 
-You'll need to create two records to your existing zone. For this example, I'm using the setup of hosted ACME-DNS.io
+Check out how in the INSTALL section.
 
-Create A record for your to-become-acme-dns-server to your domain zone:
-`ns1.auth.acme-dns.io.     A     10.1.1.53`
-Create a NS record to delegate everything under your subdomain to the ACME-DNS server:
-`auth.acme-dns.io.  NS  ns1.auth.acme-dns.io.`
+## As a service
 
-You'll want to make sure you have the NS records in your actual ACME-DNS configuration as well:
-
-> ...
-> records = [
->   # default A
->   "auth.acme-dns.io. A 10.1.1.53",
->   # A
->   "ns1.auth.acme-dns.io. A 10.1.1.53",
->   # NS
->   "auth.acme-dns.io. NS ns1.auth.acme-dns.io.",
->]
->...
+I am runnin an acme-dns instance as a service for everyone wanting to get on in fast. The service is running at `auth.acme-dns,io`, so to get started, try:
+```curl -X GET https://auth.acme-dns.io/register```
 
 
-Installation
-------------
+## Installation
 
-1) Install [Go](https://golang.org/doc/install) and set your `$GOPATH` environment variable
+    1) Install [Go](https://golang.org/doc/install)
 
-2) Clone this repo: `git clone https://github.com/joohoi/acme-dns $GOPATH/src/acme-dns`
+    2) Clone this repo: `git clone https://github.com/joohoi/acme-dns $GOPATH/src/acme-dns`
 
-3) Install govendor.  ‘go get -u github.com/kardianos/govendor’ . This is used for dependency handling
+    3) Install govendor.  ‘go get -u github.com/kardianos/govendor’ . This is used for dependency handling.
 
-4) Get dependencies:  `cd $GOPATH/src/acme-dns` and `govendor sync`
+    4) Get dependencies:  `cd $GOPATH/src/acme-dns` and `govendor sync`
 
-5) Build ACME-DNS: `go build`
+    5) Build ACME-DNS: `go build`
 
-6) Edit config.cfg to suit your needs (see [configuration](#configuration))
+    6) Edit config.cfg to suit your needs (see [configuration](#configuration))
 
-7) Run acme-dns `sudo ./acme-dns` in most cases you need to run it as privileged user, because we usually need privileged ports.
-
-Configuration
--------------------
-
-...
+    7) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with according privileges.
 
 
-TODO
-----
+## Configuration
 
-- Let user to POST to registration with CIDR masks to allow updates from
+    ```
+[general]
+# dns interface
+listen = ":53"
+# protocol, "udp", "udp4", "udp6" or "tcp", "tcp4", "tcp6"
+protocol = "udp"
+# domain name to serve th requests off of 
+domain = "auth.example.org"
+# zone name server 
+nsname = "ns1.auth.example.org"
+# admin email address, with @ substituted with .
+nsadmin = "admin.example.org"
+# predefined records that we're serving in addition to the TXT
+records = [
+    # default A
+    "auth.example.org. A 192.168.1.100",
+    # A 
+    "ns1.auth.example.org. A 192.168.1.100",
+    "ns2.auth.example.org. A 192.168.1.100",
+    # NS
+    "auth.example.org. NS ns1.auth.example.org.",
+    "auth.example.org. NS ns2.auth.example.org.",
+]
+# debug messages from CORS etc
+debug = false
 
-Contributing
-------------
+[database]
+# Database engine to use, sqlite3 or postgres
+engine = "sqlite3"
+# Connection string, filename for sqlite3 and postgres://$username:$password@$host/$db_name for postgres
+connection = "acme-dns.db"
+# connection = "postgres://user:password@localhost/acmedns_db"
 
-ACME-DNS is open for contributions. So please if you have something you would wish to see improved, or would like to improve yourself, submit an issue or pull request!
+[api]
+# domain name to listen requests for, mandatory if using tls = "letsencrypt"
+api_domain = ""
+# listen port, eg. 443 for default HTTPS
+port = "8080"
+# possible values: "letsencrypt", "cert", "none"
+tls = "none"
+# only used if tls = "cert"
+tls_cert_privkey = "/etc/tls/example.org/privkey.pem"
+tls_cert_fullchain = "/etc/tls/example.org/fullchain.pem"
+# CORS AllowOrigins, wildcards can be used
+corsorigins = [
+    "*"
+]
 
-License
---------
+[logconfig]
+# logging level: "error", "warning", "info" or "debug"
+loglevel = "debug"
+# possible values: stdout, TODO file & integrations
+logtype = "stdout"
+# file path for logfile TODO
+# logfile = "./acme-dns.log"
+# format, either "json" or "text" 
+logformat = "text"
+```
 
-ACME-DNS is released under the [MIT License](http://www.opensource.org/licenses/MIT).
+## TODO
+
+    - Ability to POST to /register endpoint, giving users the possibility to define CIDR masks to restrict the /update requests for the created user / key to.
+    - Want to see something implemented, make a feature request!
+
+## Contributing
+
+    acme-dns is open for contributions. So if you have an improvement, please open a Pull Request.
+
+## License
+
+    acme-dns is released under the [MIT License](http://www.opensource.org/licenses/MIT).
