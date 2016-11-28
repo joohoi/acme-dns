@@ -69,8 +69,8 @@ The method allows you to update the TXT answer contents of your unique subdomain
 
 #### Response
 
-```200 OK```
-```
+```Status: 200 OK```
+```json
 {
     "txt": "______my_43_char_dns_validation_token______"
 }
@@ -84,7 +84,7 @@ Check out how in the INSTALL section.
 
 ## As a service
 
-I am runnin an acme-dns instance as a service for everyone wanting to get on in fast. The service is running at `auth.acme-dns,io`, so to get started, try:
+I am running an acme-dns instance as a service for everyone wanting to get on in fast. The service is running at `auth.acme-dns,io`, so to get started, try:
 ```curl -X GET https://auth.acme-dns.io/register```
 
 
@@ -107,7 +107,7 @@ I am runnin an acme-dns instance as a service for everyone wanting to get on in 
 
 ## Configuration
 
-```
+```bash
 [general]
 # dns interface
 listen = ":53"
