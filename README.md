@@ -18,6 +18,8 @@ So basically it boils down to **accessibility** and **security**
 
 ## Usage
 
+[![asciicast](https://asciinema.org/a/94462.png)](https://asciinema.org/a/94462)
+
 Using acme-dns is a three-step process (provided you already have the server set up, or are using a service):
 
 - Get credentials and unique subdomain (simple GET request to https://auth.exmaple.org/register)
@@ -85,7 +87,7 @@ Check out how in the INSTALL section.
 
 ## As a service
 
-I am running an acme-dns instance as a service for everyone wanting to get on in fast. The service is running at `auth.acme-dns,io`, so to get started, try:
+I am running an acme-dns instance as a service for everyone wanting to get on in fast. The service is running at `auth.acme-dns.io`, so to get started, try:
 ```curl -X GET https://auth.acme-dns.io/register```
 
 
