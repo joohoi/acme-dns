@@ -17,7 +17,8 @@ var recordsTable = `
         Password TEXT UNIQUE NOT NULL,
         Subdomain TEXT UNIQUE NOT NULL,
         Value   TEXT,
-        LastActive INT
+        LastActive INT,
+		AllowFrom TEXT
     );`
 
 // getSQLiteStmt replaces all PostgreSQL prepared statement placeholders (eg. $1, $2) with SQLite variant "?"
@@ -54,8 +55,9 @@ func (d *acmedb) Register() (ACMETxt, error) {
         Password,
         Subdomain,
 		Value,
-        LastActive) 
-        values($1, $2, $3, '', $4)`
+        LastActive,
+		AllowFrom) 
+        values($1, $2, $3, '', $4, $5)`
 	if DNSConf.Database.Engine == "sqlite3" {
 		regSQL = getSQLiteStmt(regSQL)
 	}
@@ -64,7 +66,7 @@ func (d *acmedb) Register() (ACMETxt, error) {
 		return a, errors.New("SQL error")
 	}
 	defer sm.Close()
-	_, err = sm.Exec(a.Username.String(), passwordHash, a.Subdomain, timenow)
+	_, err = sm.Exec(a.Username.String(), passwordHash, a.Subdomain, timenow, a.AllowFrom)
 	if err != nil {
 		return a, err
 	}
@@ -76,7 +78,7 @@ func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	defer d.Unlock()
 	var results []ACMETxt
 	getSQL := `
-	SELECT Username, Password, Subdomain, Value, LastActive
+	SELECT Username, Password, Subdomain, Value, LastActive, AllowFrom
 	FROM records
 	WHERE Username=$1 LIMIT 1
 	`
@@ -97,12 +99,11 @@ func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 
 	// It will only be one row though
 	for rows.Next() {
-		a := ACMETxt{}
-		err = rows.Scan(&a.Username, &a.Password, &a.Subdomain, &a.Value, &a.LastActive)
+		txt, err := getModelFromRow(rows)
 		if err != nil {
 			return ACMETxt{}, err
 		}
-		results = append(results, a)
+		results = append(results, txt)
 	}
 	if len(results) > 0 {
 		return results[0], nil
@@ -116,7 +117,7 @@ func (d *acmedb) GetByDomain(domain string) ([]ACMETxt, error) {
 	domain = sanitizeString(domain)
 	var a []ACMETxt
 	getSQL := `
-	SELECT Username, Password, Subdomain, Value
+	SELECT Username, Password, Subdomain, Value, LastActive, AllowFrom
 	FROM records
 	WHERE Subdomain=$1 LIMIT 1
 	`
@@ -136,8 +137,7 @@ func (d *acmedb) GetByDomain(domain string) ([]ACMETxt, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		txt := ACMETxt{}
-		err = rows.Scan(&txt.Username, &txt.Password, &txt.Subdomain, &txt.Value)
+		txt, err := getModelFromRow(rows)
 		if err != nil {
 			return a, err
 		}
@@ -169,6 +169,18 @@ func (d *acmedb) Update(a ACMETxt) error {
 		return err
 	}
 	return nil
+}
+
+func getModelFromRow(r *sql.Rows) (ACMETxt, error) {
+	txt := ACMETxt{}
+	err := r.Scan(
+		&txt.Username,
+		&txt.Password,
+		&txt.Subdomain,
+		&txt.Value,
+		&txt.LastActive,
+		&txt.AllowFrom)
+	return txt, err
 }
 
 func (d *acmedb) Close() {

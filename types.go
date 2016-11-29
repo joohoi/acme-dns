@@ -72,6 +72,7 @@ type ACMETxt struct {
 	Password string
 	ACMETxtPost
 	LastActive int64
+	AllowFrom  string
 }
 
 // ACMETxtPost holds the DNS part of the ACMETxt struct
