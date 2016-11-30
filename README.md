@@ -5,7 +5,8 @@ A simplified DNS server with a RESTful HTTP API to provide a simple way to autom
 
 ## Why?
 
-Many DNS servers do not provide an API to enable automation for the ACME DNS challenges. And those which do, give the keys way too much power to leave them laying around your random boxes, which sadly would be required to have a meaningful way to automate the process.
+Many DNS servers do not provide an API to enable automation for the ACME DNS challenges. Those which do, gives the keys way too much power.
+Leaving them to lay around your random boxes is too often a requirement to have a meaningful process automation.
 
 So basically it boils down to **accessibility** and **security**
 
@@ -20,19 +21,19 @@ So basically it boils down to **accessibility** and **security**
 
 [![asciicast](https://asciinema.org/a/94462.png)](https://asciinema.org/a/94462)
 
-Using acme-dns is a three-step process (provided you already have the server set up, or are using a service):
+Using acme-dns is a three-step process (provided you already have the self-hosted server set up, or are using a service like acme-dns.io):
 
 - Get credentials and unique subdomain (simple GET request to https://auth.exmaple.org/register)
 - Create a (ACME magic) CNAME record to your existing zone, pointing to the subdomain you got from the registration. (eg. `_acme-challenge.domainiwantcertfor.tld. CNAME a097455b-52cc-4569-90c8-7a4b97c6eba8.auth.example.org` )
 - Use your credentials to POST a new DNS challenge values to an acme-dns server for the CA to validate them off of.
-
-After that, crontab and forget.
+- Crontab and forget.
 
 ## API
 
 ### Register endpoint
 
-The method returns a new unique subdomain to point the CNAME record to, along with credentials needed to update its TXT response.
+The method returns a new unique subdomain and credentials needed to update your record.
+Subdomain is where you can point your own `_acme-challenge` subdomain CNAME record along with credentials in TXT response.
 
 ```GET /register```
 
@@ -87,7 +88,7 @@ Check out how in the INSTALL section.
 
 ## As a service
 
-I am running an acme-dns instance as a service for everyone wanting to get on in fast. The service is running at `auth.acme-dns.io`, so to get started, try:
+Acme-dns instance as a service for everyone wanting to get on in fast. The service is running at `auth.acme-dns.io`, so to get started, try:
 ```curl -X GET https://auth.acme-dns.io/register```
 
 
@@ -105,7 +106,7 @@ I am running an acme-dns instance as a service for everyone wanting to get on in
 
 6) Edit config.cfg to suit your needs (see [configuration](#configuration))
 
-7) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with according privileges.
+7) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with correct privileges.
 
 
 ## Configuration
@@ -116,13 +117,13 @@ I am running an acme-dns instance as a service for everyone wanting to get on in
 listen = ":53"
 # protocol, "udp", "udp4", "udp6" or "tcp", "tcp4", "tcp6"
 protocol = "udp"
-# domain name to serve th requests off of 
+# domain name to serve the requests off of 
 domain = "auth.example.org"
 # zone name server 
 nsname = "ns1.auth.example.org"
-# admin email address, with @ substituted with .
+# admin email address, where @ is substituted with .
 nsadmin = "admin.example.org"
-# predefined records that we're serving in addition to the TXT
+# predefined records served in addition to the TXT
 records = [
     # default A
     "auth.example.org. A 192.168.1.100",
@@ -171,7 +172,7 @@ logformat = "text"
 
 ## TODO
 
-- Ability to POST to /register endpoint, giving users the possibility to define CIDR masks to restrict the /update requests for the created user / key to.
+- Ability to define the CIDR mask in POST request to /register endpoint which is authorized to make /update requests with the created user-key-pair.
 - Want to see something implemented, make a feature request!
 
 ## Contributing
