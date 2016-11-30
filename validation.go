@@ -1,9 +1,10 @@
 package main
 
 import (
+	"unicode/utf8"
+
 	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
-	"unicode/utf8"
 )
 
 func getValidUsername(u string) (uuid.UUID, error) {

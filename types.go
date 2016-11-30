@@ -66,21 +66,6 @@ type logconfig struct {
 	Format  string `toml:"logformat"`
 }
 
-// ACMETxt is the default structure for the user controlled record
-type ACMETxt struct {
-	Username uuid.UUID
-	Password string
-	ACMETxtPost
-	LastActive int64
-	AllowFrom  string
-}
-
-// ACMETxtPost holds the DNS part of the ACMETxt struct
-type ACMETxtPost struct {
-	Subdomain string `json:"subdomain"`
-	Value     string `json:"txt"`
-}
-
 type acmedb struct {
 	sync.Mutex
 	DB *sql.DB
@@ -88,7 +73,7 @@ type acmedb struct {
 
 type database interface {
 	Init(string, string) error
-	Register() (ACMETxt, error)
+	Register(cidrslice) (ACMETxt, error)
 	GetByUsername(uuid.UUID) (ACMETxt, error)
 	GetByDomain(string) ([]ACMETxt, error)
 	Update(ACMETxt) error

@@ -106,3 +106,24 @@ func TestCorrectPassword(t *testing.T) {
 		}
 	}
 }
+
+func TestGetValidCIDRMasks(t *testing.T) {
+	for i, test := range []struct {
+		input  cidrslice
+		output cidrslice
+	}{
+		{cidrslice{"10.0.0.1/24"}, cidrslice{"10.0.0.1/24"}},
+		{cidrslice{"invalid", "127.0.0.1/32"}, cidrslice{"127.0.0.1/32"}},
+	} {
+		ret := test.input.ValidEntries()
+		if len(ret) == len(test.output) {
+			for i, v := range ret {
+				if v != test.output[i] {
+					t.Errorf("Test %d: Expected %q but got %q", i, test.output, ret)
+				}
+			}
+		} else {
+			t.Errorf("Test %d: Expected %q but got %q", i, test.output, ret)
+		}
+	}
+}

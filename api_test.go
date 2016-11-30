@@ -90,7 +90,7 @@ func TestApiUpdateWithCredentials(t *testing.T) {
 		"txt":       ""}
 
 	e := setupIris(t, false, false)
-	newUser, err := DB.Register()
+	newUser, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Could not create new user, got error [%v]", err)
 	}
@@ -146,7 +146,7 @@ func TestApiManyUpdateWithCredentials(t *testing.T) {
 		"txt":       ""}
 
 	e := setupIris(t, false, false)
-	newUser, err := DB.Register()
+	newUser, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Could not create new user, got error [%v]", err)
 	}
@@ -164,6 +164,7 @@ func TestApiManyUpdateWithCredentials(t *testing.T) {
 		{newUser.Username.String(), newUser.Password, newUser.Subdomain, "tooshortfortxt", 400},
 		{newUser.Username.String(), newUser.Password, newUser.Subdomain, 1234567890, 400},
 		{newUser.Username.String(), newUser.Password, newUser.Subdomain, validTxtData, 200},
+		{newUser.Username.String(), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", newUser.Subdomain, validTxtData, 401},
 	} {
 		updateJSON = map[string]interface{}{
 			"subdomain": test.subdomain,

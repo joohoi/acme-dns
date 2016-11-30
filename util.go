@@ -5,7 +5,6 @@ import (
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
 	"github.com/miekg/dns"
-	"github.com/satori/go.uuid"
 	"math/big"
 	"regexp"
 	"strings"
@@ -43,15 +42,6 @@ func sanitizeDomainQuestion(d string) string {
 		dom = dom[0:firstDot]
 	}
 	return dom
-}
-
-func newACMETxt() ACMETxt {
-	var a = ACMETxt{}
-	password := generatePassword(40)
-	a.Username = uuid.NewV4()
-	a.Password = password
-	a.Subdomain = uuid.NewV4().String()
-	return a
 }
 
 func setupLogging(format string, level string) {

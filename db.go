@@ -2,13 +2,16 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"regexp"
+	"time"
+
+	log "github.com/Sirupsen/logrus"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
-	"regexp"
-	"time"
 )
 
 var recordsTable = `
@@ -43,10 +46,11 @@ func (d *acmedb) Init(engine string, connection string) error {
 	return nil
 }
 
-func (d *acmedb) Register() (ACMETxt, error) {
+func (d *acmedb) Register(afrom cidrslice) (ACMETxt, error) {
 	d.Lock()
 	defer d.Unlock()
 	a := newACMETxt()
+	a.AllowFrom = cidrslice(afrom.ValidEntries())
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(a.Password), 10)
 	timenow := time.Now().Unix()
 	regSQL := `
@@ -63,10 +67,11 @@ func (d *acmedb) Register() (ACMETxt, error) {
 	}
 	sm, err := d.DB.Prepare(regSQL)
 	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Database error in prepare")
 		return a, errors.New("SQL error")
 	}
 	defer sm.Close()
-	_, err = sm.Exec(a.Username.String(), passwordHash, a.Subdomain, timenow, a.AllowFrom)
+	_, err = sm.Exec(a.Username.String(), passwordHash, a.Subdomain, timenow, a.AllowFrom.JSON())
 	if err != nil {
 		return a, err
 	}
@@ -173,13 +178,24 @@ func (d *acmedb) Update(a ACMETxt) error {
 
 func getModelFromRow(r *sql.Rows) (ACMETxt, error) {
 	txt := ACMETxt{}
+	afrom := ""
 	err := r.Scan(
 		&txt.Username,
 		&txt.Password,
 		&txt.Subdomain,
 		&txt.Value,
 		&txt.LastActive,
-		&txt.AllowFrom)
+		&afrom)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Row scan error")
+	}
+
+	cslice := cidrslice{}
+	err = json.Unmarshal([]byte(afrom), &cslice)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("JSON unmarshall error")
+	}
+	txt.AllowFrom = cslice
 	return txt, err
 }
 

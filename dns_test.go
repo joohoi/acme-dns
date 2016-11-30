@@ -139,7 +139,7 @@ func TestResolveTXT(t *testing.T) {
 	resolv := resolver{server: "0.0.0.0:15353"}
 	validTXT := "______________valid_response_______________"
 
-	atxt, err := DB.Register()
+	atxt, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Could not initiate db record: [%v]", err)
 		return

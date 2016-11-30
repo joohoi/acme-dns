@@ -16,28 +16,36 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 	username, err := getValidUsername(usernameStr)
 	if err == nil && validKey(password) {
 		au, err := DB.GetByUsername(username)
-		if err == nil && correctPassword(password, au.Password) {
-			// Password ok
-			if err := ctx.ReadJSON(&postData); err == nil {
-				// Check that the subdomain belongs to the user
-				if au.Subdomain == postData.Subdomain {
-					ctx.Next()
+		if err != nil {
+			log.WithFields(log.Fields{"error": err.Error()}).Error("Error while trying to get user")
+			// To protect against timed side channel (never gonna give you up)
+			correctPassword(password, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
+		} else {
+			if correctPassword(password, au.Password) {
+				// Password ok
+				if err := ctx.ReadJSON(&postData); err == nil {
+					// Check that the subdomain belongs to the user
+					if au.Subdomain == postData.Subdomain {
+						ctx.Next()
+						return
+					}
+				} else {
+					// JSON error
+					ctx.JSON(iris.StatusBadRequest, iris.Map{"error": "bad data"})
 					return
 				}
 			} else {
-				ctx.JSON(iris.StatusBadRequest, iris.Map{"error": "bad data"})
-				return
+				// Wrong password
+				log.WithFields(log.Fields{"username": username}).Warning("Failed password check")
 			}
 		}
-		// To protect against timed side channel (never gonna give you up)
-		correctPassword(password, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
 	}
 	ctx.JSON(iris.StatusUnauthorized, iris.Map{"error": "unauthorized"})
 }
 
 func webRegisterPost(ctx *iris.Context) {
 	// Create new user
-	nu, err := DB.Register()
+	nu, err := DB.Register(cidrslice{})
 	var regJSON iris.Map
 	var regStatus int
 	if err != nil {
