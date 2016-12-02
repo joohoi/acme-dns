@@ -177,11 +177,6 @@ func TestApiManyUpdateWithCredentials(t *testing.T) {
 		t.Errorf("Could not create new user with a valid CIDR, got error [%v]", err)
 	}
 
-	/*	newUserWithValidCIDR, err := DB.Register(cidrslice{"192.168.1.1/32", "invalid"})
-		if err != nil {
-			t.Errorf("Could not create new user with CIDR, got error [%v]", err)
-		}
-	*/
 	for _, test := range []struct {
 		user      string
 		pass      string
