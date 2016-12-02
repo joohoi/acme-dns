@@ -9,6 +9,7 @@ import (
 
 // Serve is an authentication middlware function used to authenticate update requests
 func (a authMiddleware) Serve(ctx *iris.Context) {
+	allowUpdate := false
 	usernameStr := ctx.RequestHeader("X-Api-User")
 	password := ctx.RequestHeader("X-Api-Key")
 	postData := ACMETxt{}
@@ -23,7 +24,16 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 		} else {
 			if correctPassword(password, au.Password) {
 				// Password ok
-				if au.allowedFrom(ctx.RequestIP()) {
+
+				// Now test for the possibly limited ranges
+				if DNSConf.API.UseHeader {
+					ips := getIPListFromHeader(ctx.RequestHeader(DNSConf.API.HeaderName))
+					allowUpdate = au.allowedFromList(ips)
+				} else {
+					allowUpdate = au.allowedFrom(ctx.RequestIP())
+				}
+
+				if allowUpdate {
 					// Update is allowed from remote addr
 					if err := ctx.ReadJSON(&postData); err == nil {
 						if au.Subdomain == postData.Subdomain {

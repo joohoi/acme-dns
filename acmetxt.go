@@ -57,6 +57,17 @@ func (a ACMETxt) allowedFrom(ip string) bool {
 	return false
 }
 
+// Go through list (most likely from headers) to check for the IP.
+// Reason for this is that some setups use reverse proxy in front of acme-dns
+func (a ACMETxt) allowedFromList(ips []string) bool {
+	for _, v := range ips {
+		if a.allowedFrom(v) {
+			return true
+		}
+	}
+	return false
+}
+
 func newACMETxt() ACMETxt {
 	var a = ACMETxt{}
 	password := generatePassword(40)

@@ -19,6 +19,8 @@ func setupIris(t *testing.T, debug bool, noauth bool) *httpexpect.Expect {
 		Port:        "8080",
 		TLS:         "none",
 		CorsOrigins: []string{"*"},
+		UseHeader:   false,
+		HeaderName:  "X-Forwarded-For",
 	}
 	var dnscfg = DNSConfig{
 		API:      httpapicfg,
@@ -205,4 +207,49 @@ func TestApiManyUpdateWithCredentials(t *testing.T) {
 			Expect().
 			Status(test.status)
 	}
+}
+
+func TestApiManyUpdateWithIpCheckHeaders(t *testing.T) {
+
+	updateJSON := map[string]interface{}{
+		"subdomain": "",
+		"txt":       ""}
+
+	e := setupIris(t, false, false)
+	// Use header checks from default header (X-Forwarded-For)
+	DNSConf.API.UseHeader = true
+	// User without defined CIDR masks
+	newUser, err := DB.Register(cidrslice{})
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+
+	newUserWithCIDR, err := DB.Register(cidrslice{"192.168.1.2/32", "invalid"})
+	if err != nil {
+		t.Errorf("Could not create new user with CIDR, got error [%v]", err)
+	}
+
+	for _, test := range []struct {
+		user        ACMETxt
+		headerValue string
+		status      int
+	}{
+		{newUser, "whatever goes", 200},
+		{newUser, "10.0.0.1, 1.2.3.4 ,3.4.5.6", 200},
+		{newUserWithCIDR, "127.0.0.1", 401},
+		{newUserWithCIDR, "10.0.0.1, 10.0.0.2, 192.168.1.3", 401},
+		{newUserWithCIDR, "10.1.1.1 ,192.168.1.2, 8.8.8.8", 200},
+	} {
+		updateJSON = map[string]interface{}{
+			"subdomain": test.user.Subdomain,
+			"txt":       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+		e.POST("/update").
+			WithJSON(updateJSON).
+			WithHeader("X-Api-User", test.user.Username.String()).
+			WithHeader("X-Api-Key", test.user.Password).
+			WithHeader("X-Forwarded-For", test.headerValue).
+			Expect().
+			Status(test.status)
+	}
+	DNSConf.API.UseHeader = false
 }

@@ -56,6 +56,8 @@ type httpapi struct {
 	TLSCertPrivkey   string `toml:"tls_cert_privkey"`
 	TLSCertFullchain string `toml:"tls_cert_fullchain"`
 	CorsOrigins      []string
+	UseHeader        bool   `toml:"use_header"`
+	HeaderName       string `toml:"header_name"`
 }
 
 // Logging config

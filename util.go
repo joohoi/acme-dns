@@ -2,12 +2,13 @@ package main
 
 import (
 	"crypto/rand"
-	"github.com/BurntSushi/toml"
-	log "github.com/Sirupsen/logrus"
-	"github.com/miekg/dns"
 	"math/big"
 	"regexp"
 	"strings"
+
+	"github.com/BurntSushi/toml"
+	log "github.com/Sirupsen/logrus"
+	"github.com/miekg/dns"
 )
 
 func readConfig(fname string) DNSConfig {
@@ -67,4 +68,15 @@ func startDNS(listen string, proto string) *dns.Server {
 	server := &dns.Server{Addr: listen, Net: proto}
 	go server.ListenAndServe()
 	return server
+}
+
+func getIPListFromHeader(header string) []string {
+	iplist := []string{}
+	for _, v := range strings.Split(header, ",") {
+		if len(v) > 0 {
+			// Ignore empty values
+			iplist = append(iplist, strings.TrimSpace(v))
+		}
+	}
+	return iplist
 }
