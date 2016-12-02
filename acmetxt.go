@@ -41,6 +41,22 @@ func (c *cidrslice) ValidEntries() []string {
 	return valid
 }
 
+// Check if IP belongs to an allowed net
+func (a ACMETxt) allowedFrom(ip string) bool {
+	remoteIP := net.ParseIP(ip)
+	// Range not limited
+	if len(a.AllowFrom.ValidEntries()) == 0 {
+		return true
+	}
+	for _, v := range a.AllowFrom.ValidEntries() {
+		_, vnet, _ := net.ParseCIDR(v)
+		if vnet.Contains(remoteIP) {
+			return true
+		}
+	}
+	return false
+}
+
 func newACMETxt() ACMETxt {
 	var a = ACMETxt{}
 	password := generatePassword(40)

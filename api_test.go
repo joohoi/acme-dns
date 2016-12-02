@@ -26,7 +26,6 @@ func setupIris(t *testing.T, debug bool, noauth bool) *httpexpect.Expect {
 	}
 	DNSConf = dnscfg
 	var ForceAuth = authMiddleware{}
-	iris.Get("/register", webRegisterGet)
 	iris.Post("/register", webRegisterPost)
 	if noauth {
 		iris.Post("/update", webUpdatePost)
@@ -40,14 +39,6 @@ func setupIris(t *testing.T, debug bool, noauth bool) *httpexpect.Expect {
 
 func TestApiRegister(t *testing.T) {
 	e := setupIris(t, false, false)
-	e.GET("/register").Expect().
-		Status(iris.StatusCreated).
-		JSON().Object().
-		ContainsKey("fulldomain").
-		ContainsKey("subdomain").
-		ContainsKey("username").
-		ContainsKey("password").
-		NotContainsKey("error")
 	e.POST("/register").Expect().
 		Status(iris.StatusCreated).
 		JSON().Object().
@@ -56,6 +47,27 @@ func TestApiRegister(t *testing.T) {
 		ContainsKey("username").
 		ContainsKey("password").
 		NotContainsKey("error")
+
+	allowfrom := []interface{}{
+		"123.123.123.123/32",
+		"1010.10.10.10/24",
+		"invalid",
+	}
+
+	response := e.POST("/register").
+		WithJSON(allowfrom).
+		Expect().
+		Status(iris.StatusCreated).
+		JSON().Object().
+		ContainsKey("fulldomain").
+		ContainsKey("subdomain").
+		ContainsKey("username").
+		ContainsKey("password").
+		ContainsKey("allowfrom").
+		NotContainsKey("error")
+
+	response.Value("allowfrom").String().Equal("[\"123.123.123.123/32\"]")
+
 }
 
 func TestApiRegisterWithMockDB(t *testing.T) {
@@ -66,7 +78,7 @@ func TestApiRegisterWithMockDB(t *testing.T) {
 	defer db.Close()
 	mock.ExpectBegin()
 	mock.ExpectPrepare("INSERT INTO records").WillReturnError(errors.New("error"))
-	e.GET("/register").Expect().
+	e.POST("/register").Expect().
 		Status(iris.StatusInternalServerError).
 		JSON().Object().
 		ContainsKey("error")
@@ -146,10 +158,30 @@ func TestApiManyUpdateWithCredentials(t *testing.T) {
 		"txt":       ""}
 
 	e := setupIris(t, false, false)
+	// User without defined CIDR masks
 	newUser, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Could not create new user, got error [%v]", err)
 	}
+
+	// User with defined allow from - CIDR masks, all invalid
+	// (httpexpect doesn't provide a way to mock remote ip)
+	newUserWithCIDR, err := DB.Register(cidrslice{"192.168.1.1/32", "invalid"})
+	if err != nil {
+		t.Errorf("Could not create new user with CIDR, got error [%v]", err)
+	}
+
+	// Another user with valid CIDR mask to match the httpexpect default
+	newUserWithValidCIDR, err := DB.Register(cidrslice{"0.0.0.0/32", "invalid"})
+	if err != nil {
+		t.Errorf("Could not create new user with a valid CIDR, got error [%v]", err)
+	}
+
+	/*	newUserWithValidCIDR, err := DB.Register(cidrslice{"192.168.1.1/32", "invalid"})
+		if err != nil {
+			t.Errorf("Could not create new user with CIDR, got error [%v]", err)
+		}
+	*/
 	for _, test := range []struct {
 		user      string
 		pass      string
@@ -164,6 +196,8 @@ func TestApiManyUpdateWithCredentials(t *testing.T) {
 		{newUser.Username.String(), newUser.Password, newUser.Subdomain, "tooshortfortxt", 400},
 		{newUser.Username.String(), newUser.Password, newUser.Subdomain, 1234567890, 400},
 		{newUser.Username.String(), newUser.Password, newUser.Subdomain, validTxtData, 200},
+		{newUserWithCIDR.Username.String(), newUserWithCIDR.Password, newUserWithCIDR.Subdomain, validTxtData, 401},
+		{newUserWithValidCIDR.Username.String(), newUserWithValidCIDR.Password, newUserWithValidCIDR.Subdomain, validTxtData, 200},
 		{newUser.Username.String(), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", newUser.Subdomain, validTxtData, 401},
 	} {
 		updateJSON = map[string]interface{}{

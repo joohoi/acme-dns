@@ -49,7 +49,6 @@ func startHTTPAPI() {
 	})
 	api.Use(crs)
 	var ForceAuth = authMiddleware{}
-	api.Get("/register", webRegisterGet)
 	api.Post("/register", webRegisterPost)
 	api.Post("/update", ForceAuth.Serve, webUpdatePost)
 	switch DNSConf.API.TLS {

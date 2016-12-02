@@ -23,16 +23,18 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 		} else {
 			if correctPassword(password, au.Password) {
 				// Password ok
-				if err := ctx.ReadJSON(&postData); err == nil {
-					// Check that the subdomain belongs to the user
-					if au.Subdomain == postData.Subdomain {
-						ctx.Next()
+				if au.allowedFrom(ctx.RequestIP()) {
+					// Update is allowed from remote addr
+					if err := ctx.ReadJSON(&postData); err == nil {
+						if au.Subdomain == postData.Subdomain {
+							ctx.Next()
+							return
+						}
+					} else {
+						// JSON error
+						ctx.JSON(iris.StatusBadRequest, iris.Map{"error": "bad data"})
 						return
 					}
-				} else {
-					// JSON error
-					ctx.JSON(iris.StatusBadRequest, iris.Map{"error": "bad data"})
-					return
 				}
 			} else {
 				// Wrong password
@@ -44,27 +46,24 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 }
 
 func webRegisterPost(ctx *iris.Context) {
-	// Create new user
-	nu, err := DB.Register(cidrslice{})
 	var regJSON iris.Map
 	var regStatus int
+	cslice := cidrslice{}
+	_ = ctx.ReadJSON(&cslice)
+	// Create new user
+	nu, err := DB.Register(cslice)
 	if err != nil {
 		errstr := fmt.Sprintf("%v", err)
 		regJSON = iris.Map{"error": errstr}
 		regStatus = iris.StatusInternalServerError
 		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error in registration")
 	} else {
-		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain}
+		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain, "allowfrom": nu.AllowFrom.JSON()}
 		regStatus = iris.StatusCreated
 
 		log.WithFields(log.Fields{"user": nu.Username.String()}).Debug("Created new user")
 	}
 	ctx.JSON(regStatus, regJSON)
-}
-
-func webRegisterGet(ctx *iris.Context) {
-	// This is placeholder for now
-	webRegisterPost(ctx)
 }
 
 func webUpdatePost(ctx *iris.Context) {
