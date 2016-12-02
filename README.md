@@ -107,7 +107,7 @@ Acme-dns instance is running as a service for everyone wanting to get on in fast
 
 6) Edit config.cfg to suit your needs (see [configuration](#configuration))
 
-7) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with correct privileges.
+7) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
 
 ## Configuration
