@@ -5,8 +5,8 @@ A simplified DNS server with a RESTful HTTP API to provide a simple way to autom
 
 ## Why?
 
-Many DNS servers do not provide an API to enable automation for the ACME DNS challenges. Those which do, gives the keys way too much power.
-Leaving them to lay around your random boxes is too often a requirement to have a meaningful process automation.
+Many DNS servers do not provide an API to enable automation for the ACME DNS challenges. Those which do, give the keys way too much power.
+Leaving the keys laying around your random boxes is too often a requirement to have a meaningful process automation.
 
 So basically it boils down to **accessibility** and **security**
 
@@ -33,7 +33,8 @@ Using acme-dns is a three-step process (provided you already have the self-hoste
 ### Register endpoint
 
 The method returns a new unique subdomain and credentials needed to update your record.
-Subdomain is where you can point your own `_acme-challenge` subdomain CNAME record along with credentials in TXT response.
+Subdomain is where you can point your own `_acme-challenge` subdomain CNAME record to.
+With the credentials, you can update the TXT response in the service to match the challenge token, later referred as ______my_43_char_dns_validation_token______, given out by the Certificate Authority.
 
 ```GET /register```
 
@@ -88,7 +89,7 @@ Check out how in the INSTALL section.
 
 ## As a service
 
-Acme-dns instance as a service for everyone wanting to get on in fast. The service is running at `auth.acme-dns.io`, so to get started, try:
+Acme-dns instance is running as a service for everyone wanting to get on in fast. You can find it at `auth.acme-dns.io`, so to get started, try:
 ```curl -X GET https://auth.acme-dns.io/register```
 
 
