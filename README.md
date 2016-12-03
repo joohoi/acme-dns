@@ -21,8 +21,7 @@ So basically it boils down to **accessibility** and **security**
 - Simple deployment (it's Go after all)
 
 ## Usage
-
-[![asciicast](https://asciinema.org/a/94462.png)](https://asciinema.org/a/94462)
+[![asciicast](https://asciinema.org/a/94903.png)](https://asciinema.org/a/94903)
 
 Using acme-dns is a three-step process (provided you already have the self-hosted server set up, or are using a service like acme-dns.io):
 
