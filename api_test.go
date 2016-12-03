@@ -50,10 +50,10 @@ func TestApiRegister(t *testing.T) {
 		ContainsKey("password").
 		NotContainsKey("error")
 
-	allowfrom := []interface{}{
-		"123.123.123.123/32",
-		"1010.10.10.10/24",
-		"invalid",
+	allowfrom := map[string][]interface{}{
+		"allowfrom": []interface{}{"123.123.123.123/32",
+			"1010.10.10.10/24",
+			"invalid"},
 	}
 
 	response := e.POST("/register").
@@ -68,8 +68,7 @@ func TestApiRegister(t *testing.T) {
 		ContainsKey("allowfrom").
 		NotContainsKey("error")
 
-	response.Value("allowfrom").String().Equal("[\"123.123.123.123/32\"]")
-
+	response.Value("allowfrom").Array().Elements("123.123.123.123/32")
 }
 
 func TestApiRegisterWithMockDB(t *testing.T) {

@@ -58,17 +58,17 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 func webRegisterPost(ctx *iris.Context) {
 	var regJSON iris.Map
 	var regStatus int
-	cslice := cidrslice{}
-	_ = ctx.ReadJSON(&cslice)
+	aTXT := ACMETxt{}
+	_ = ctx.ReadJSON(&aTXT)
 	// Create new user
-	nu, err := DB.Register(cslice)
+	nu, err := DB.Register(aTXT.AllowFrom)
 	if err != nil {
 		errstr := fmt.Sprintf("%v", err)
 		regJSON = iris.Map{"error": errstr}
 		regStatus = iris.StatusInternalServerError
 		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error in registration")
 	} else {
-		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain, "allowfrom": nu.AllowFrom.JSON()}
+		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain, "allowfrom": nu.AllowFrom.ValidEntries()}
 		regStatus = iris.StatusCreated
 
 		log.WithFields(log.Fields{"user": nu.Username.String()}).Debug("Created new user")
