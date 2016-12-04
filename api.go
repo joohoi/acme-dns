@@ -9,6 +9,7 @@ import (
 
 // Serve is an authentication middlware function used to authenticate update requests
 func (a authMiddleware) Serve(ctx *iris.Context) {
+	allowUpdate := false
 	usernameStr := ctx.RequestHeader("X-Api-User")
 	password := ctx.RequestHeader("X-Api-Key")
 	postData := ACMETxt{}
@@ -16,47 +17,63 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 	username, err := getValidUsername(usernameStr)
 	if err == nil && validKey(password) {
 		au, err := DB.GetByUsername(username)
-		if err == nil && correctPassword(password, au.Password) {
-			// Password ok
-			if err := ctx.ReadJSON(&postData); err == nil {
-				// Check that the subdomain belongs to the user
-				if au.Subdomain == postData.Subdomain {
-					ctx.Next()
-					return
+		if err != nil {
+			log.WithFields(log.Fields{"error": err.Error()}).Error("Error while trying to get user")
+			// To protect against timed side channel (never gonna give you up)
+			correctPassword(password, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
+		} else {
+			if correctPassword(password, au.Password) {
+				// Password ok
+
+				// Now test for the possibly limited ranges
+				if DNSConf.API.UseHeader {
+					ips := getIPListFromHeader(ctx.RequestHeader(DNSConf.API.HeaderName))
+					allowUpdate = au.allowedFromList(ips)
+				} else {
+					allowUpdate = au.allowedFrom(ctx.RequestIP())
+				}
+
+				if allowUpdate {
+					// Update is allowed from remote addr
+					if err := ctx.ReadJSON(&postData); err == nil {
+						if au.Subdomain == postData.Subdomain {
+							ctx.Next()
+							return
+						}
+					} else {
+						// JSON error
+						ctx.JSON(iris.StatusBadRequest, iris.Map{"error": "bad data"})
+						return
+					}
 				}
 			} else {
-				ctx.JSON(iris.StatusBadRequest, iris.Map{"error": "bad data"})
-				return
+				// Wrong password
+				log.WithFields(log.Fields{"username": username}).Warning("Failed password check")
 			}
 		}
-		// To protect against timed side channel (never gonna give you up)
-		correctPassword(password, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
 	}
 	ctx.JSON(iris.StatusUnauthorized, iris.Map{"error": "unauthorized"})
 }
 
 func webRegisterPost(ctx *iris.Context) {
-	// Create new user
-	nu, err := DB.Register()
 	var regJSON iris.Map
 	var regStatus int
+	aTXT := ACMETxt{}
+	_ = ctx.ReadJSON(&aTXT)
+	// Create new user
+	nu, err := DB.Register(aTXT.AllowFrom)
 	if err != nil {
 		errstr := fmt.Sprintf("%v", err)
 		regJSON = iris.Map{"error": errstr}
 		regStatus = iris.StatusInternalServerError
 		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error in registration")
 	} else {
-		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain}
+		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain, "allowfrom": nu.AllowFrom.ValidEntries()}
 		regStatus = iris.StatusCreated
 
 		log.WithFields(log.Fields{"user": nu.Username.String()}).Debug("Created new user")
 	}
 	ctx.JSON(regStatus, regJSON)
-}
-
-func webRegisterGet(ctx *iris.Context) {
-	// This is placeholder for now
-	webRegisterPost(ctx)
 }
 
 func webUpdatePost(ctx *iris.Context) {

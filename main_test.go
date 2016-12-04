@@ -68,6 +68,8 @@ func setupConfig() {
 		Port:        "8080",
 		TLS:         "none",
 		CorsOrigins: []string{"*"},
+		UseHeader:   false,
+		HeaderName:  "X-Forwarded-For",
 	}
 
 	var dnscfg = DNSConfig{

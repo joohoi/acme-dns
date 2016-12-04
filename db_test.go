@@ -41,17 +41,44 @@ func TestDBInit(t *testing.T) {
 	errorDB.Close()
 }
 
-func TestRegister(t *testing.T) {
+func TestRegisterNoCIDR(t *testing.T) {
 	// Register tests
-	_, err := DB.Register()
+	_, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Registration failed, got error [%v]", err)
 	}
 }
 
+func TestRegisterMany(t *testing.T) {
+	for i, test := range []struct {
+		input  cidrslice
+		output cidrslice
+	}{
+		{cidrslice{"127.0.0.1/8", "8.8.8.8/32", "1.0.0.1/1"}, cidrslice{"127.0.0.1/8", "8.8.8.8/32", "1.0.0.1/1"}},
+		{cidrslice{"1.1.1./32", "1922.168.42.42/8", "1.1.1.1/33", "1.2.3.4/"}, cidrslice{}},
+		{cidrslice{"7.6.5.4/32", "invalid", "1.0.0.1/2"}, cidrslice{"7.6.5.4/32", "1.0.0.1/2"}},
+	} {
+		user, err := DB.Register(test.input)
+		if err != nil {
+			t.Errorf("Test %d: Got error from register method: [%v]", i, err)
+		}
+		res, err := DB.GetByUsername(user.Username)
+		if err != nil {
+			t.Errorf("Test %d: Got error when fetching username: [%v]", i, err)
+		}
+		if len(user.AllowFrom) != len(test.output) {
+			t.Errorf("Test %d: Expected to recieve struct with [%d] entries in AllowFrom, but got [%d] records", i, len(test.output), len(user.AllowFrom))
+		}
+		if len(res.AllowFrom) != len(test.output) {
+			t.Errorf("Test %d: Expected to recieve struct with [%d] entries in AllowFrom, but got [%d] records", i, len(test.output), len(res.AllowFrom))
+		}
+
+	}
+}
+
 func TestGetByUsername(t *testing.T) {
 	// Create  reg to refer to
-	reg, err := DB.Register()
+	reg, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Registration failed, got error [%v]", err)
 	}
@@ -76,7 +103,7 @@ func TestGetByUsername(t *testing.T) {
 }
 
 func TestPrepareErrors(t *testing.T) {
-	reg, _ := DB.Register()
+	reg, _ := DB.Register(cidrslice{})
 	tdb, err := sql.Open("testdb", "")
 	if err != nil {
 		t.Errorf("Got error: %v", err)
@@ -98,7 +125,7 @@ func TestPrepareErrors(t *testing.T) {
 }
 
 func TestQueryExecErrors(t *testing.T) {
-	reg, _ := DB.Register()
+	reg, _ := DB.Register(cidrslice{})
 	testdb.SetExecWithArgsFunc(func(query string, args []driver.Value) (result driver.Result, err error) {
 		return testResult{1, 0}, errors.New("Prepared query error")
 	})
@@ -129,7 +156,7 @@ func TestQueryExecErrors(t *testing.T) {
 		t.Errorf("Expected error from exec in GetByDomain, but got none")
 	}
 
-	_, err = DB.Register()
+	_, err = DB.Register(cidrslice{})
 	if err == nil {
 		t.Errorf("Expected error from exec in Register, but got none")
 	}
@@ -142,7 +169,7 @@ func TestQueryExecErrors(t *testing.T) {
 }
 
 func TestQueryScanErrors(t *testing.T) {
-	reg, _ := DB.Register()
+	reg, _ := DB.Register(cidrslice{})
 
 	testdb.SetExecWithArgsFunc(func(query string, args []driver.Value) (result driver.Result, err error) {
 		return testResult{1, 0}, errors.New("Prepared query error")
@@ -176,7 +203,7 @@ func TestQueryScanErrors(t *testing.T) {
 }
 
 func TestBadDBValues(t *testing.T) {
-	reg, _ := DB.Register()
+	reg, _ := DB.Register(cidrslice{})
 
 	testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
 		columns := []string{"Username", "Password", "Subdomain", "Value", "LastActive"}
@@ -209,7 +236,7 @@ func TestGetByDomain(t *testing.T) {
 	var regDomain = ACMETxt{}
 
 	// Create  reg to refer to
-	reg, err := DB.Register()
+	reg, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Registration failed, got error [%v]", err)
 	}
@@ -246,7 +273,7 @@ func TestGetByDomain(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	// Create  reg to refer to
-	reg, err := DB.Register()
+	reg, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Registration failed, got error [%v]", err)
 	}
