@@ -114,6 +114,7 @@ func TestGetValidCIDRMasks(t *testing.T) {
 	}{
 		{cidrslice{"10.0.0.1/24"}, cidrslice{"10.0.0.1/24"}},
 		{cidrslice{"invalid", "127.0.0.1/32"}, cidrslice{"127.0.0.1/32"}},
+		{cidrslice{"2002:c0a8::0/32", "8.8.8.8/32"}, cidrslice{"2002:c0a8::0/32", "8.8.8.8/32"}},
 	} {
 		ret := test.input.ValidEntries()
 		if len(ret) == len(test.output) {

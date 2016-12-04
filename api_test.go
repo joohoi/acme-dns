@@ -228,6 +228,11 @@ func TestApiManyUpdateWithIpCheckHeaders(t *testing.T) {
 		t.Errorf("Could not create new user with CIDR, got error [%v]", err)
 	}
 
+	newUserWithIP6CIDR, err := DB.Register(cidrslice{"2002:c0a8::0/32"})
+	if err != nil {
+		t.Errorf("Could not create a new user with IP6 CIDR, got error [%v]", err)
+	}
+
 	for _, test := range []struct {
 		user        ACMETxt
 		headerValue string
@@ -238,6 +243,9 @@ func TestApiManyUpdateWithIpCheckHeaders(t *testing.T) {
 		{newUserWithCIDR, "127.0.0.1", 401},
 		{newUserWithCIDR, "10.0.0.1, 10.0.0.2, 192.168.1.3", 401},
 		{newUserWithCIDR, "10.1.1.1 ,192.168.1.2, 8.8.8.8", 200},
+		{newUserWithIP6CIDR, "2002:c0a8:b4dc:0d3::0", 200},
+		{newUserWithIP6CIDR, "2002:c0a7:0ff::0", 401},
+		{newUserWithIP6CIDR, "2002:c0a8:d3ad:b33f:c0ff:33b4:dc0d:3b4d", 200},
 	} {
 		updateJSON = map[string]interface{}{
 			"subdomain": test.user.Subdomain,
