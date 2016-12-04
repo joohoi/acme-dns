@@ -48,7 +48,7 @@ With the credentials, you can update the TXT response in the service to match th
     "allowfrom": [
         "192.168.100.1/24",
         "1.2.3.4/32",
-        "2002:c0a8:2a01::0/32",
+        "2002:c0a8:2a00::0/40",
 }
 ```
 
