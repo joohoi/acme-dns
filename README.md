@@ -190,6 +190,9 @@ use_header = false
 header_name = "X-Forwarded-For"
 ```
 
+## Changelog
+- v0.1 Initial release
+
 ## TODO
 
 - Logging to a file
