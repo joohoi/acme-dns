@@ -30,7 +30,7 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 					ips := getIPListFromHeader(ctx.RequestHeader(DNSConf.API.HeaderName))
 					allowUpdate = au.allowedFromList(ips)
 				} else {
-					allowUpdate = au.allowedFrom(ctx.RequestIP())
+					allowUpdate = au.allowedFrom(ctx.RemoteAddr())
 				}
 
 				if allowUpdate {
