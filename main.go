@@ -4,7 +4,7 @@ package main
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/iris-contrib/middleware/cors"
+	"github.com/iris-contrib/plugin/cors"
 	"github.com/kataras/iris"
 	"os"
 )
@@ -47,7 +47,7 @@ func startHTTPAPI() {
 		OptionsPassthrough: false,
 		Debug:              DNSConf.General.Debug,
 	})
-	api.Use(crs)
+	api.Plugins.Add(crs)
 	var ForceAuth = authMiddleware{}
 	api.Post("/register", webRegisterPost)
 	api.Post("/update", ForceAuth.Serve, webUpdatePost)
