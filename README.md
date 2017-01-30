@@ -23,7 +23,7 @@ So basically it boils down to **accessibility** and **security**
 ## Usage
 [![asciicast](https://asciinema.org/a/94903.png)](https://asciinema.org/a/94903)
 
-Using acme-dns is a three-step process (provided you already have the self-hosted server set up, or are using a service like acme-dns.io):
+Using acme-dns is a three-step process (provided you already have the self-hosted server set up):
 
 - Get credentials and unique subdomain (simple POST request to eg. https://auth.acme-dns.io/register)
 - Create a (ACME magic) CNAME record to your existing zone, pointing to the subdomain you got from the registration. (eg. `_acme-challenge.domainiwantcertfor.tld. CNAME a097455b-52cc-4569-90c8-7a4b97c6eba8.auth.example.org` )
@@ -101,11 +101,6 @@ The method allows you to update the TXT answer contents of your unique subdomain
 You are encouraged to run your own acme-dns instance, because you are effectively authorizing the acme-dns server to act on your behalf in providing the answer to challengeing CA, making the instance able to request (and get issued) a TLS certificate for the domain that has CNAME pointing to it.
 
 Check out how in the INSTALL section.
-
-## As a service
-
-Acme-dns instance is running as a service for everyone wanting to get on in fast. You can find it at `auth.acme-dns.io`, so to get started, try:
-```curl -X POST https://auth.acme-dns.io/register```
 
 
 ## Installation
