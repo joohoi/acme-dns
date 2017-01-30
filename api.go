@@ -3,8 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+
 	log "github.com/Sirupsen/logrus"
-	"github.com/kataras/iris"
+	"gopkg.in/kataras/iris.v5"
 )
 
 // Serve is an authentication middlware function used to authenticate update requests
