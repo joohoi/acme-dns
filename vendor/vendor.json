@@ -3,12 +3,6 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "ApBk+VBSeHhPr7e9A4mCPVW36cQ=",
-			"path": "acme-dns",
-			"revision": "220ef6d3c039d5c4affb59aa8bccac813ff69565",
-			"revisionTime": "2016-12-04T22:43:10Z"
-		},
-		{
 			"checksumSHA1": "hqDDDpue/5363luidNMBS8z8eJU=",
 			"path": "github.com/BurntSushi/toml",
 			"revision": "99064174e013895bbd9b025c31100bd1d9b590ca",
@@ -113,11 +107,10 @@
 			"revisionTime": "2016-10-31T04:20:56Z"
 		},
 		{
-			"checksumSHA1": "yyAzHoiVLu+xywYI2BDyRq6sOqE=",
-			"origin": "github.com/kataras/go-fs/vendor/github.com/google/go-querystring/query",
+			"checksumSHA1": "p3IB18uJRs4dL2K5yx24MrLYE9A=",
 			"path": "github.com/google/go-querystring/query",
-			"revision": "c029e113d9faaf558b730f06041c8bf9545a3502",
-			"revisionTime": "2016-10-31T04:20:56Z"
+			"revision": "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
+			"revisionTime": "2017-01-11T10:11:55Z"
 		},
 		{
 			"checksumSHA1": "XjzE8S3JcN+F48Tmv6ZAf7kwqKU=",
@@ -266,12 +259,6 @@
 			"revisionTime": "2017-01-28T09:39:50Z"
 		},
 		{
-			"checksumSHA1": "IirunItym3T3TkGI+I32EI4dHp4=",
-			"path": "github.com/kataras/iris/utils",
-			"revision": "aa8f6649e880f64e5579f87330bd503ec9747414",
-			"revisionTime": "2017-01-28T09:39:50Z"
-		},
-		{
 			"checksumSHA1": "+CqJGh7NIDMnHgScq9sl9tPrnVM=",
 			"path": "github.com/klauspost/compress/flate",
 			"revision": "461e8fd8397ae84a23f56e385801e4feda2048ce",
@@ -414,12 +401,6 @@
 			"revisionTime": "2017-01-18T17:20:47Z"
 		},
 		{
-			"checksumSHA1": "1j/ERUJk+d/UwnmA+oMUsrPxdSw=",
-			"path": "github.com/valyala/fasthttp/fasthttpadaptor",
-			"revision": "2ada93a6dff49eb212acf5d7faf2f6d9cfca729b",
-			"revisionTime": "2017-01-18T17:20:47Z"
-		},
-		{
 			"checksumSHA1": "nMWLZCTKLciURGG8o/KeEPUExkY=",
 			"path": "github.com/valyala/fasthttp/fasthttputil",
 			"revision": "2ada93a6dff49eb212acf5d7faf2f6d9cfca729b",
@@ -538,24 +519,6 @@
 			"path": "gopkg.in/DATA-DOG/go-sqlmock.v1",
 			"revision": "d4cd2ca2ad1cc2130bba385aab072218f131f636",
 			"revisionTime": "2016-11-02T12:49:59Z"
-		},
-		{
-			"checksumSHA1": "dtcUPKv5aSaCvFYOofHgcReq044=",
-			"path": "gopkg.in/iris-contrib/websocket.v5",
-			"revision": "bc14117ad25db88dd667f03170dc6db1e5c1f78f",
-			"revisionTime": "2017-01-16T19:28:20Z"
-		},
-		{
-			"checksumSHA1": "9rBjF8xJYTw8rYGrbm/iIRAmW3Y=",
-			"path": "gopkg.in/kataras/go-websocket.v0",
-			"revision": "fbd354848b26d771444dc7475237e2b434393034",
-			"revisionTime": "2017-01-28T08:39:04Z"
-		},
-		{
-			"checksumSHA1": "/wCpTQBZHVl2vSK9hARjKuMg7wo=",
-			"path": "gopkg.in/kataras/iris.v5",
-			"revision": "879c36ba3a2ad1cbdfcdaf1d1e79218c4e5c26d7",
-			"revisionTime": "2017-01-16T19:29:21Z"
 		},
 		{
 			"checksumSHA1": "vSlztt3rfYwwDDKEiqUDWXl2LGw=",
