@@ -3,10 +3,11 @@
 package main
 
 import (
-	log "github.com/Sirupsen/logrus"
-	"github.com/iris-contrib/middleware/cors"
-	"github.com/kataras/iris"
 	"os"
+
+	log "github.com/Sirupsen/logrus"
+	"gopkg.in/iris-contrib/middleware.v5/cors"
+	"gopkg.in/kataras/iris.v5"
 )
 
 func main() {
