@@ -53,12 +53,12 @@ func startHTTPAPI() {
 	api.Post("/register", webRegisterPost)
 	api.Post("/update", ForceAuth.Serve, webUpdatePost)
 	switch DNSConf.API.TLS {
-	/*case "letsencrypt":
-	listener, err := iris.LETSENCRYPT(DNSConf.API.Domain)
-	err = api.Serve(listener)
-	if err != nil {
-		log.Errorf("Error in HTTP server [%v]", err)
-	}*/
+	case "letsencrypt":
+		listener, err := iris.LETSENCRYPT("0.0.0.0", DNSConf.API.Domain)
+		err = api.Serve(listener)
+		if err != nil {
+			log.Errorf("Error in HTTP server [%v]", err)
+		}
 	case "cert":
 		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
 		api.ListenTLS(host, DNSConf.API.TLSCertFullchain, DNSConf.API.TLSCertPrivkey)
