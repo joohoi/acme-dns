@@ -6,8 +6,8 @@ import (
 
 	"github.com/gavv/httpexpect"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
-	"gopkg.in/kataras/iris.v5"
-	"gopkg.in/kataras/iris.v5/httptest"
+	"gopkg.in/kataras/iris.v6"
+	"gopkg.in/kataras/iris.v6/httptest"
 )
 
 func setupIris(t *testing.T, debug bool, noauth bool) *httpexpect.Expect {
