@@ -5,9 +5,10 @@ package main
 import (
 	"os"
 
-	log "github.com/Sirupsen/logrus"
-	"gopkg.in/iris-contrib/middleware.v5/cors"
-	"gopkg.in/kataras/iris.v5"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/kataras/iris.v6"
+	"gopkg.in/kataras/iris.v6/adaptors/cors"
+	"gopkg.in/kataras/iris.v6/adaptors/httprouter"
 )
 
 func main() {
@@ -40,21 +41,20 @@ func main() {
 }
 
 func startHTTPAPI() {
-	api := iris.New()
-	api.Config.DisableBanner = true
-	crs := cors.New(cors.Options{
+	api := iris.New(iris.Configuration{DisableBodyConsumptionOnUnmarshal: true})
+	api.Adapt(httprouter.New())
+	api.Adapt(cors.New(cors.Options{
 		AllowedOrigins:     DNSConf.API.CorsOrigins,
 		AllowedMethods:     []string{"GET", "POST"},
 		OptionsPassthrough: false,
 		Debug:              DNSConf.General.Debug,
-	})
-	api.Use(crs)
+	}))
 	var ForceAuth = authMiddleware{}
 	api.Post("/register", webRegisterPost)
 	api.Post("/update", ForceAuth.Serve, webUpdatePost)
 	switch DNSConf.API.TLS {
 	case "letsencrypt":
-		listener, err := iris.LETSENCRYPTPROD(DNSConf.API.Domain)
+		listener, err := iris.LETSENCRYPT("0.0.0.0", DNSConf.API.Domain)
 		err = api.Serve(listener)
 		if err != nil {
 			log.Errorf("Error in HTTP server [%v]", err)

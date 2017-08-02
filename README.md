@@ -105,19 +105,17 @@ Check out how in the INSTALL section.
 
 ## Installation
 
-1) Install [Go](https://golang.org/doc/install)
+1) Install [Go 1.8 or newer](https://golang.org/doc/install)
 
 2) Clone this repo: `git clone https://github.com/joohoi/acme-dns $GOPATH/src/acme-dns`
 
-3) Install govendor.  ‘go get -u github.com/kardianos/govendor’ . This is used for dependency handling.
+3) Get dependencies: `go get -u`
 
-4) Get dependencies:  `cd $GOPATH/src/acme-dns` and `govendor sync`
+4) Build ACME-DNS: `go build`
 
-5) Build ACME-DNS: `go build`
+5) Edit config.cfg to suit your needs (see [configuration](#configuration))
 
-6) Edit config.cfg to suit your needs (see [configuration](#configuration))
-
-7) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
+6) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
 
 ## Configuration
