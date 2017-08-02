@@ -1,13 +1,11 @@
 language: go
 go:
-  - 1.7
+  - 1.8
 env:
   - "PATH=/home/travis/gopath/bin:$PATH"
 before_install:
-  - go get -u github.com/kardianos/govendor
   - go get github.com/golang/lint/golint
   - go get github.com/mattn/goveralls
-  - govendor sync
 script:
   - go vet 
   - golint -set_exit_status
