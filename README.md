@@ -48,7 +48,8 @@ With the credentials, you can update the TXT response in the service to match th
     "allowfrom": [
         "192.168.100.1/24",
         "1.2.3.4/32",
-        "2002:c0a8:2a00::0/40",
+        "2002:c0a8:2a00::0/40"
+    ]
 }
 ```
 
@@ -58,7 +59,8 @@ With the credentials, you can update the TXT response in the service to match th
 {
     "allowfrom": [
         "192.168.100.1/24",
-        "1.2.3.4/32"
+        "1.2.3.4/32",
+        "2002:c0a8:2a00::0/40"
     ],
     "fulldomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a.auth.acme-dns.io",
     "password": "htB9mR9DYgcu9bX_afHF62erXaH2TS7bg9KW3F7Z",
@@ -83,7 +85,7 @@ The method allows you to update the TXT answer contents of your unique subdomain
 ```json
 {
     "subdomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a",
-    "txt": "___validation_token_recieved_from_the_ca___",
+    "txt": "___validation_token_recieved_from_the_ca___"
 }
 ```
 
@@ -92,7 +94,7 @@ The method allows you to update the TXT answer contents of your unique subdomain
 ```Status: 200 OK```
 ```json
 {
-    "txt": "___validation_token_recieved_from_the_ca___",
+    "txt": "___validation_token_recieved_from_the_ca___"
 }
 ```
 
