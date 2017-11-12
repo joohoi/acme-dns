@@ -5,10 +5,9 @@ package main
 import (
 	"os"
 
+	"github.com/iris-contrib/middleware/cors"
+	"github.com/kataras/iris"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/kataras/iris.v6"
-	"gopkg.in/kataras/iris.v6/adaptors/cors"
-	"gopkg.in/kataras/iris.v6/adaptors/httprouter"
 )
 
 func main() {
@@ -41,9 +40,8 @@ func main() {
 }
 
 func startHTTPAPI() {
-	api := iris.New(iris.Configuration{DisableBodyConsumptionOnUnmarshal: true})
-	api.Adapt(httprouter.New())
-	api.Adapt(cors.New(cors.Options{
+	api := iris.New()
+	api.Use(cors.New(cors.Options{
 		AllowedOrigins:     DNSConf.API.CorsOrigins,
 		AllowedMethods:     []string{"GET", "POST"},
 		OptionsPassthrough: false,
@@ -52,18 +50,14 @@ func startHTTPAPI() {
 	var ForceAuth = authMiddleware{}
 	api.Post("/register", webRegisterPost)
 	api.Post("/update", ForceAuth.Serve, webUpdatePost)
+
+	host := DNSConf.API.Domain + ":" + DNSConf.API.Port
 	switch DNSConf.API.TLS {
 	case "letsencrypt":
-		listener, err := iris.LETSENCRYPT("0.0.0.0", DNSConf.API.Domain)
-		err = api.Serve(listener)
-		if err != nil {
-			log.Errorf("Error in HTTP server [%v]", err)
-		}
+		api.Run(iris.AutoTLS(host, DNSConf.API.Domain, DNSConf.API.LEmail), iris.WithoutBodyConsumptionOnUnmarshal)
 	case "cert":
-		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
-		api.ListenTLS(host, DNSConf.API.TLSCertFullchain, DNSConf.API.TLSCertPrivkey)
+		api.Run(iris.TLS(host, DNSConf.API.TLSCertFullchain, DNSConf.API.TLSCertPrivkey), iris.WithoutBodyConsumptionOnUnmarshal)
 	default:
-		host := DNSConf.API.Domain + ":" + DNSConf.API.Port
-		api.Listen(host)
+		api.Run(iris.Addr(host), iris.WithoutBodyConsumptionOnUnmarshal)
 	}
 }
