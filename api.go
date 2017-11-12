@@ -4,15 +4,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kataras/iris"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/kataras/iris.v6"
 )
 
 // Serve is an authentication middlware function used to authenticate update requests
-func (a authMiddleware) Serve(ctx *iris.Context) {
+func (a authMiddleware) Serve(ctx iris.Context) {
 	allowUpdate := false
-	usernameStr := ctx.RequestHeader("X-Api-User")
-	password := ctx.RequestHeader("X-Api-Key")
+	usernameStr := ctx.GetHeader("X-Api-User")
+	password := ctx.GetHeader("X-Api-Key")
 	postData := ACMETxt{}
 
 	username, err := getValidUsername(usernameStr)
@@ -28,7 +28,7 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 
 				// Now test for the possibly limited ranges
 				if DNSConf.API.UseHeader {
-					ips := getIPListFromHeader(ctx.RequestHeader(DNSConf.API.HeaderName))
+					ips := getIPListFromHeader(ctx.GetHeader(DNSConf.API.HeaderName))
 					allowUpdate = au.allowedFromList(ips)
 				} else {
 					allowUpdate = au.allowedFrom(ctx.RemoteAddr())
@@ -43,7 +43,9 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 						}
 					} else {
 						// JSON error
-						ctx.JSON(iris.StatusBadRequest, iris.Map{"error": "bad data"})
+						log.WithFields(log.Fields{"error": err.Error()}).Warning("Failed reading POST data")
+						ctx.JSON(iris.Map{"error": "bad data"})
+						ctx.StatusCode(iris.StatusBadRequest)
 						return
 					}
 				}
@@ -53,10 +55,11 @@ func (a authMiddleware) Serve(ctx *iris.Context) {
 			}
 		}
 	}
-	ctx.JSON(iris.StatusUnauthorized, iris.Map{"error": "unauthorized"})
+	ctx.JSON(iris.Map{"error": "unauthorized"})
+	ctx.StatusCode(iris.StatusUnauthorized)
 }
 
-func webRegisterPost(ctx *iris.Context) {
+func webRegisterPost(ctx iris.Context) {
 	var regJSON iris.Map
 	var regStatus int
 	aTXT := ACMETxt{}
@@ -74,13 +77,14 @@ func webRegisterPost(ctx *iris.Context) {
 
 		log.WithFields(log.Fields{"user": nu.Username.String()}).Debug("Created new user")
 	}
-	ctx.JSON(regStatus, regJSON)
+	ctx.JSON(regJSON)
+	ctx.StatusCode(regStatus)
 }
 
-func webUpdatePost(ctx *iris.Context) {
+func webUpdatePost(ctx iris.Context) {
 	// User auth done in middleware
 	a := ACMETxt{}
-	userStr := ctx.RequestHeader("X-API-User")
+	userStr := ctx.GetHeader("X-API-User")
 	// Already checked in auth middlware
 	username, _ := getValidUsername(userStr)
 	// Already checked in auth middleware
@@ -94,7 +98,8 @@ func webUpdatePost(ctx *iris.Context) {
 			webUpdatePostError(ctx, errors.New("internal error"), iris.StatusInternalServerError)
 			return
 		}
-		ctx.JSON(iris.StatusOK, iris.Map{"txt": a.Value})
+		ctx.JSON(iris.Map{"txt": a.Value})
+		ctx.StatusCode(iris.StatusOK)
 	} else {
 		log.WithFields(log.Fields{"subdomain": a.Subdomain, "txt": a.Value}).Debug("Bad data for subdomain")
 		webUpdatePostError(ctx, errors.New("bad data"), iris.StatusBadRequest)
@@ -102,8 +107,9 @@ func webUpdatePost(ctx *iris.Context) {
 	}
 }
 
-func webUpdatePostError(ctx *iris.Context, err error, status int) {
+func webUpdatePostError(ctx iris.Context, err error, status int) {
 	errStr := fmt.Sprintf("%v", err)
 	updJSON := iris.Map{"error": errStr}
-	ctx.JSON(status, updJSON)
+	ctx.JSON(updJSON)
+	ctx.StatusCode(status)
 }

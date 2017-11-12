@@ -107,7 +107,7 @@ Check out how in the INSTALL section.
 
 ## Installation
 
-1) Install [Go 1.8 or newer](https://golang.org/doc/install)
+1) Install [Go 1.9 or newer](https://golang.org/doc/install)
 
 2) Clone this repo: `git clone https://github.com/joohoi/acme-dns $GOPATH/src/acme-dns`
 

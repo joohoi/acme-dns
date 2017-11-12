@@ -51,6 +51,8 @@ type dbsettings struct {
 // API config
 type httpapi struct {
 	Domain           string `toml:"api_domain"`
+	LEmail           string `toml:"le_email"`
+	IP               string
 	Port             string
 	TLS              string
 	TLSCertPrivkey   string `toml:"tls_cert_privkey"`
