@@ -111,13 +111,11 @@ Check out how in the INSTALL section.
 
 2) Clone this repo: `git clone https://github.com/joohoi/acme-dns $GOPATH/src/acme-dns`
 
-3) Get dependencies: `go get -u`
+3) Build ACME-DNS: `go build`
 
-4) Build ACME-DNS: `go build`
+4) Edit config.cfg to suit your needs (see [configuration](#configuration))
 
-5) Edit config.cfg to suit your needs (see [configuration](#configuration))
-
-6) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
+5) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
 
 ## Configuration
