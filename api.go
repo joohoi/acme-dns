@@ -27,8 +27,8 @@ func (a authMiddleware) Serve(ctx iris.Context) {
 				// Password ok
 
 				// Now test for the possibly limited ranges
-				if DNSConf.API.UseHeader {
-					ips := getIPListFromHeader(ctx.GetHeader(DNSConf.API.HeaderName))
+				if Config.API.UseHeader {
+					ips := getIPListFromHeader(ctx.GetHeader(Config.API.HeaderName))
 					allowUpdate = au.allowedFromList(ips)
 				} else {
 					allowUpdate = au.allowedFrom(ctx.RemoteAddr())
@@ -72,7 +72,7 @@ func webRegisterPost(ctx iris.Context) {
 		regStatus = iris.StatusInternalServerError
 		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error in registration")
 	} else {
-		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + DNSConf.General.Domain, "subdomain": nu.Subdomain, "allowfrom": nu.AllowFrom.ValidEntries()}
+		regJSON = iris.Map{"username": nu.Username, "password": nu.Password, "fulldomain": nu.Subdomain + "." + Config.General.Domain, "subdomain": nu.Subdomain, "allowfrom": nu.AllowFrom.ValidEntries()}
 		regStatus = iris.StatusCreated
 
 		log.WithFields(log.Fields{"user": nu.Username.String()}).Debug("Created new user")

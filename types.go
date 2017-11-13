@@ -7,8 +7,8 @@ import (
 	"sync"
 )
 
-// DNSConf is global configuration struct
-var DNSConf DNSConfig
+// Config is global configuration struct
+var Config DNSConfig
 
 // DB is used to access the database functions in acme-dns
 var DB database

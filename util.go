@@ -3,13 +3,22 @@ package main
 import (
 	"crypto/rand"
 	"math/big"
+	"os"
 	"regexp"
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	log "github.com/sirupsen/logrus"
 	"github.com/miekg/dns"
+	log "github.com/sirupsen/logrus"
 )
+
+func fileExists(fname string) bool {
+	_, err := os.Stat(fname)
+	if err != nil {
+		return false
+	}
+	return true
+}
 
 func readConfig(fname string) DNSConfig {
 	var conf DNSConfig

@@ -12,17 +12,21 @@ import (
 
 func main() {
 	// Read global config
-	configTmp := readConfig("config.cfg")
-	DNSConf = configTmp
+	var Config DNSConfig
+	if fileExists("/etc/acme-dns/config.cfg") {
+		Config = readConfig("/etc/acme-dns/config.cfg")
+	} else {
+		Config = readConfig("config.cfg")
+	}
 
-	setupLogging(DNSConf.Logconfig.Format, DNSConf.Logconfig.Level)
+	setupLogging(Config.Logconfig.Format, Config.Logconfig.Level)
 
 	// Read the default records in
-	RR.Parse(DNSConf.General)
+	RR.Parse(Config.General)
 
 	// Open database
 	newDB := new(acmedb)
-	err := newDB.Init(DNSConf.Database.Engine, DNSConf.Database.Connection)
+	err := newDB.Init(Config.Database.Engine, Config.Database.Connection)
 	if err != nil {
 		log.Errorf("Could not open database [%v]", err)
 		os.Exit(1)
@@ -31,7 +35,7 @@ func main() {
 	defer DB.Close()
 
 	// DNS server
-	startDNS(DNSConf.General.Listen, DNSConf.General.Proto)
+	startDNS(Config.General.Listen, Config.General.Proto)
 
 	// HTTP API
 	startHTTPAPI()
@@ -42,21 +46,21 @@ func main() {
 func startHTTPAPI() {
 	api := iris.New()
 	api.Use(cors.New(cors.Options{
-		AllowedOrigins:     DNSConf.API.CorsOrigins,
+		AllowedOrigins:     Config.API.CorsOrigins,
 		AllowedMethods:     []string{"GET", "POST"},
 		OptionsPassthrough: false,
-		Debug:              DNSConf.General.Debug,
+		Debug:              Config.General.Debug,
 	}))
 	var ForceAuth = authMiddleware{}
 	api.Post("/register", webRegisterPost)
 	api.Post("/update", ForceAuth.Serve, webUpdatePost)
 
-	host := DNSConf.API.Domain + ":" + DNSConf.API.Port
-	switch DNSConf.API.TLS {
+	host := Config.API.Domain + ":" + Config.API.Port
+	switch Config.API.TLS {
 	case "letsencrypt":
-		api.Run(iris.AutoTLS(host, DNSConf.API.Domain, DNSConf.API.LEmail), iris.WithoutBodyConsumptionOnUnmarshal)
+		api.Run(iris.AutoTLS(host, Config.API.Domain, Config.API.LEmail), iris.WithoutBodyConsumptionOnUnmarshal)
 	case "cert":
-		api.Run(iris.TLS(host, DNSConf.API.TLSCertFullchain, DNSConf.API.TLSCertPrivkey), iris.WithoutBodyConsumptionOnUnmarshal)
+		api.Run(iris.TLS(host, Config.API.TLSCertFullchain, Config.API.TLSCertPrivkey), iris.WithoutBodyConsumptionOnUnmarshal)
 	default:
 		api.Run(iris.Addr(host), iris.WithoutBodyConsumptionOnUnmarshal)
 	}

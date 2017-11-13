@@ -26,19 +26,19 @@ var records = []string{
 func TestMain(m *testing.M) {
 	setupTestLogger()
 	setupConfig()
-	RR.Parse(DNSConf.General)
+	RR.Parse(Config.General)
 	flag.Parse()
 
 	newDb := new(acmedb)
 	if *postgres {
-		DNSConf.Database.Engine = "postgres"
+		Config.Database.Engine = "postgres"
 		err := newDb.Init("postgres", "postgres://acmedns:acmedns@localhost/acmedns")
 		if err != nil {
 			fmt.Println("PostgreSQL integration tests expect database \"acmedns\" running in localhost, with username and password set to \"acmedns\"")
 			os.Exit(1)
 		}
 	} else {
-		DNSConf.Database.Engine = "sqlite3"
+		Config.Database.Engine = "sqlite3"
 		_ = newDb.Init("sqlite3", ":memory:")
 	}
 	DB = newDb
@@ -78,7 +78,7 @@ func setupConfig() {
 		API:      httpapicfg,
 	}
 
-	DNSConf = dnscfg
+	Config = dnscfg
 }
 
 func setupTestLogger() {

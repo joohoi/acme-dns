@@ -24,7 +24,7 @@ ignored = ["gopkg.in/kataras/iris.v5", "github.com/iris-contrib/letsencrypt"]
 
 [[constraint]]
   name = "github.com/kataras/iris"
-  version = "8.5.7"
+  version = "8.5.8"
 
 [[constraint]]
   name = "github.com/iris-contrib/middleware"

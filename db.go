@@ -7,10 +7,10 @@ import (
 	"regexp"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -62,7 +62,7 @@ func (d *acmedb) Register(afrom cidrslice) (ACMETxt, error) {
         LastActive,
 		AllowFrom) 
         values($1, $2, $3, '', $4, $5)`
-	if DNSConf.Database.Engine == "sqlite3" {
+	if Config.Database.Engine == "sqlite3" {
 		regSQL = getSQLiteStmt(regSQL)
 	}
 	sm, err := d.DB.Prepare(regSQL)
@@ -87,7 +87,7 @@ func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	FROM records
 	WHERE Username=$1 LIMIT 1
 	`
-	if DNSConf.Database.Engine == "sqlite3" {
+	if Config.Database.Engine == "sqlite3" {
 		getSQL = getSQLiteStmt(getSQL)
 	}
 
@@ -126,7 +126,7 @@ func (d *acmedb) GetByDomain(domain string) ([]ACMETxt, error) {
 	FROM records
 	WHERE Subdomain=$1 LIMIT 1
 	`
-	if DNSConf.Database.Engine == "sqlite3" {
+	if Config.Database.Engine == "sqlite3" {
 		getSQL = getSQLiteStmt(getSQL)
 	}
 
@@ -160,7 +160,7 @@ func (d *acmedb) Update(a ACMETxt) error {
 	UPDATE records SET Value=$1, LastActive=$2
 	WHERE Username=$3 AND Subdomain=$4
 	`
-	if DNSConf.Database.Engine == "sqlite3" {
+	if Config.Database.Engine == "sqlite3" {
 		updSQL = getSQLiteStmt(updSQL)
 	}
 
