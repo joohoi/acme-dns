@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"os"
 	"regexp"
@@ -11,6 +12,10 @@ import (
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 )
+
+func jsonError(message string) []byte {
+	return []byte(fmt.Sprintf("{\"error\": \"%s\"}", message))
+}
 
 func fileExists(fname string) bool {
 	_, err := os.Stat(fname)

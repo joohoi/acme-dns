@@ -3,19 +3,23 @@
 package main
 
 import (
+	"crypto/tls"
+	"net/http"
 	"os"
 
-	"github.com/iris-contrib/middleware/cors"
-	"github.com/kataras/iris"
+	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 func main() {
 	// Read global config
-	var Config DNSConfig
 	if fileExists("/etc/acme-dns/config.cfg") {
 		Config = readConfig("/etc/acme-dns/config.cfg")
+		log.WithFields(log.Fields{"file": "/etc/acme-dns/config.cfg"}).Info("Using config file")
+
 	} else {
+		log.WithFields(log.Fields{"file": "./config.cfg"}).Info("Using config file")
 		Config = readConfig("config.cfg")
 	}
 
@@ -44,24 +48,54 @@ func main() {
 }
 
 func startHTTPAPI() {
-	api := iris.New()
-	api.Use(cors.New(cors.Options{
-		AllowedOrigins:     Config.API.CorsOrigins,
-		AllowedMethods:     []string{"GET", "POST"},
-		OptionsPassthrough: false,
-		Debug:              Config.General.Debug,
-	}))
-	var ForceAuth = authMiddleware{}
-	api.Post("/register", webRegisterPost)
-	api.Post("/update", ForceAuth.Serve, webUpdatePost)
+	api := httprouter.New()
+	//api.Use(cors.New(cors.Options{
+	//	AllowedOrigins:     Config.API.CorsOrigins,
+	//	AllowedMethods:     []string{"GET", "POST"},
+	//	OptionsPassthrough: false,
+	//	Debug:              Config.General.Debug,
+	//}))
+	api.POST("/register", webRegisterPost)
+	api.POST("/update", Auth(webUpdatePost))
 
 	host := Config.API.Domain + ":" + Config.API.Port
+
+	cfg := &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+	}
+
 	switch Config.API.TLS {
 	case "letsencrypt":
-		api.Run(iris.AutoTLS(host, Config.API.Domain, Config.API.LEmail), iris.WithoutBodyConsumptionOnUnmarshal)
+		m := autocert.Manager{
+			Cache:      autocert.DirCache("api-certs"),
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(Config.API.Domain),
+		}
+		cfg.GetCertificate = m.GetCertificate
+		srv := &http.Server{
+			Addr:      host,
+			Handler:   api,
+			TLSConfig: cfg,
+		}
+		log.Fatal(srv.ListenAndServeTLS("", ""))
 	case "cert":
-		api.Run(iris.TLS(host, Config.API.TLSCertFullchain, Config.API.TLSCertPrivkey), iris.WithoutBodyConsumptionOnUnmarshal)
+		srv := &http.Server{
+			Addr:      host,
+			Handler:   api,
+			TLSConfig: cfg,
+		}
+		log.WithFields(log.Fields{"host": host}).Info("Listening HTTPS")
+		log.Fatal(srv.ListenAndServeTLS(Config.API.TLSCertFullchain, Config.API.TLSCertPrivkey))
 	default:
-		api.Run(iris.Addr(host), iris.WithoutBodyConsumptionOnUnmarshal)
+		log.WithFields(log.Fields{"host": host}).Info("Listening HTTP")
+		log.Fatal(http.ListenAndServe(host, api))
 	}
 }
