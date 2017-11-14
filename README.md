@@ -184,11 +184,13 @@ header_name = "X-Forwarded-For"
 ```
 
 ## Changelog
+- v0.2 Now powered by httprouter
 - v0.1 Initial release
 
 ## TODO
 
 - Logging to a file
+- DNSSEC
 - Want to see something implemented, make a feature request!
 
 ## Contributing
