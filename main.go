@@ -4,10 +4,12 @@ package main
 
 import (
 	"crypto/tls"
+	stdlog "log"
 	"net/http"
 	"os"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -48,28 +50,26 @@ func main() {
 }
 
 func startHTTPAPI() {
+	// Setup http logger
+	logger := log.New()
+	logwriter := logger.Writer()
+	defer logwriter.Close()
 	api := httprouter.New()
-	//api.Use(cors.New(cors.Options{
-	//	AllowedOrigins:     Config.API.CorsOrigins,
-	//	AllowedMethods:     []string{"GET", "POST"},
-	//	OptionsPassthrough: false,
-	//	Debug:              Config.General.Debug,
-	//}))
+	c := cors.New(cors.Options{
+		AllowedOrigins:     Config.API.CorsOrigins,
+		AllowedMethods:     []string{"GET", "POST"},
+		OptionsPassthrough: false,
+		Debug:              Config.General.Debug,
+	})
+	// Logwriter for saner log output
+	c.Log = stdlog.New(logwriter, "", 0)
 	api.POST("/register", webRegisterPost)
 	api.POST("/update", Auth(webUpdatePost))
 
-	host := Config.API.Domain + ":" + Config.API.Port
+	host := Config.API.IP + ":" + Config.API.Port
 
 	cfg := &tls.Config{
-		MinVersion:               tls.VersionTLS12,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-		},
+		MinVersion: tls.VersionTLS12,
 	}
 
 	switch Config.API.TLS {
@@ -82,20 +82,23 @@ func startHTTPAPI() {
 		cfg.GetCertificate = m.GetCertificate
 		srv := &http.Server{
 			Addr:      host,
-			Handler:   api,
+			Handler:   c.Handler(api),
 			TLSConfig: cfg,
+			ErrorLog:  stdlog.New(logwriter, "", 0),
 		}
+		log.WithFields(log.Fields{"host": host, "domain": Config.API.Domain}).Info("Listening HTTPS autocert")
 		log.Fatal(srv.ListenAndServeTLS("", ""))
 	case "cert":
 		srv := &http.Server{
 			Addr:      host,
-			Handler:   api,
+			Handler:   c.Handler(api),
 			TLSConfig: cfg,
+			ErrorLog:  stdlog.New(logwriter, "", 0),
 		}
 		log.WithFields(log.Fields{"host": host}).Info("Listening HTTPS")
 		log.Fatal(srv.ListenAndServeTLS(Config.API.TLSCertFullchain, Config.API.TLSCertPrivkey))
 	default:
 		log.WithFields(log.Fields{"host": host}).Info("Listening HTTP")
-		log.Fatal(http.ListenAndServe(host, api))
+		log.Fatal(http.ListenAndServe(host, c.Handler(api)))
 	}
 }
