@@ -60,6 +60,10 @@ func (a ACMETxt) allowedFrom(ip string) bool {
 // Go through list (most likely from headers) to check for the IP.
 // Reason for this is that some setups use reverse proxy in front of acme-dns
 func (a ACMETxt) allowedFromList(ips []string) bool {
+	if len(ips) == 0 {
+		// If no IP provided, check if no whitelist present (everyone has access)
+		return a.allowedFrom("")
+	}
 	for _, v := range ips {
 		if a.allowedFrom(v) {
 			return true

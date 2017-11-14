@@ -10,6 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type key int
+
+// ACMETxtKey is a context key for ACMETxt struct
+const ACMETxtKey key = 0
+
 // Auth middleware for update request
 func Auth(update httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -39,12 +44,12 @@ func Auth(update httprouter.Handle) httprouter.Handle {
 			postData.Username = user.Username
 			postData.Password = user.Password
 			// Set the ACMETxt struct to context to pull in from update function
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, []byte("acmetxt"), postData)
-			r = r.WithContext(ctx)
-			update(w, r, p)
+			ctx := context.WithValue(r.Context(), ACMETxtKey, postData)
+			update(w, r.WithContext(ctx), p)
 		} else {
-			http.Error(w, string(jsonError("forbidden")), http.StatusForbidden)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write(jsonError("forbidden"))
 		}
 	}
 }
@@ -62,6 +67,7 @@ func getUserFromRequest(r *http.Request) (ACMETxt, error) {
 			log.WithFields(log.Fields{"error": err.Error()}).Error("Error while trying to get user")
 			// To protect against timed side channel (never gonna give you up)
 			correctPassword(passwd, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
+
 			return ACMETxt{}, fmt.Errorf("Invalid username: %s", uname)
 		}
 		if correctPassword(passwd, dbuser.Password) {

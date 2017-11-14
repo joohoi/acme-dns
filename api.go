@@ -54,7 +54,7 @@ func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	var updStatus int
 	var upd []byte
 	// Get user
-	a, ok := r.Context().Value("acmetxt").(ACMETxt)
+	a, ok := r.Context().Value(ACMETxtKey).(ACMETxt)
 	if !ok {
 		log.WithFields(log.Fields{"error": "context"}).Error("Context error")
 	}
