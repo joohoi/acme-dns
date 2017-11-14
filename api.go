@@ -22,10 +22,6 @@ func webRegisterPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	var regStatus int
 	var reg []byte
 	aTXT := ACMETxt{}
-	if r.Body == nil {
-		http.Error(w, string(jsonError("body_missing")), http.StatusBadRequest)
-		return
-	}
 	json.NewDecoder(r.Body).Decode(&aTXT)
 	// Create new user
 	nu, err := DB.Register(aTXT.AllowFrom)
