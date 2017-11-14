@@ -3,5 +3,3 @@ acme-dns.db
 acme-dns.log
 .vagrant
 coverage.out
-vendor/*/
-/vendor/**/.git

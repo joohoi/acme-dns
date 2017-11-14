@@ -53,7 +53,7 @@ type httpapi struct {
 	Domain           string `toml:"api_domain"`
 	LEmail           string `toml:"le_email"`
 	IP               string
-	Port             string
+	Port             string `toml:"port"`
 	TLS              string
 	TLSCertPrivkey   string `toml:"tls_cert_privkey"`
 	TLSCertFullchain string `toml:"tls_cert_fullchain"`

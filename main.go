@@ -3,18 +3,25 @@
 package main
 
 import (
+	"crypto/tls"
+	stdlog "log"
+	"net/http"
 	"os"
 
-	"github.com/iris-contrib/middleware/cors"
-	"github.com/kataras/iris"
+	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 func main() {
 	// Read global config
 	if fileExists("/etc/acme-dns/config.cfg") {
 		Config = readConfig("/etc/acme-dns/config.cfg")
+		log.WithFields(log.Fields{"file": "/etc/acme-dns/config.cfg"}).Info("Using config file")
+
 	} else {
+		log.WithFields(log.Fields{"file": "./config.cfg"}).Info("Using config file")
 		Config = readConfig("config.cfg")
 	}
 
@@ -43,24 +50,55 @@ func main() {
 }
 
 func startHTTPAPI() {
-	api := iris.New()
-	api.Use(cors.New(cors.Options{
+	// Setup http logger
+	logger := log.New()
+	logwriter := logger.Writer()
+	defer logwriter.Close()
+	api := httprouter.New()
+	c := cors.New(cors.Options{
 		AllowedOrigins:     Config.API.CorsOrigins,
 		AllowedMethods:     []string{"GET", "POST"},
 		OptionsPassthrough: false,
 		Debug:              Config.General.Debug,
-	}))
-	var ForceAuth = authMiddleware{}
-	api.Post("/register", webRegisterPost)
-	api.Post("/update", ForceAuth.Serve, webUpdatePost)
+	})
+	// Logwriter for saner log output
+	c.Log = stdlog.New(logwriter, "", 0)
+	api.POST("/register", webRegisterPost)
+	api.POST("/update", Auth(webUpdatePost))
 
-	host := Config.API.Domain + ":" + Config.API.Port
+	host := Config.API.IP + ":" + Config.API.Port
+
+	cfg := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
+
 	switch Config.API.TLS {
 	case "letsencrypt":
-		api.Run(iris.AutoTLS(host, Config.API.Domain, Config.API.LEmail), iris.WithoutBodyConsumptionOnUnmarshal)
+		m := autocert.Manager{
+			Cache:      autocert.DirCache("api-certs"),
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(Config.API.Domain),
+		}
+		cfg.GetCertificate = m.GetCertificate
+		srv := &http.Server{
+			Addr:      host,
+			Handler:   c.Handler(api),
+			TLSConfig: cfg,
+			ErrorLog:  stdlog.New(logwriter, "", 0),
+		}
+		log.WithFields(log.Fields{"host": host, "domain": Config.API.Domain}).Info("Listening HTTPS autocert")
+		log.Fatal(srv.ListenAndServeTLS("", ""))
 	case "cert":
-		api.Run(iris.TLS(host, Config.API.TLSCertFullchain, Config.API.TLSCertPrivkey), iris.WithoutBodyConsumptionOnUnmarshal)
+		srv := &http.Server{
+			Addr:      host,
+			Handler:   c.Handler(api),
+			TLSConfig: cfg,
+			ErrorLog:  stdlog.New(logwriter, "", 0),
+		}
+		log.WithFields(log.Fields{"host": host}).Info("Listening HTTPS")
+		log.Fatal(srv.ListenAndServeTLS(Config.API.TLSCertFullchain, Config.API.TLSCertPrivkey))
 	default:
-		api.Run(iris.Addr(host), iris.WithoutBodyConsumptionOnUnmarshal)
+		log.WithFields(log.Fields{"host": host}).Info("Listening HTTP")
+		log.Fatal(http.ListenAndServe(host, c.Handler(api)))
 	}
 }
