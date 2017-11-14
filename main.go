@@ -12,7 +12,6 @@ import (
 
 func main() {
 	// Read global config
-	var Config DNSConfig
 	if fileExists("/etc/acme-dns/config.cfg") {
 		Config = readConfig("/etc/acme-dns/config.cfg")
 	} else {
