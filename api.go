@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// RegResponse is a struct for registration response JSON
 type RegResponse struct {
 	Username   string   `json:"username"`
 	Password   string   `json:"password"`

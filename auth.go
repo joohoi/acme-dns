@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Auth middleware for update request
 func Auth(update httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		postData := ACMETxt{}
@@ -40,7 +40,7 @@ func Auth(update httprouter.Handle) httprouter.Handle {
 			postData.Password = user.Password
 			// Set the ACMETxt struct to context to pull in from update function
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, "acmetxt", postData)
+			ctx = context.WithValue(ctx, []byte("acmetxt"), postData)
 			r = r.WithContext(ctx)
 			update(w, r, p)
 		} else {
@@ -54,7 +54,7 @@ func getUserFromRequest(r *http.Request) (ACMETxt, error) {
 	passwd := r.Header.Get("X-Api-Key")
 	username, err := getValidUsername(uname)
 	if err != nil {
-		return ACMETxt{}, errors.New(fmt.Sprintf("Invalid username: %s: %s", uname, err.Error()))
+		return ACMETxt{}, fmt.Errorf("Invalid username: %s: %s", uname, err.Error())
 	}
 	if validKey(passwd) {
 		dbuser, err := DB.GetByUsername(username)
@@ -62,26 +62,20 @@ func getUserFromRequest(r *http.Request) (ACMETxt, error) {
 			log.WithFields(log.Fields{"error": err.Error()}).Error("Error while trying to get user")
 			// To protect against timed side channel (never gonna give you up)
 			correctPassword(passwd, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
-			return ACMETxt{}, errors.New(fmt.Sprintf("Invalid username: %s", uname))
-		} else {
-			if correctPassword(passwd, dbuser.Password) {
-				return dbuser, nil
-			} else {
-				return ACMETxt{}, errors.New(fmt.Sprintf("Invalid password for user %s", uname))
-			}
-
+			return ACMETxt{}, fmt.Errorf("Invalid username: %s", uname)
 		}
-	} else {
-		return ACMETxt{}, errors.New(fmt.Sprintf("Invalid key for user %s", uname))
+		if correctPassword(passwd, dbuser.Password) {
+			return dbuser, nil
+		}
+		return ACMETxt{}, fmt.Errorf("Invalid password for user %s", uname)
 	}
+	return ACMETxt{}, fmt.Errorf("Invalid key for user %s", uname)
 }
 
 func updateAllowedFromIP(r *http.Request, user ACMETxt) bool {
 	if Config.API.UseHeader {
 		ips := getIPListFromHeader(r.Header.Get(Config.API.HeaderName))
 		return user.allowedFromList(ips)
-	} else {
-		return user.allowedFrom(r.RemoteAddr)
 	}
-	return false
+	return user.allowedFrom(r.RemoteAddr)
 }
