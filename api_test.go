@@ -35,6 +35,17 @@ func noAuth(update httprouter.Handle) httprouter.Handle {
 	}
 }
 
+func getExpect(t *testing.T, server *httptest.Server) *httpexpect.Expect {
+	return httpexpect.WithConfig(httpexpect.Config{
+		BaseURL:  server.URL,
+		Reporter: httpexpect.NewAssertReporter(t),
+		Printers: []httpexpect.Printer{
+			httpexpect.NewCurlPrinter(t),
+			httpexpect.NewDebugPrinter(t, true),
+		},
+	})
+}
+
 func setupRouter(debug bool, noauth bool) http.Handler {
 	api := httprouter.New()
 	var dbcfg = dbsettings{
@@ -72,7 +83,7 @@ func TestApiRegister(t *testing.T) {
 	router := setupRouter(false, false)
 	server := httptest.NewServer(router)
 	defer server.Close()
-	e := httpexpect.New(t, server.URL)
+	e := getExpect(t, server)
 	e.POST("/register").Expect().
 		Status(http.StatusCreated).
 		JSON().Object().
@@ -103,11 +114,38 @@ func TestApiRegister(t *testing.T) {
 	response.Value("allowfrom").Array().Elements("123.123.123.123/32")
 }
 
+func TestApiRegisterMalformedJSON(t *testing.T) {
+	router := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+
+	malPayloads := []string{
+		"{\"allowfrom': '1.1.1.1/32'}",
+		"\"allowfrom\": \"1.1.1.1/32\"",
+		"{\"allowfrom\": \"[1.1.1.1/32]\"",
+		"\"allowfrom\": \"1.1.1.1/32\"}",
+		"{allowfrom: \"1.2.3.4\"}",
+		"{allowfrom: [1.2.3.4]}",
+		"whatever that's not a json payload",
+	}
+	for _, test := range malPayloads {
+		e.POST("/register").
+			WithBytes([]byte(test)).
+			Expect().
+			Status(http.StatusBadRequest).
+			JSON().Object().
+			ContainsKey("error").
+			NotContainsKey("subdomain").
+			NotContainsKey("username")
+	}
+}
+
 func TestApiRegisterWithMockDB(t *testing.T) {
 	router := setupRouter(false, false)
 	server := httptest.NewServer(router)
 	defer server.Close()
-	e := httpexpect.New(t, server.URL)
+	e := getExpect(t, server)
 	oldDb := DB.GetBackend()
 	db, mock, _ := sqlmock.New()
 	DB.SetBackend(db)
@@ -125,7 +163,7 @@ func TestApiUpdateWithoutCredentials(t *testing.T) {
 	router := setupRouter(false, false)
 	server := httptest.NewServer(router)
 	defer server.Close()
-	e := httpexpect.New(t, server.URL)
+	e := getExpect(t, server)
 	e.POST("/update").Expect().
 		Status(http.StatusUnauthorized).
 		JSON().Object().
@@ -143,7 +181,7 @@ func TestApiUpdateWithCredentials(t *testing.T) {
 	router := setupRouter(false, false)
 	server := httptest.NewServer(router)
 	defer server.Close()
-	e := httpexpect.New(t, server.URL)
+	e := getExpect(t, server)
 	newUser, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Could not create new user, got error [%v]", err)
@@ -176,7 +214,7 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 	router := setupRouter(false, true)
 	server := httptest.NewServer(router)
 	defer server.Close()
-	e := httpexpect.New(t, server.URL)
+	e := getExpect(t, server)
 	oldDb := DB.GetBackend()
 	db, mock, _ := sqlmock.New()
 	DB.SetBackend(db)
@@ -202,7 +240,7 @@ func TestApiManyUpdateWithCredentials(t *testing.T) {
 	router := setupRouter(true, false)
 	server := httptest.NewServer(router)
 	defer server.Close()
-	e := httpexpect.New(t, server.URL)
+	e := getExpect(t, server)
 	// User without defined CIDR masks
 	newUser, err := DB.Register(cidrslice{})
 	if err != nil {
@@ -262,7 +300,7 @@ func TestApiManyUpdateWithIpCheckHeaders(t *testing.T) {
 	router := setupRouter(false, false)
 	server := httptest.NewServer(router)
 	defer server.Close()
-	e := httpexpect.New(t, server.URL)
+	e := getExpect(t, server)
 	// Use header checks from default header (X-Forwarded-For)
 	Config.API.UseHeader = true
 	// User without defined CIDR masks
