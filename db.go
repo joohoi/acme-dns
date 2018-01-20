@@ -15,7 +15,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var DB_VERSION = 1
+// DBVersion shows the database version this code uses. This is used for update checks.
+var DBVersion = 1
 
 var acmeTable = `
 	CREATE TABLE IF NOT EXISTS acmedns(
@@ -92,7 +93,7 @@ func (d *acmedb) checkDBUpgrades(versionString string) error {
 	if err != nil {
 		return err
 	}
-	if version != DB_VERSION {
+	if version != DBVersion {
 		return d.handleDBUpgrades(version)
 	}
 	return nil

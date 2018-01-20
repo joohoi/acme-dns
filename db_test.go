@@ -251,20 +251,20 @@ func TestGetTXTForDomain(t *testing.T) {
 		t.Errorf("No rows returned for GetTXTForDomain [%s]", reg.Subdomain)
 	}
 
-	var val1_found bool = false
-	var val2_found bool = false
+	var val1found = false
+	var val2found = false
 	for _, v := range regDomainSlice {
 		if v == txtval1 {
-			val1_found = true
+			val1found = true
 		}
 		if v == txtval2 {
-			val2_found = true
+			val2found = true
 		}
 	}
-	if !val1_found {
+	if !val1found {
 		t.Errorf("No TXT value found for val1")
 	}
-	if !val2_found {
+	if !val2found {
 		t.Errorf("No TXT value found for val2")
 	}
 
