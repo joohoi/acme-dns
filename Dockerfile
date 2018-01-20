@@ -1,4 +1,5 @@
 FROM golang:1.9.2-alpine AS builder
+LABEL maintainer="joona@kuori.org"
 
 RUN apk add --update gcc musl-dev git
 
@@ -10,6 +11,9 @@ FROM alpine:latest
 
 WORKDIR /root/
 COPY --from=builder /go/src/github.com/joohoi/acme-dns .
+RUN mkdir -p /etc/acme-dns
+RUN mkdir -p /var/lib/acme-dns
 
+VOLUME ["/etc/acme-dns", "/var/lib/acme-dns"]
 ENTRYPOINT ["./acme-dns"]
-EXPOSE 8080
+EXPOSE 53 80 443

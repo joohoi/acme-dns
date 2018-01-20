@@ -1,0 +1,14 @@
+version: '2'
+services:
+  acmedns:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: joohoi/acme-dns:latest
+    ports:
+      - "443:443"
+      - "53:53"
+      - "80:80"
+    volumes:
+      - ./config.cfg:/etc/acme-dns/config.cfg:ro
+      - ./data:/var/lib/acme-dns
