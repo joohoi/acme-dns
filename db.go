@@ -111,16 +111,7 @@ func (d *acmedb) handleDBUpgrades(version int) error {
 
 func (d *acmedb) handleDBUpgradeTo1() error {
 	var err error
-	tx, err := d.DB.Begin()
-	// Rollback if errored, commit if not
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-			return
-		}
-		tx.Commit()
-	}()
-	_, _ = tx.Exec("DELETE FROM txt")
+	var subdomains []string
 	rows, err := d.DB.Query("SELECT Subdomain FROM records")
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade")
@@ -134,6 +125,24 @@ func (d *acmedb) handleDBUpgradeTo1() error {
 			log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade while reading values")
 			return err
 		}
+		subdomains = append(subdomains, subdomain)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade while inserting values")
+		return err
+	}
+	tx, err := d.DB.Begin()
+	// Rollback if errored, commit if not
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+	_, _ = tx.Exec("DELETE FROM txt")
+	for _, subdomain := range subdomains {
 		if subdomain != "" {
 			// Insert two rows for each subdomain to txt table
 			err = d.NewTXTValuesInTransaction(tx, subdomain)
@@ -142,11 +151,6 @@ func (d *acmedb) handleDBUpgradeTo1() error {
 				return err
 			}
 		}
-	}
-	err = rows.Err()
-	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade while inserting values")
-		return err
 	}
 	// SQLite doesn't support dropping columns
 	if Config.Database.Engine != "sqlite3" {
