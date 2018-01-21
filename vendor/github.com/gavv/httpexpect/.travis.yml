@@ -1,0 +1,19 @@
+language: go
+sudo: false
+
+go:
+    - 1.7
+    - 1.8
+
+before_install:
+  - go get golang.org/x/tools/cmd/cover
+  - go get github.com/mattn/goveralls
+  - go get github.com/alecthomas/gometalinter
+  - ${GOPATH}/bin/gometalinter --install
+
+script:
+  - go get -v -t . ./_examples
+  - go test -coverprofile profile.cov .
+  - go test ./_examples
+  - ${GOPATH}/bin/gometalinter --config .gometalinter
+  - ${GOPATH}/bin/goveralls -coverprofile profile.cov -service=travis-ci
