@@ -8,15 +8,75 @@
   version = "v0.3.0"
 
 [[projects]]
+  name = "github.com/ajg/form"
+  packages = ["."]
+  revision = "cc2954064ec9ea8d93917f0f87456e11d7b881ad"
+  version = "v1.5"
+
+[[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/erikstmartin/go-testdb"
   packages = ["."]
   revision = "8d10e4a1bae52cd8b81ffdec3445890d6dccab3d"
 
 [[projects]]
+  name = "github.com/fatih/structs"
+  packages = ["."]
+  revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
+  version = "v1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gavv/httpexpect"
+  packages = ["."]
+  revision = "c44a6d7bb636b17e880a53998a7f7061a56ffacb"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gavv/monotime"
+  packages = ["."]
+  revision = "6f8212e8d10df7383609d3c377ca08884d8f3ec0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/google/go-querystring"
+  packages = ["query"]
+  revision = "53e6ce116135b80d037921a7fdd5138cf32d7a8a"
+
+[[projects]]
+  name = "github.com/imkira/go-interpol"
+  packages = ["."]
+  revision = "5accad8134979a6ac504d456a6c7f1c53da237ca"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/julienschmidt/httprouter"
   packages = ["."]
   revision = "8c199fb6259ffc1af525cc3ad52ee60ba8359669"
+  version = "v1.1"
+
+[[projects]]
+  name = "github.com/klauspost/compress"
+  packages = ["flate","gzip","zlib"]
+  revision = "6c8db69c4b49dd4df1fff66996cf556176d0b9bf"
+  version = "v1.2.1"
+
+[[projects]]
+  name = "github.com/klauspost/cpuid"
+  packages = ["."]
+  revision = "ae7887de9fa5d2db4eaa8174a7eff2c1ac00f2da"
+  version = "v1.1"
+
+[[projects]]
+  name = "github.com/klauspost/crc32"
+  packages = ["."]
+  revision = "cb6bfca970f6908083f26f39a79009d608efd5cd"
   version = "v1.1"
 
 [[projects]]
@@ -38,6 +98,18 @@
   revision = "9fc4eb252eedf0ef8adc05169ce35da5e31beaba"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/moul/http2curl"
+  packages = ["."]
+  revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
+
+[[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/rs/cors"
   packages = ["."]
   revision = "7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6"
@@ -50,10 +122,64 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/sergi/go-diff"
+  packages = ["diffmatchpatch"]
+  revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = [".","hooks/test"]
   revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
   version = "v1.0.3"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = ["assert","require"]
+  revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
+  version = "v1.2.0"
+
+[[projects]]
+  name = "github.com/valyala/fasthttp"
+  packages = [".","fasthttputil"]
+  revision = "d42167fd04f636e20b005e9934159e95454233c7"
+  version = "v20160617"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/xeipuuv/gojsonpointer"
+  packages = ["."]
+  revision = "6fe8760cad3569743d51ddbb243b26f8456742dc"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/xeipuuv/gojsonreference"
+  packages = ["."]
+  revision = "e02fc20de94c78484cd5ffb007f8af96be030a45"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/xeipuuv/gojsonschema"
+  packages = ["."]
+  revision = "511d08a359d14c0dd9c4302af52ee9abb6f93c2a"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/yalp/jsonpath"
+  packages = ["."]
+  revision = "31a79c7593bb93eb10b163650d4a3e6ca190e4dc"
+
+[[projects]]
+  name = "github.com/yudai/gojsondiff"
+  packages = [".","formatter"]
+  revision = "7b1b7adf999dab73a6eb02669c3d82dbb27a3dd6"
+  version = "1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/yudai/golcs"
+  packages = ["."]
+  revision = "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68"
 
 [[projects]]
   branch = "master"
@@ -64,7 +190,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context"]
+  packages = ["context","idna","publicsuffix"]
   revision = "a337091b0525af65de94df2eb7e98bd9962dcbe2"
 
 [[projects]]
@@ -73,9 +199,21 @@
   packages = ["unix","windows"]
   revision = "bf42f188b9bc6f2cf5b8ee5a912ef1aedd0eba4c"
 
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/text"
+  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
+  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
+
+[[projects]]
+  name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
+  packages = ["."]
+  revision = "d76b18b42f285b792bf985118980ce9eacea9d10"
+  version = "v1.3.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "be83e227a7669195a51167f325db2e40653f4562e483247f914f862f6eea6b2f"
+  inputs-digest = "ef09403e62255cdb6d421c73590e06bee1e744d4137126430d03d0713c5e1608"
   solver-name = "gps-cdcl"
   solver-version = 1

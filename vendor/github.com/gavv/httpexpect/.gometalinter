@@ -1,0 +1,21 @@
+{
+  "Deadline": "30s",
+  "LineLength": 90,
+  "Enable": [
+    "gotype",
+    "goimports",
+    "golint",
+    "gosimple",
+    "gofmt",
+    "vet",
+    "lll",
+    "staticcheck",
+    "ineffassign",
+    "deadcode",
+    "unused",
+    "unconvert",
+    "misspell",
+    "test",
+    "testify"
+  ]
+}
