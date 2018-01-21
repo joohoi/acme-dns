@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -62,8 +63,8 @@ func (d *acmedb) Init(engine string, connection string) error {
 	}
 	d.DB = db
 	// Check version first to try to catch old versions without version string
-	versionString := ""
-	_ = d.DB.QueryRow("SELECT Value FROM acmedns where Name='db_version'").Scan(&versionString)
+	var versionString string
+	_ = d.DB.QueryRow("SELECT Value FROM acmedns WHERE Name='db_version'").Scan(&versionString)
 	if versionString == "" {
 		versionString = "0"
 	}
@@ -81,7 +82,8 @@ func (d *acmedb) Init(engine string, connection string) error {
 	if err == nil {
 		if versionString == "0" {
 			// No errors so we should now be in version 1
-			_, err = db.Exec("INSERT INTO acmedns (Name, Value) values('db_version', '1')")
+			insversion := fmt.Sprintf("INSERT INTO acmedns (Name, Value) values('db_version', '%d')", DBVersion)
+			_, err = db.Exec(insversion)
 		}
 	}
 	return err
@@ -119,7 +121,7 @@ func (d *acmedb) handleDBUpgradeTo1() error {
 		tx.Commit()
 	}()
 	_, _ = tx.Exec("DELETE FROM txt")
-	rows, err := tx.Query("SELECT Subdomain FROM records")
+	rows, err := d.DB.Query("SELECT Subdomain FROM records")
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade")
 		return err
@@ -141,25 +143,26 @@ func (d *acmedb) handleDBUpgradeTo1() error {
 			}
 		}
 	}
+	err = rows.Err()
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade while inserting values")
+		return err
+	}
 	// SQLite doesn't support dropping columns
 	if Config.Database.Engine != "sqlite3" {
-		_, err = tx.Exec("ALTER TABLE records DROP COLUMN Value")
-		if err != nil {
-			log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade while modifying records table")
-		}
-		_, err = tx.Exec("ALTER TABLE records DROP COLUMN LastActive")
-		if err != nil {
-			log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade while modifying records table")
-		}
+		_, _ = tx.Exec("ALTER TABLE records DROP COLUMN IF EXISTS Value")
+		_, _ = tx.Exec("ALTER TABLE records DROP COLUMN IF EXISTS LastActive")
 	}
-	_, err = tx.Exec("UPDATE acmedns SET Value='?' WHERE Name='version'", "1")
+	_, err = tx.Exec("UPDATE acmedns SET Value='1' WHERE Name='db_version'")
 	return err
 }
 
+// Create two rows for subdomain to the txt table
 func (d *acmedb) NewTXTValuesInTransaction(tx *sql.Tx, subdomain string) error {
 	var err error
-	_, err = tx.Exec("INSERT INTO txt (Subdomain, LastUpdate) values(?, 0)", subdomain)
-	_, err = tx.Exec("INSERT INTO txt (Subdomain, LastUpdate) values(?, 0)", subdomain)
+	instr := fmt.Sprintf("INSERT INTO txt (Subdomain, LastUpdate) values('%s', 0)", subdomain)
+	_, err = tx.Exec(instr)
+	_, err = tx.Exec(instr)
 	return err
 }
 
