@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"github.com/miekg/dns"
+	log "github.com/sirupsen/logrus"
 	"strings"
 	"time"
 )
@@ -23,16 +23,16 @@ func answerTXT(q dns.Question) ([]dns.RR, int, error) {
 	var ra []dns.RR
 	rcode := dns.RcodeNameError
 	subdomain := sanitizeDomainQuestion(q.Name)
-	atxt, err := DB.GetByDomain(subdomain)
+	atxt, err := DB.GetTXTForDomain(subdomain)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error while trying to get record")
 		return ra, dns.RcodeNameError, err
 	}
 	for _, v := range atxt {
-		if len(v.Value) > 0 {
+		if len(v) > 0 {
 			r := new(dns.TXT)
 			r.Hdr = dns.RR_Header{Name: q.Name, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 1}
-			r.Txt = append(r.Txt, v.Value)
+			r.Txt = append(r.Txt, v)
 			ra = append(ra, r)
 			rcode = dns.RcodeSuccess
 		}

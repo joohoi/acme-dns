@@ -36,6 +36,8 @@ func main() {
 	if err != nil {
 		log.Errorf("Could not open database [%v]", err)
 		os.Exit(1)
+	} else {
+		log.Info("Connected to database")
 	}
 	DB = newDB
 	defer DB.Close()
@@ -61,8 +63,10 @@ func startHTTPAPI() {
 		OptionsPassthrough: false,
 		Debug:              Config.General.Debug,
 	})
-	// Logwriter for saner log output
-	c.Log = stdlog.New(logwriter, "", 0)
+	if Config.General.Debug {
+		// Logwriter for saner log output
+		c.Log = stdlog.New(logwriter, "", 0)
+	}
 	api.POST("/register", webRegisterPost)
 	api.POST("/update", Auth(webUpdatePost))
 
