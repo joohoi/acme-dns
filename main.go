@@ -36,6 +36,8 @@ func main() {
 	if err != nil {
 		log.Errorf("Could not open database [%v]", err)
 		os.Exit(1)
+	} else {
+		log.Info("Connected to database")
 	}
 	DB = newDB
 	defer DB.Close()

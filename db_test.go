@@ -118,7 +118,7 @@ func TestPrepareErrors(t *testing.T) {
 		t.Errorf("Expected error, but didn't get one")
 	}
 
-	_, err = DB.GetByDomain(reg.Subdomain)
+	_, err = DB.GetTXTForDomain(reg.Subdomain)
 	if err == nil {
 		t.Errorf("Expected error, but didn't get one")
 	}
@@ -151,7 +151,7 @@ func TestQueryExecErrors(t *testing.T) {
 		t.Errorf("Expected error from exec, but got none")
 	}
 
-	_, err = DB.GetByDomain(reg.Subdomain)
+	_, err = DB.GetTXTForDomain(reg.Subdomain)
 	if err == nil {
 		t.Errorf("Expected error from exec in GetByDomain, but got none")
 	}
@@ -195,11 +195,6 @@ func TestQueryScanErrors(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected error from scan in, but got none")
 	}
-
-	_, err = DB.GetByDomain(reg.Subdomain)
-	if err == nil {
-		t.Errorf("Expected error from scan in GetByDomain, but got none")
-	}
 }
 
 func TestBadDBValues(t *testing.T) {
@@ -226,46 +221,55 @@ func TestBadDBValues(t *testing.T) {
 		t.Errorf("Expected error from scan in, but got none")
 	}
 
-	_, err = DB.GetByDomain(reg.Subdomain)
+	_, err = DB.GetTXTForDomain(reg.Subdomain)
 	if err == nil {
 		t.Errorf("Expected error from scan in GetByDomain, but got none")
 	}
 }
 
-func TestGetByDomain(t *testing.T) {
-	var regDomain = ACMETxt{}
-
+func TestGetTXTForDomain(t *testing.T) {
 	// Create  reg to refer to
 	reg, err := DB.Register(cidrslice{})
 	if err != nil {
 		t.Errorf("Registration failed, got error [%v]", err)
 	}
 
-	regDomainSlice, err := DB.GetByDomain(reg.Subdomain)
+	txtval1 := "___validation_token_received_from_the_ca___"
+	txtval2 := "___validation_token_received_YEAH_the_ca___"
+
+	reg.Value = txtval1
+	_ = DB.Update(reg)
+
+	reg.Value = txtval2
+	_ = DB.Update(reg)
+
+	regDomainSlice, err := DB.GetTXTForDomain(reg.Subdomain)
 	if err != nil {
 		t.Errorf("Could not get test user, got error [%v]", err)
 	}
 	if len(regDomainSlice) == 0 {
-		t.Errorf("No rows returned for GetByDomain [%s]", reg.Subdomain)
-	} else {
-		regDomain = regDomainSlice[0]
+		t.Errorf("No rows returned for GetTXTForDomain [%s]", reg.Subdomain)
 	}
 
-	if reg.Username != regDomain.Username {
-		t.Errorf("GetByUsername username [%q] did not match the original [%q]", regDomain.Username, reg.Username)
+	var val1found = false
+	var val2found = false
+	for _, v := range regDomainSlice {
+		if v == txtval1 {
+			val1found = true
+		}
+		if v == txtval2 {
+			val2found = true
+		}
 	}
-
-	if reg.Subdomain != regDomain.Subdomain {
-		t.Errorf("GetByUsername subdomain [%q] did not match the original [%q]", regDomain.Subdomain, reg.Subdomain)
+	if !val1found {
+		t.Errorf("No TXT value found for val1")
 	}
-
-	// regDomain password already is a bcrypt hash
-	if !correctPassword(reg.Password, regDomain.Password) {
-		t.Errorf("The password [%s] does not match the hash [%s]", reg.Password, regDomain.Password)
+	if !val2found {
+		t.Errorf("No TXT value found for val2")
 	}
 
 	// Not found
-	regNotfound, _ := DB.GetByDomain("does-not-exist")
+	regNotfound, _ := DB.GetTXTForDomain("does-not-exist")
 	if len(regNotfound) > 0 {
 		t.Errorf("No records should be returned.")
 	}
@@ -293,13 +297,5 @@ func TestUpdate(t *testing.T) {
 	err = DB.Update(regUser)
 	if err != nil {
 		t.Errorf("DB Update failed, got error: [%v]", err)
-	}
-
-	updUser, err := DB.GetByUsername(regUser.Username)
-	if err != nil {
-		t.Errorf("GetByUsername threw error [%v]", err)
-	}
-	if updUser.Value != validTXT {
-		t.Errorf("Update failed, fetched value [%s] does not match the update value [%s]", updUser.Value, validTXT)
 	}
 }
