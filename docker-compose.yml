@@ -10,5 +10,5 @@ services:
       - "53:53"
       - "80:80"
     volumes:
-      - ./config.cfg:/etc/acme-dns/config.cfg:ro
+      - ./config:/etc/acme-dns:ro
       - ./data:/var/lib/acme-dns

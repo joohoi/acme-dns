@@ -13,6 +13,7 @@ WORKDIR /root/
 COPY --from=builder /go/src/github.com/joohoi/acme-dns .
 RUN mkdir -p /etc/acme-dns
 RUN mkdir -p /var/lib/acme-dns
+RUN rm -rf ./config.cfg
 
 VOLUME ["/etc/acme-dns", "/var/lib/acme-dns"]
 ENTRYPOINT ["./acme-dns"]
