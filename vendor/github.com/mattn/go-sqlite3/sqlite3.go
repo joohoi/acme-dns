@@ -136,6 +136,7 @@ static int _sqlite3_limit(sqlite3* db, int limitId, int newLimit) {
 */
 import "C"
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
@@ -149,8 +150,6 @@ import (
 	"sync"
 	"time"
 	"unsafe"
-
-	"golang.org/x/net/context"
 )
 
 // SQLiteTimestampFormats is timestamp formats understood by both this module
@@ -1171,9 +1170,13 @@ func (s *SQLiteStmt) exec(ctx context.Context, args []namedValue) (driver.Result
 	defer close(done)
 	go func(db *C.sqlite3) {
 		select {
-		case <-ctx.Done():
-			C.sqlite3_interrupt(db)
 		case <-done:
+		case <-ctx.Done():
+			select {
+			case <-done:
+			default:
+				C.sqlite3_interrupt(db)
+			}
 		}
 	}(s.c.db)
 
