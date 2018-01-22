@@ -214,7 +214,7 @@ header_name = "X-Forwarded-For"
 ```
 
 ## Changelog
-- v0.2 Now powered by httprouter, support wildcard certificates
+- v0.2 Now powered by httprouter, support wildcard certificates, Docker images
 - v0.1 Initial release
 
 ## TODO
