@@ -12,8 +12,7 @@ type ACMETxt struct {
 	Username uuid.UUID
 	Password string
 	ACMETxtPost
-	LastActive int64
-	AllowFrom  cidrslice
+	AllowFrom cidrslice
 }
 
 // ACMETxtPost holds the DNS part of the ACMETxt struct
