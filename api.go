@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -22,11 +23,18 @@ func webRegisterPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	var regStatus int
 	var reg []byte
 	aTXT := ACMETxt{}
-	if r.Body == nil {
-		http.Error(w, string(jsonError("body_missing")), http.StatusBadRequest)
-		return
+	bdata, _ := ioutil.ReadAll(r.Body)
+	if bdata != nil && len(bdata) > 0 {
+		err := json.Unmarshal(bdata, &aTXT)
+		if err != nil {
+			regStatus = http.StatusBadRequest
+			reg = jsonError("malformed_json_payload")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(regStatus)
+			w.Write(reg)
+			return
+		}
 	}
-	json.NewDecoder(r.Body).Decode(&aTXT)
 	// Create new user
 	nu, err := DB.Register(aTXT.AllowFrom)
 	if err != nil {
