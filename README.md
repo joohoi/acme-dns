@@ -18,6 +18,7 @@ So basically it boils down to **accessibility** and **security**
 - HTTP API automatically acquires and uses Let's Encrypt TLS certificate
 - Limit /update API endpoint access to specific CIDR mask(s), defined in the /register request
 - Supports SQLite & PostgreSQL as DB backends
+- Rolling update of two TXT records to be able to answer to challenges for certificates that have both names: `yourdomain.tld` and `*.yourdomain.tld`, as both of the challenges point to the same subdomain.
 - Simple deployment (it's Go after all)
 
 ## Usage
@@ -184,7 +185,7 @@ header_name = "X-Forwarded-For"
 ```
 
 ## Changelog
-- v0.2 Now powered by httprouter
+- v0.2 Now powered by httprouter, support wildcard certificates
 - v0.1 Initial release
 
 ## TODO
@@ -196,7 +197,7 @@ header_name = "X-Forwarded-For"
 ## Contributing
 
 acme-dns is open for contributions. 
-If you have an improvement, please open a Pull Request.
+If you have an idea for improvement, please open an new issue or feel free to write a PR!
 
 ## License
 
