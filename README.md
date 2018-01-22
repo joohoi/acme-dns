@@ -117,6 +117,35 @@ Check out how in the INSTALL section.
 
 5) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
+## Using Docker
+
+1) Pull the latest acme-dns Docker image: `docker pull joohoi/acme-dns` 
+
+2) Create directories: `config` for the configuration file, and `data` for the sqlite3 database.
+
+3) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg` 
+
+4) Modify the config.cfg to suit your needs.
+
+5) Run Docker, this example expects that you have `port = "80"` in your config.cfg:
+```
+docker run --rm --name acmedns                 \
+ -p 53:53                                      \
+ -p 80:80                                      \
+ -v /path/to/your/config:/etc/acme-dns:ro      \
+ -v /path/to/your/data:/var/lib/acme-dns       \
+ -d joohoi/acme-dns
+```
+
+## Docker Compose
+
+1) Create directories: `config` for the configuration file, and `data` for the sqlite3 database.
+
+2) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg` 
+
+3) Copy [docker-compose.yml from the project](https://raw.githubusercontent.com/joohoi/acme-dns/master/docker-compose.yml), or create your own.
+
+4) Edit the `config/config.cfg` and `docker-compose.yml` to suit your needs, and run `docker-compose up -d`
 
 ## Configuration
 
