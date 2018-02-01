@@ -14,6 +14,7 @@ COPY --from=builder /go/src/github.com/joohoi/acme-dns .
 RUN mkdir -p /etc/acme-dns
 RUN mkdir -p /var/lib/acme-dns
 RUN rm -rf ./config.cfg
+RUN apk --no-cache add ca-certificates && update-ca-certificates
 
 VOLUME ["/etc/acme-dns", "/var/lib/acme-dns"]
 ENTRYPOINT ["./acme-dns"]
