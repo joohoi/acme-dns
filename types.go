@@ -52,6 +52,7 @@ type dbsettings struct {
 type httpapi struct {
 	Domain           string `toml:"api_domain"`
 	IP               string
+	AutocertPort     string `toml:"autocert_port"`
 	Port             string `toml:"port"`
 	TLS              string
 	TLSCertPrivkey   string `toml:"tls_cert_privkey"`

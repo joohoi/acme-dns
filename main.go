@@ -83,6 +83,9 @@ func startHTTPAPI() {
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(Config.API.Domain),
 		}
+		autocerthost := Config.API.IP + ":" + Config.API.AutocertPort
+		log.WithFields(log.Fields{"autocerthost": autocerthost, "domain": Config.API.Domain}).Debug("Opening HTTP port for autocert")
+		go http.ListenAndServe(autocerthost, m.HTTPHandler(nil))
 		cfg.GetCertificate = m.GetCertificate
 		srv := &http.Server{
 			Addr:      host,
@@ -90,7 +93,7 @@ func startHTTPAPI() {
 			TLSConfig: cfg,
 			ErrorLog:  stdlog.New(logwriter, "", 0),
 		}
-		log.WithFields(log.Fields{"host": host, "domain": Config.API.Domain}).Info("Listening HTTPS autocert")
+		log.WithFields(log.Fields{"host": host, "domain": Config.API.Domain}).Info("Listening HTTPS, using certificate from autocert")
 		log.Fatal(srv.ListenAndServeTLS("", ""))
 	case "cert":
 		srv := &http.Server{

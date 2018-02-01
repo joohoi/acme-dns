@@ -186,6 +186,8 @@ connection = "acme-dns.db"
 [api]
 # domain name to listen requests for, mandatory if using tls = "letsencrypt"
 api_domain = ""
+# autocert HTTP port, eg. 80 for answering Let's Encrypt HTTP-01 challenges. Mandatory if using tls = "letsencrypt".
+autocert_port = "80"
 # listen port, eg. 443 for default HTTPS
 port = "8080"
 # possible values: "letsencrypt", "cert", "none"
@@ -214,6 +216,7 @@ header_name = "X-Forwarded-For"
 ```
 
 ## Changelog
+- v0.3 Changed autocert to use HTTP-01 challenges, as TLS-SNI is disabled by Let's Encrypt
 - v0.2 Now powered by httprouter, support wildcard certificates, Docker images
 - v0.1 Initial release
 
