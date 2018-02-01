@@ -216,6 +216,8 @@ header_name = "X-Forwarded-For"
 ```
 
 ## Changelog
+- v0.3.2 Dockerfile was fixed for users using autocert feature
+- v0.3.1 Added goreleaser for distributing binary builds of the releases
 - v0.3 Changed autocert to use HTTP-01 challenges, as TLS-SNI is disabled by Let's Encrypt
 - v0.2 Now powered by httprouter, support wildcard certificates, Docker images
 - v0.1 Initial release
