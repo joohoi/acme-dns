@@ -112,7 +112,7 @@ Check out how in the INSTALL section.
 
 2) Install acme-dns: `go get https://github.com/joohoi/acme-dns/...`
 
-3) Edit config.cfg to suit your needs (see [configuration](#configuration))
+3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`
 
 4) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
