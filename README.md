@@ -188,6 +188,8 @@ connection = "acme-dns.db"
 api_domain = ""
 # autocert HTTP port, eg. 80 for answering Let's Encrypt HTTP-01 challenges. Mandatory if using tls = "letsencrypt".
 autocert_port = "80"
+# listen ip, default "" listens on all interfaces/addresses
+ip = "127.0.0.1"
 # listen port, eg. 443 for default HTTPS
 port = "8080"
 # possible values: "letsencrypt", "cert", "none"
