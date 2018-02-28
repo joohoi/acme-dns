@@ -110,7 +110,7 @@ Check out how in the INSTALL section.
 
 1) Install [Go 1.9 or newer](https://golang.org/doc/install)
 
-2) Install acme-dns: `go get https://github.com/joohoi/acme-dns/...`
+2) Install acme-dns: `go get github.com/joohoi/acme-dns/...`
 
 3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`
 
