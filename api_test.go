@@ -159,6 +159,66 @@ func TestApiRegisterWithMockDB(t *testing.T) {
 	DB.SetBackend(oldDb)
 }
 
+func TestApiUpdateWithInvalidSubdomain(t *testing.T) {
+	validTxtData := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+	updateJSON := map[string]interface{}{
+		"subdomain": "",
+		"txt":       ""}
+
+	router := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	newUser, err := DB.Register(cidrslice{})
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+	// Invalid subdomain data
+	updateJSON["subdomain"] = "example.com"
+	updateJSON["txt"] = validTxtData
+	e.POST("/update").
+		WithJSON(updateJSON).
+		WithHeader("X-Api-User", newUser.Username.String()).
+		WithHeader("X-Api-Key", newUser.Password).
+		Expect().
+		Status(http.StatusUnauthorized).
+		JSON().Object().
+		ContainsKey("error").
+		NotContainsKey("txt").
+		ValueEqual("error", "forbidden")
+}
+
+func TestApiUpdateWithInvalidTxt(t *testing.T) {
+	invalidTXTData := "idk m8 bbl lmao"
+
+	updateJSON := map[string]interface{}{
+		"subdomain": "",
+		"txt":       ""}
+
+	router := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	newUser, err := DB.Register(cidrslice{})
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+	updateJSON["subdomain"] = newUser.Subdomain
+	// Invalid txt data
+	updateJSON["txt"] = invalidTXTData
+	e.POST("/update").
+		WithJSON(updateJSON).
+		WithHeader("X-Api-User", newUser.Username.String()).
+		WithHeader("X-Api-Key", newUser.Password).
+		Expect().
+		Status(http.StatusBadRequest).
+		JSON().Object().
+		ContainsKey("error").
+		NotContainsKey("txt").
+		ValueEqual("error", "bad_txt")
+}
+
 func TestApiUpdateWithoutCredentials(t *testing.T) {
 	router := setupRouter(false, false)
 	server := httptest.NewServer(router)

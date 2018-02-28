@@ -66,7 +66,18 @@ func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	if !ok {
 		log.WithFields(log.Fields{"error": "context"}).Error("Context error")
 	}
-	if validSubdomain(a.Subdomain) && validTXT(a.Value) {
+	// NOTE: An invalid subdomain should not happen - the auth handler should
+	// reject POSTs with an invalid subdomain before this handler. Reject any
+	// invalid subdomains anyway as a matter of caution.
+	if !validSubdomain(a.Subdomain) {
+		log.WithFields(log.Fields{"error": "subdomain", "subdomain": a.Subdomain, "txt": a.Value}).Debug("Bad update data")
+		updStatus = http.StatusBadRequest
+		upd = jsonError("bad_subdomain")
+	} else if !validTXT(a.Value) {
+		log.WithFields(log.Fields{"error": "txt", "subdomain": a.Subdomain, "txt": a.Value}).Debug("Bad update data")
+		updStatus = http.StatusBadRequest
+		upd = jsonError("bad_txt")
+	} else if validSubdomain(a.Subdomain) && validTXT(a.Value) {
 		err := DB.Update(a)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err.Error()}).Debug("Error while trying to update record")
@@ -77,10 +88,6 @@ func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			updStatus = http.StatusOK
 			upd = []byte("{\"txt\": \"" + a.Value + "\"}")
 		}
-	} else {
-		log.WithFields(log.Fields{"error": "subdomain", "subdomain": a.Subdomain, "txt": a.Value}).Debug("Bad update data")
-		updStatus = http.StatusBadRequest
-		upd = jsonError("bad_subdomain")
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(updStatus)
