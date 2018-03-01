@@ -48,7 +48,7 @@ func (a ACMETxt) allowedFrom(ip string) bool {
 	if len(a.AllowFrom.ValidEntries()) == 0 {
 		return true
 	}
-	log.WithFields(log.Fields{"ip": remoteIP}).Debug("Checking if update allowed is from IP")
+	log.WithFields(log.Fields{"ip": remoteIP}).Debug("Checking if update is permitted from IP")
 	for _, v := range a.AllowFrom.ValidEntries() {
 		_, vnet, _ := net.ParseCIDR(v)
 		if vnet.Contains(remoteIP) {
