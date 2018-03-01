@@ -110,13 +110,11 @@ Check out how in the INSTALL section.
 
 1) Install [Go 1.9 or newer](https://golang.org/doc/install)
 
-2) Clone this repo: `git clone https://github.com/joohoi/acme-dns $GOPATH/src/acme-dns`
+2) Install acme-dns: `go get github.com/joohoi/acme-dns/...`
 
-3) Build ACME-DNS: `go build`
+3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`
 
-4) Edit config.cfg to suit your needs (see [configuration](#configuration))
-
-5) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
+4) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
 ## Using Docker
 
@@ -188,6 +186,8 @@ connection = "acme-dns.db"
 api_domain = ""
 # autocert HTTP port, eg. 80 for answering Let's Encrypt HTTP-01 challenges. Mandatory if using tls = "letsencrypt".
 autocert_port = "80"
+# listen ip, default "" listens on all interfaces/addresses
+ip = "127.0.0.1"
 # listen port, eg. 443 for default HTTPS
 port = "8080"
 # possible values: "letsencrypt", "cert", "none"
