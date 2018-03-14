@@ -50,16 +50,17 @@ type dbsettings struct {
 
 // API config
 type httpapi struct {
-	Domain           string `toml:"api_domain"`
-	IP               string
-	AutocertPort     string `toml:"autocert_port"`
-	Port             string `toml:"port"`
-	TLS              string
-	TLSCertPrivkey   string `toml:"tls_cert_privkey"`
-	TLSCertFullchain string `toml:"tls_cert_fullchain"`
-	CorsOrigins      []string
-	UseHeader        bool   `toml:"use_header"`
-	HeaderName       string `toml:"header_name"`
+	Domain              string `toml:"api_domain"`
+	IP                  string
+	DisableRegistration bool   `toml:"disable_registration"`
+	AutocertPort        string `toml:"autocert_port"`
+	Port                string `toml:"port"`
+	TLS                 string
+	TLSCertPrivkey      string `toml:"tls_cert_privkey"`
+	TLSCertFullchain    string `toml:"tls_cert_fullchain"`
+	CorsOrigins         []string
+	UseHeader           bool   `toml:"use_header"`
+	HeaderName          string `toml:"header_name"`
 }
 
 // Logging config
