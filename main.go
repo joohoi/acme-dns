@@ -67,7 +67,9 @@ func startHTTPAPI() {
 		// Logwriter for saner log output
 		c.Log = stdlog.New(logwriter, "", 0)
 	}
-	api.POST("/register", webRegisterPost)
+	if !Config.API.DisableRegistration {
+		api.POST("/register", webRegisterPost)
+	}
 	api.POST("/update", Auth(webUpdatePost))
 
 	host := Config.API.IP + ":" + Config.API.Port

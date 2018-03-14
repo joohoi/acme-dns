@@ -184,6 +184,8 @@ connection = "acme-dns.db"
 [api]
 # domain name to listen requests for, mandatory if using tls = "letsencrypt"
 api_domain = ""
+# disable registration endpoint
+disable_registration = false
 # autocert HTTP port, eg. 80 for answering Let's Encrypt HTTP-01 challenges. Mandatory if using tls = "letsencrypt".
 autocert_port = "80"
 # listen ip, default "" listens on all interfaces/addresses
