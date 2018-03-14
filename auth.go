@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -83,5 +84,10 @@ func updateAllowedFromIP(r *http.Request, user ACMETxt) bool {
 		ips := getIPListFromHeader(r.Header.Get(Config.API.HeaderName))
 		return user.allowedFromList(ips)
 	}
-	return user.allowedFrom(r.RemoteAddr)
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error(), "remoteaddr": r.RemoteAddr}).Error("Error while parsing remote address")
+		host = ""
+	}
+	return user.allowedFrom(host)
 }

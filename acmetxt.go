@@ -33,9 +33,9 @@ func (c *cidrslice) JSON() string {
 func (c *cidrslice) ValidEntries() []string {
 	valid := []string{}
 	for _, v := range *c {
-		_, _, err := net.ParseCIDR(v)
+		_, _, err := net.ParseCIDR(sanitizeIPv6addr(v))
 		if err == nil {
-			valid = append(valid, v)
+			valid = append(valid, sanitizeIPv6addr(v))
 		}
 	}
 	return valid
