@@ -38,6 +38,12 @@ func sanitizeString(s string) string {
 	return re.ReplaceAllString(s, "")
 }
 
+func sanitizeIPv6addr(s string) string {
+	// Remove brackets from IPv6 addresses, net.ParseCIDR needs this
+	re, _ := regexp.Compile("[\\[\\]]+")
+	return re.ReplaceAllString(s, "")
+}
+
 func generatePassword(length int) string {
 	ret := make([]byte, length)
 	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_"
