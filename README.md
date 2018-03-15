@@ -22,6 +22,9 @@ So basically it boils down to **accessibility** and **security**
 - Simple deployment (it's Go after all)
 
 ## Usage
+
+A Certbot authentication hook for acme-dns is available at: [https://github.com/joohoi/acme-dns-certbot](https://github.com/joohoi/acme-dns-certbot).
+
 [![asciicast](https://asciinema.org/a/94903.png)](https://asciinema.org/a/94903)
 
 Using acme-dns is a three-step process (provided you already have the self-hosted server set up):
@@ -216,6 +219,10 @@ use_header = false
 # header name to pull the ip address / list of ip addresses from
 header_name = "X-Forwarded-For"
 ```
+
+## Client
+
+A Certbot authentication hook for acme-dns is available at: [https://github.com/joohoi/acme-dns-certbot](https://github.com/joohoi/acme-dns-certbot).
 
 ## Changelog
 - v0.4 Clear error messages for bad TXT record content, proper handling of static CNAME records, fixed IP address parsing from the request, added option to disable registration endpoint in the configuration.
