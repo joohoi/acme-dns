@@ -224,6 +224,8 @@ header_name = "X-Forwarded-For"
 
 A Certbot authentication hook for acme-dns is available at: [https://github.com/joohoi/acme-dns-certbot](https://github.com/joohoi/acme-dns-certbot).
 
+Client library for Python is available at PyPI: [https://pypi.python.org/pypi/pyacmedns/](https://pypi.python.org/pypi/pyacmedns/)
+
 ## Changelog
 - v0.4 Clear error messages for bad TXT record content, proper handling of static CNAME records, fixed IP address parsing from the request, added option to disable registration endpoint in the configuration.
 - v0.3.2 Dockerfile was fixed for users using autocert feature
