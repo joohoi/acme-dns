@@ -111,13 +111,53 @@ Check out how in the INSTALL section.
 
 ## Installation
 
+In all the commands listed below:
+- `example.com` is your domain name
+- `auth.example.com` is the subdomain you want to use for acme-dns
+- `198.51.100.1` is the **public** IP address of the system running acme-dns  
+
+These values should be changed based on your environment.
+
 1) Install [Go 1.9 or newer](https://golang.org/doc/install)
 
-2) Install acme-dns: `go get github.com/joohoi/acme-dns/...`
+2) Install acme-dns: `go get github.com/joohoi/acme-dns/...`. This will install acme-dns to `~/go/bin/acme-dns`.
 
 3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`
 
 4) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
+
+5) Confirm that acme-dns is working by performing a DNS lookup for one of the predefined records configured in the `config.cfg` file: `dig @198.51.100.1 auth.example.com`. This should be logged in acme-dns' output:
+```
+DEBU[0003] Answering question for domain                 domain=auth.example.com. qtype=A
+```
+
+If this request times out, ensure that port 53 is open in your firewall.
+
+6) On your domain's regular DNS server, add an `NS` record for `auth.example.com` pointing to `ns.auth.example.com`, and an `A` record for `ns.auth.example.com` pointing to `198.51.100.1` If using IPv6, use an AAAA record rather than an A record.
+
+7) Wait a few minutes for DNS changes to propagate
+
+8) Confirm that DNS lookups for the acme-dns subdomain works as expected: `dig auth.example.com`
+
+9) Call the `/register` API endpoint to register a test domain:
+```
+$ curl -X POST -d "{}" http://auth.example.com/register
+{"username":"eabcdb41-d89f-4580-826f-3e62e9755ef2","password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0","fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com","subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf","allowfrom":[]}
+```
+
+10) Call the `/update` API endpoint to set a test TXT record:
+```
+$ curl -X POST \
+  -H "X-Api-User: eabcdb41-d89f-4580-826f-3e62e9755ef2" \
+  -H "X-Api-Key: pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0" \
+  -d '{"subdomain": "d420c923-bbd7-4056-ab64-c3ca54c9b3cf", "txt": "___validation_token_recieved_from_the_ca___"}' \
+  http://auth.example.com/update
+```
+
+11) Perform a DNS lookup to the test subdomain to confirm that everything is working properly: 
+```
+$ dig @ns.auth.example.com d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com
+```
 
 ## Using Docker
 
