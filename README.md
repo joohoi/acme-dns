@@ -220,11 +220,17 @@ use_header = false
 header_name = "X-Forwarded-For"
 ```
 
-## Client
+## Clients
 
-A Certbot authentication hook for acme-dns is available at: [https://github.com/joohoi/acme-dns-certbot](https://github.com/joohoi/acme-dns-certbot).
+### Authentication hooks
 
-Client library for Python is available at PyPI: [https://pypi.python.org/pypi/pyacmedns/](https://pypi.python.org/pypi/pyacmedns/)
+- Certbot authentication hook in Python:  [https://github.com/joohoi/acme-dns-certbot](https://github.com/joohoi/acme-dns-certbot)
+- Certbot authentication hook in Go: [https://github.com/koesie10/acme-dns-certbot-hook](https://github.com/koesie10/acme-dns-certbot-hook) 
+
+### Libraries
+
+- Generic client library in Python ([PyPI](https://pypi.python.org/pypi/pyacmedns/)): [https://github.com/joohoi/pyacmedns](https://github.com/joohoi/pyacmedns)
+
 
 ## Changelog
 - v0.4 Clear error messages for bad TXT record content, proper handling of static CNAME records, fixed IP address parsing from the request, added option to disable registration endpoint in the configuration.
