@@ -119,7 +119,6 @@ Check out how in the INSTALL section.
 
 4) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
-
 ### Using Docker
 
 1) Pull the latest acme-dns Docker image: `docker pull joohoi/acme-dns` 
