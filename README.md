@@ -162,6 +162,7 @@ You will need to add some DNS records on your domain's regular DNS server:
 - `NS` record for `auth.example.com` pointing to `ns.auth.example.com`
 - `A` record for `ns.auth.example.com` pointing to `198.51.100.1`
 - If using IPv6, an `AAAA` record pointing to the IPv6 address
+- Each domain you will be authenticating will need a `CNAME` for a `_acme-challenge` subdomain added. The [client](README.md#clients) you use will explain how to do this.
 
 ## Testing It Out
 
