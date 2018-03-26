@@ -67,10 +67,10 @@ func TestRegisterMany(t *testing.T) {
 			t.Errorf("Test %d: Got error when fetching username: [%v]", i, err)
 		}
 		if len(user.AllowFrom) != len(test.output) {
-			t.Errorf("Test %d: Expected to recieve struct with [%d] entries in AllowFrom, but got [%d] records", i, len(test.output), len(user.AllowFrom))
+			t.Errorf("Test %d: Expected to receive struct with [%d] entries in AllowFrom, but got [%d] records", i, len(test.output), len(user.AllowFrom))
 		}
 		if len(res.AllowFrom) != len(test.output) {
-			t.Errorf("Test %d: Expected to recieve struct with [%d] entries in AllowFrom, but got [%d] records", i, len(test.output), len(res.AllowFrom))
+			t.Errorf("Test %d: Expected to receive struct with [%d] entries in AllowFrom, but got [%d] records", i, len(test.output), len(res.AllowFrom))
 		}
 
 	}
