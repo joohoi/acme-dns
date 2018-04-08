@@ -265,9 +265,11 @@ header_name = "X-Forwarded-For"
 
 ## Clients
 
+- acme.sh: [https://github.com/Neilpang/acme.sh](https://github.com/Neilpang/acme.sh)
+
 ### Authentication hooks
 
-- Certbot authentication hook in Python:  [https://github.com/joohoi/acme-dns-certbot](https://github.com/joohoi/acme-dns-certbot)
+- Certbot authentication hook in Python:  [https://github.com/joohoi/acme-dns-certbot-joohoi](https://github.com/joohoi/acme-dns-certbot-joohoi)
 - Certbot authentication hook in Go: [https://github.com/koesie10/acme-dns-certbot-hook](https://github.com/koesie10/acme-dns-certbot-hook) 
 
 ### Libraries
