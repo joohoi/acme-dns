@@ -4,10 +4,8 @@ go:
 env:
   - "PATH=/home/travis/gopath/bin:$PATH"
 before_install:
-  - go get github.com/golang/lint/golint
   - go get github.com/mattn/goveralls
 script:
   - go vet 
-  - golint -set_exit_status
   - go test -race -v
   - $HOME/gopath/bin/goveralls -ignore main.go -v -service=travis-ci
