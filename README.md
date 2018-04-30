@@ -267,6 +267,7 @@ header_name = "X-Forwarded-For"
 
 - acme.sh: [https://github.com/Neilpang/acme.sh](https://github.com/Neilpang/acme.sh)
 - Sewer: [https://github.com/komuw/sewer](https://github.com/komuw/sewer)
+- Posh-ACME: [https://github.com/rmbolger/Posh-ACME](https://github.com/rmbolger/Posh-ACME)
 
 ### Authentication hooks
 
