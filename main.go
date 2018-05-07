@@ -81,7 +81,7 @@ func startHTTPAPI() {
 	switch Config.API.TLS {
 	case "letsencrypt":
 		m := autocert.Manager{
-			Cache:      autocert.DirCache("api-certs"),
+			Cache:      autocert.DirCache(Config.API.ACMECacheDir),
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(Config.API.Domain),
 		}

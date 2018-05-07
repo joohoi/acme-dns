@@ -243,6 +243,8 @@ tls = "none"
 # only used if tls = "cert"
 tls_cert_privkey = "/etc/tls/example.org/privkey.pem"
 tls_cert_fullchain = "/etc/tls/example.org/fullchain.pem"
+# only used if tls = "letsencrypt"
+acme_cache_dir = "api-certs"
 # CORS AllowOrigins, wildcards can be used
 corsorigins = [
     "*"
