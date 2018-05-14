@@ -121,11 +121,11 @@ Check out how in the INSTALL section.
 
 ### Using Docker
 
-1) Pull the latest acme-dns Docker image: `docker pull joohoi/acme-dns` 
+1) Pull the latest acme-dns Docker image: `docker pull joohoi/acme-dns`
 
 2) Create directories: `config` for the configuration file, and `data` for the sqlite3 database.
 
-3) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg` 
+3) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`
 
 4) Modify the config.cfg to suit your needs.
 
@@ -143,7 +143,7 @@ docker run --rm --name acmedns                 \
 
 1) Create directories: `config` for the configuration file, and `data` for the sqlite3 database.
 
-2) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg` 
+2) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`
 
 3) Copy [docker-compose.yml from the project](https://raw.githubusercontent.com/joohoi/acme-dns/master/docker-compose.yml), or create your own.
 
@@ -187,7 +187,7 @@ $ curl -X POST \
 
 Note: The `txt` field must be exactly 43 characters long, otherwise acme-dns will reject it
 
-4) Perform a DNS lookup to the test subdomain to confirm that everything is working properly: 
+4) Perform a DNS lookup to the test subdomain to confirm that everything is working properly:
 ```
 $ dig @ns.auth.example.com d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com
 ```
@@ -200,9 +200,9 @@ $ dig @ns.auth.example.com d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com
 listen = ":53"
 # protocol, "udp", "udp4", "udp6" or "tcp", "tcp4", "tcp6"
 protocol = "udp"
-# domain name to serve the requests off of 
+# domain name to serve the requests off of
 domain = "auth.example.org"
-# zone name server 
+# zone name server
 nsname = "ns1.auth.example.org"
 # admin email address, where @ is substituted with .
 nsadmin = "admin.example.org"
@@ -210,7 +210,7 @@ nsadmin = "admin.example.org"
 records = [
     # default A
     "auth.example.org. A 192.168.1.100",
-    # A 
+    # A
     "ns1.auth.example.org. A 192.168.1.100",
     "ns2.auth.example.org. A 192.168.1.100",
     # NS
@@ -243,6 +243,8 @@ tls = "none"
 # only used if tls = "cert"
 tls_cert_privkey = "/etc/tls/example.org/privkey.pem"
 tls_cert_fullchain = "/etc/tls/example.org/fullchain.pem"
+# only used if tls = "letsencrypt"
+acme_cache_dir = "api-certs"
 # CORS AllowOrigins, wildcards can be used
 corsorigins = [
     "*"
@@ -255,7 +257,7 @@ loglevel = "debug"
 logtype = "stdout"
 # file path for logfile TODO
 # logfile = "./acme-dns.log"
-# format, either "json" or "text" 
+# format, either "json" or "text"
 logformat = "text"
 # use HTTP header to get the client ip
 use_header = false
@@ -272,7 +274,7 @@ header_name = "X-Forwarded-For"
 ### Authentication hooks
 
 - Certbot authentication hook in Python:  [https://github.com/joohoi/acme-dns-certbot-joohoi](https://github.com/joohoi/acme-dns-certbot-joohoi)
-- Certbot authentication hook in Go: [https://github.com/koesie10/acme-dns-certbot-hook](https://github.com/koesie10/acme-dns-certbot-hook) 
+- Certbot authentication hook in Go: [https://github.com/koesie10/acme-dns-certbot-hook](https://github.com/koesie10/acme-dns-certbot-hook)
 
 ### Libraries
 
@@ -295,7 +297,7 @@ header_name = "X-Forwarded-For"
 
 ## Contributing
 
-acme-dns is open for contributions. 
+acme-dns is open for contributions.
 If you have an idea for improvement, please open an new issue or feel free to write a PR!
 
 ## License
