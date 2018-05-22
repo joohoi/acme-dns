@@ -117,7 +117,13 @@ Check out how in the INSTALL section.
 
 3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`
 
-4) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
+4) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges. On Linux, to instead run acme-dns as an ordinary user, you can grant the `CAP_NET_BIND_SERVICE` capability to the executable:
+```
+setcap 'cap_net_bind_service=+ep' /usr/local/bin/acme-dns
+```
+
+Alternatively, you can have it listen on a high port (such as 5353) and then use `iptables` to forward port 53 to the port acme-dns is listening on.
+
 
 ### Using Docker
 
