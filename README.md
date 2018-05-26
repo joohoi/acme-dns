@@ -117,7 +117,23 @@ Check out how in the INSTALL section.
 
 3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`
 
-4) Run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
+4) If your system has systemd, you can optionally install acme-dns as a service so that it will start on boot and be tracked by systemd. This also allows us to add the `CAP_NET_BIND_SERVICE` capability so that acme-dns can be run by a user other than root.
+
+    1) Make sure that you have moved the configuration file to `/etc/acme-dns/config.cfg` so that acme-dns can access it globally.
+
+    2) Move the acme-dns executable from `~/go/bin/acme-dns` to `/usr/local/bin/acme-dns` (Any location will work, just be sure to change `acme-dns.service` to match)
+
+    3) Create a minimal acme-dns user: `sudo adduser --system --gecos "acme-dns Service" --disabled-password --group --home /var/lib/acme-dns acme-dns`
+
+    4) Move the systemd service unit from `acme-dns.service` to `/etc/systemd/system/acme-dns.service`
+
+    5) Reload systemd units: `sudo systemctl daemon-reload`
+
+    6) Enable acme-dns on boot: `sudo systemctl enable acme-dns.service`
+
+    7) Run acme-dns: `sudo systemctl start acme-dns.service`
+
+5) If you did not install the systemd service, run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
 ### Using Docker
 

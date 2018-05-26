@@ -1,0 +1,13 @@
+[Unit]
+Description=Limited DNS server with RESTful HTTP API to handle ACME DNS challenges easily and securely
+After=network.target
+
+[Service]
+User=acme-dns
+Group=acme-dns
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ExecStart=/usr/local/bin/acme-dns
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
