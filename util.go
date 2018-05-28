@@ -83,10 +83,13 @@ func setupLogging(format string, level string) {
 }
 
 func startDNS(listen string, proto string) *dns.Server {
+	listenAndServe := func(server *dns.Server) {
+		log.Fatal(server.ListenAndServe())
+	}
 	// DNS server part
 	dns.HandleFunc(".", handleRequest)
 	server := &dns.Server{Addr: listen, Net: proto}
-	go server.ListenAndServe()
+	go listenAndServe(server)
 	return server
 }
 
