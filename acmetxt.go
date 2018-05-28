@@ -76,8 +76,8 @@ func (a ACMETxt) allowedFromList(ips []string) bool {
 func newACMETxt() ACMETxt {
 	var a = ACMETxt{}
 	password := generatePassword(40)
-	a.Username = uuid.NewV4()
+	a.Username = uuid.Must(uuid.NewV4())
 	a.Password = password
-	a.Subdomain = uuid.NewV4().String()
+	a.Subdomain = uuid.Must(uuid.NewV4()).String()
 	return a
 }
