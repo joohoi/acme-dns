@@ -31,7 +31,7 @@ Using acme-dns is a three-step process (provided you already have the self-hoste
 
 - Get credentials and unique subdomain (simple POST request to eg. https://auth.acme-dns.io/register)
 - Create a (ACME magic) CNAME record to your existing zone, pointing to the subdomain you got from the registration. (eg. `_acme-challenge.domainiwantcertfor.tld. CNAME a097455b-52cc-4569-90c8-7a4b97c6eba8.auth.example.org` )
-- Use your credentials to POST a new DNS challenge values to an acme-dns server for the CA to validate them off of.
+- Use your credentials to POST new DNS challenge values to an acme-dns server for the CA to validate from.
 - Crontab and forget.
 
 ## API
@@ -106,7 +106,7 @@ The method allows you to update the TXT answer contents of your unique subdomain
 
 You are encouraged to run your own acme-dns instance, because you are effectively authorizing the acme-dns server to act on your behalf in providing the answer to challengeing CA, making the instance able to request (and get issued) a TLS certificate for the domain that has CNAME pointing to it.
 
-Check out how in the INSTALL section.
+See the INSTALL section for information on how to do this.
 
 
 ## Installation
