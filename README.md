@@ -10,7 +10,7 @@ Leaving the keys laying around your random boxes is too often a requirement to h
 
 Acme-dns provides a simple API exclusively for TXT record updates and should be used with ACME magic "\_acme-challenge" - subdomain CNAME records. This way, in the unfortunate exposure of API keys, the effetcs are limited to the subdomain TXT record in question.
 
-So basically it boils down to **accessibility** and **security**
+So basically it boils down to **accessibility** and **security**.
 
 ## Features
 - Simplified DNS server, serving your ACME DNS challenges (TXT)
@@ -111,37 +111,37 @@ Check out how in the INSTALL section.
 
 ## Installation
 
-1) Install [Go 1.9 or newer](https://golang.org/doc/install)
+1) Install [Go 1.9 or newer](https://golang.org/doc/install).
 
 2) Install acme-dns: `go get github.com/joohoi/acme-dns/...`. This will install acme-dns to `~/go/bin/acme-dns`.
 
-3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`
+3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`.
 
 4) If your system has systemd, you can optionally install acme-dns as a service so that it will start on boot and be tracked by systemd. This also allows us to add the `CAP_NET_BIND_SERVICE` capability so that acme-dns can be run by a user other than root.
 
     1) Make sure that you have moved the configuration file to `/etc/acme-dns/config.cfg` so that acme-dns can access it globally.
 
-    2) Move the acme-dns executable from `~/go/bin/acme-dns` to `/usr/local/bin/acme-dns` (Any location will work, just be sure to change `acme-dns.service` to match)
+    2) Move the acme-dns executable from `~/go/bin/acme-dns` to `/usr/local/bin/acme-dns` (Any location will work, just be sure to change `acme-dns.service` to match).
 
-    3) Create a minimal acme-dns user: `sudo adduser --system --gecos "acme-dns Service" --disabled-password --group --home /var/lib/acme-dns acme-dns`
+    3) Create a minimal acme-dns user: `sudo adduser --system --gecos "acme-dns Service" --disabled-password --group --home /var/lib/acme-dns acme-dns`.
 
-    4) Move the systemd service unit from `acme-dns.service` to `/etc/systemd/system/acme-dns.service`
+    4) Move the systemd service unit from `acme-dns.service` to `/etc/systemd/system/acme-dns.service`.
 
-    5) Reload systemd units: `sudo systemctl daemon-reload`
+    5) Reload systemd units: `sudo systemctl daemon-reload`.
 
-    6) Enable acme-dns on boot: `sudo systemctl enable acme-dns.service`
+    6) Enable acme-dns on boot: `sudo systemctl enable acme-dns.service`.
 
-    7) Run acme-dns: `sudo systemctl start acme-dns.service`
+    7) Run acme-dns: `sudo systemctl start acme-dns.service`.
 
 5) If you did not install the systemd service, run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
 ### Using Docker
 
-1) Pull the latest acme-dns Docker image: `docker pull joohoi/acme-dns`
+1) Pull the latest acme-dns Docker image: `docker pull joohoi/acme-dns`.
 
 2) Create directories: `config` for the configuration file, and `data` for the sqlite3 database.
 
-3) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`
+3) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`.
 
 4) Modify the config.cfg to suit your needs.
 
@@ -159,11 +159,11 @@ docker run --rm --name acmedns                 \
 
 1) Create directories: `config` for the configuration file, and `data` for the sqlite3 database.
 
-2) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`
+2) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`.
 
 3) Copy [docker-compose.yml from the project](https://raw.githubusercontent.com/joohoi/acme-dns/master/docker-compose.yml), or create your own.
 
-4) Edit the `config/config.cfg` and `docker-compose.yml` to suit your needs, and run `docker-compose up -d`
+4) Edit the `config/config.cfg` and `docker-compose.yml` to suit your needs, and run `docker-compose up -d`.
 
 ## DNS Records
 
@@ -177,14 +177,14 @@ These values should be changed based on your environment.
 You will need to add some DNS records on your domain's regular DNS server:
 - `NS` record for `auth.example.com` pointing to `ns.auth.example.com`
 - `A` record for `ns.auth.example.com` pointing to `198.51.100.1`
-- If using IPv6, an `AAAA` record pointing to the IPv6 address
+- If using IPv6, an `AAAA` record pointing to the IPv6 address.
 - Each domain you will be authenticating will need a `CNAME` for a `_acme-challenge` subdomain added. The [client](README.md#clients) you use will explain how to do this.
 
 ## Testing It Out
 
 You may want to test that acme-dns is working before using it for real queries.
 
-1) Confirm that DNS lookups for the acme-dns subdomain works as expected: `dig auth.example.com`
+1) Confirm that DNS lookups for the acme-dns subdomain works as expected: `dig auth.example.com`.
 
 2) Call the `/register` API endpoint to register a test domain:
 ```
