@@ -8,7 +8,7 @@ A simplified DNS server with a RESTful HTTP API to provide a simple way to autom
 Many DNS servers do not provide an API to enable automation for the ACME DNS challenges. Those which do, give the keys way too much power.
 Leaving the keys laying around your random boxes is too often a requirement to have a meaningful process automation.
 
-Acme-dns provides a simple API exclusively for TXT record updates and should be used with ACME magic "\_acme-challenge" - subdomain CNAME records. This way, in the unfortunate exposure of API keys, the effetcs are limited to the subdomain TXT record in question.
+Acme-dns provides a simple API exclusively for TXT record updates and should be used with ACME magic "\_acme-challenge" - subdomain CNAME records. This way, in the unfortunate exposure of API keys, the effects are limited to the subdomain TXT record in question.
 
 So basically it boils down to **accessibility** and **security**
 
