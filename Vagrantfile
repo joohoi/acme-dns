@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Vagratnfile for running integration tests with PostgreSQL
+# Vagrantfile for running integration tests with PostgreSQL
 
 VAGRANTFILE_API_VERSION = "2"
 
