@@ -8,7 +8,7 @@ A simplified DNS server with a RESTful HTTP API to provide a simple way to autom
 Many DNS servers do not provide an API to enable automation for the ACME DNS challenges. Those which do, give the keys way too much power.
 Leaving the keys laying around your random boxes is too often a requirement to have a meaningful process automation.
 
-Acme-dns provides a simple API exclusively for TXT record updates and should be used with ACME magic "\_acme-challenge" - subdomain CNAME records. This way, in the unfortunate exposure of API keys, the effetcs are limited to the subdomain TXT record in question.
+Acme-dns provides a simple API exclusively for TXT record updates and should be used with ACME magic "\_acme-challenge" - subdomain CNAME records. This way, in the unfortunate exposure of API keys, the effects are limited to the subdomain TXT record in question.
 
 So basically it boils down to **accessibility** and **security**
 
@@ -40,7 +40,7 @@ Using acme-dns is a three-step process (provided you already have the self-hoste
 
 The method returns a new unique subdomain and credentials needed to update your record.
 Fulldomain is where you can point your own `_acme-challenge` subdomain CNAME record to.
-With the credentials, you can update the TXT response in the service to match the challenge token, later referred as \_\_\_validation\_token\_recieved\_from\_the\_ca\_\_\_, given out by the Certificate Authority.
+With the credentials, you can update the TXT response in the service to match the challenge token, later referred as \_\_\_validation\_token\_received\_from\_the\_ca\_\_\_, given out by the Certificate Authority.
 
 **Optional:**: You can POST JSON data to limit the /update requests to predefined source networks using CIDR notation.
 
@@ -82,14 +82,14 @@ The method allows you to update the TXT answer contents of your unique subdomain
 #### Required headers
 | Header name   | Description                                | Example                                               |
 | ------------- |--------------------------------------------|-------------------------------------------------------|
-| X-Api-User    | UUIDv4 username recieved from registration | `X-Api-User: c36f50e8-4632-44f0-83fe-e070fef28a10`    |
-| X-Api-Key     | Password recieved from registration        | `X-Api-Key: htB9mR9DYgcu9bX_afHF62erXaH2TS7bg9KW3F7Z` |
+| X-Api-User    | UUIDv4 username received from registration | `X-Api-User: c36f50e8-4632-44f0-83fe-e070fef28a10`    |
+| X-Api-Key     | Password received from registration        | `X-Api-Key: htB9mR9DYgcu9bX_afHF62erXaH2TS7bg9KW3F7Z` |
 
 #### Example input
 ```json
 {
     "subdomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a",
-    "txt": "___validation_token_recieved_from_the_ca___"
+    "txt": "___validation_token_received_from_the_ca___"
 }
 ```
 
@@ -98,13 +98,13 @@ The method allows you to update the TXT answer contents of your unique subdomain
 ```Status: 200 OK```
 ```json
 {
-    "txt": "___validation_token_recieved_from_the_ca___"
+    "txt": "___validation_token_received_from_the_ca___"
 }
 ```
 
 ## Self-hosted
 
-You are encouraged to run your own acme-dns instance, because you are effectively authorizing the acme-dns server to act on your behalf in providing the answer to challengeing CA, making the instance able to request (and get issued) a TLS certificate for the domain that has CNAME pointing to it.
+You are encouraged to run your own acme-dns instance, because you are effectively authorizing the acme-dns server to act on your behalf in providing the answer to the challenging CA, making the instance able to request (and get issued) a TLS certificate for the domain that has CNAME pointing to it.
 
 Check out how in the INSTALL section.
 
@@ -197,7 +197,7 @@ $ curl -X POST http://auth.example.com/register
 $ curl -X POST \
   -H "X-Api-User: eabcdb41-d89f-4580-826f-3e62e9755ef2" \
   -H "X-Api-Key: pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0" \
-  -d '{"subdomain": "d420c923-bbd7-4056-ab64-c3ca54c9b3cf", "txt": "___validation_token_recieved_from_the_ca___"}' \
+  -d '{"subdomain": "d420c923-bbd7-4056-ab64-c3ca54c9b3cf", "txt": "___validation_token_received_from_the_ca___"}' \
   http://auth.example.com/update
 ```
 
