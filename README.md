@@ -42,7 +42,7 @@ The method returns a new unique subdomain and credentials needed to update your 
 Fulldomain is where you can point your own `_acme-challenge` subdomain CNAME record to.
 With the credentials, you can update the TXT response in the service to match the challenge token, later referred as \_\_\_validation\_token\_recieved\_from\_the\_ca\_\_\_, given out by the Certificate Authority.
 
-**Optional:**: You can POST JSON data to limit the /update requests to predefined source networks using CIDR notation.
+**Optional:**: You can POST JSON data to limit the `/update` requests to predefined source networks using CIDR notation.
 
 ```POST /register```
 
@@ -133,7 +133,7 @@ Check out how in the INSTALL section.
 
     7) Run acme-dns: `sudo systemctl start acme-dns.service`.
 
-5) If you did not install the systemd service, run acme-dns. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
+5) If you did not install the systemd service, run `acme-dns`. Please note that acme-dns needs to open a privileged port (53, domain), so it needs to be run with elevated privileges.
 
 ### Using Docker
 
@@ -143,9 +143,9 @@ Check out how in the INSTALL section.
 
 3) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`.
 
-4) Modify the config.cfg to suit your needs.
+4) Modify the `config.cfg` to suit your needs.
 
-5) Run Docker, this example expects that you have `port = "80"` in your config.cfg:
+5) Run Docker, this example expects that you have `port = "80"` in your `config.cfg`:
 ```
 docker run --rm --name acmedns                 \
  -p 53:53                                      \
