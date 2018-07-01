@@ -295,6 +295,7 @@ header_name = "X-Forwarded-For"
 ### Libraries
 
 - Generic client library in Python ([PyPI](https://pypi.python.org/pypi/pyacmedns/)): [https://github.com/joohoi/pyacmedns](https://github.com/joohoi/pyacmedns)
+- Generic client library in Go: [https://github.com/cpu/goacmedns](https://github.com/cpu/goacmedns)
 
 
 ## Changelog
