@@ -284,9 +284,9 @@ header_name = "X-Forwarded-For"
 ## Clients
 
 - acme.sh: [https://github.com/Neilpang/acme.sh](https://github.com/Neilpang/acme.sh)
+- Lego: [https://github.com/xenolf/lego](https://github.com/xenolf/lego)
 - Posh-ACME: [https://github.com/rmbolger/Posh-ACME](https://github.com/rmbolger/Posh-ACME)
 - Sewer: [https://github.com/komuw/sewer](https://github.com/komuw/sewer)
-- Lego: [https://github.com/xenolf/lego](https://github.com/xenolf/lego)
 
 ### Authentication hooks
 
