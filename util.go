@@ -18,18 +18,30 @@ func jsonError(message string) []byte {
 }
 
 func fileExists(fname string) bool {
-	_, err := os.Stat(fname)
-	if err != nil {
-		return false
-	}
-	return true
+        _, err := os.Stat(fname)
+        if err != nil {
+                return false
+        }
+        // file exists but might not be readable
+        f, err := os.Open(fname)
+        if err != nil {
+                log.Error("Cannot open file : [%v]", err)
+                os.Exit(1)
+        }
+f.Close()
+        return true
 }
 
 func readConfig(fname string) DNSConfig {
-	var conf DNSConfig
-	// Practically never errors
-	_, _ = toml.DecodeFile(fname, &conf)
-	return conf
+        var conf DNSConfig
+        // Practically never errors
+        // but will if there is an error in the config file
+        _, err := toml.DecodeFile(fname, &conf)
+        if err != nil {
+                log.Error("Error decoding configuration file [%v]", err)
+                os.Exit(1)
+        }
+        return conf
 }
 
 func sanitizeString(s string) string {

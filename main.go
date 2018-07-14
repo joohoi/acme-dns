@@ -17,12 +17,15 @@ import (
 func main() {
 	// Read global config
 	if fileExists("/etc/acme-dns/config.cfg") {
-		Config = readConfig("/etc/acme-dns/config.cfg")
 		log.WithFields(log.Fields{"file": "/etc/acme-dns/config.cfg"}).Info("Using config file")
+		Config = readConfig("/etc/acme-dns/config.cfg")
 
-	} else {
+	} else if fileExists("./config.cfg") {
 		log.WithFields(log.Fields{"file": "./config.cfg"}).Info("Using config file")
-		Config = readConfig("config.cfg")
+		Config = readConfig("./config.cfg")
+	} else {
+	       log.Error("Configuration file not found")
+	       os.Exit(1)
 	}
 
 	setupLogging(Config.Logconfig.Format, Config.Logconfig.Level)
