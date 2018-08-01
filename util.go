@@ -17,19 +17,26 @@ func jsonError(message string) []byte {
 	return []byte(fmt.Sprintf("{\"error\": \"%s\"}", message))
 }
 
+func isFileReadable(fname string) bool {
+	f, err := os.Open(fname)
+	if err != nil {
+		log.Errorf("Cannot open file : [%v]", err)
+		os.Exit(1)
+	}
+	f.Close()
+	return true
+}
+
 func fileExists(fname string) bool {
 	_, err := os.Stat(fname)
 	if err != nil {
 		return false
 	}
-	// file exists but might not be readable
-	f, err := os.Open(fname)
-	if err != nil {
-		log.Error("Cannot open file : [%v]", err)
-		os.Exit(1)
-	}
-	f.Close()
 	return true
+}
+
+func isFileAccessible(fname string) bool {
+	return  fileExists(fname) && isFileReadable(fname)
 }
 
 func readConfig(fname string) DNSConfig {
