@@ -16,16 +16,16 @@ import (
 
 func main() {
 	// Read global config
-	if isFileAccessible("/etc/acme-dns/config.cfg") {
+	if fileIsAccessible("/etc/acme-dns/config.cfg") {
 		log.WithFields(log.Fields{"file": "/etc/acme-dns/config.cfg"}).Info("Using config file")
 		Config = readConfig("/etc/acme-dns/config.cfg")
 
-	} else if isFileAccessible("./config.cfg") {
+	} else if fileIsAccessible("./config.cfg") {
 		log.WithFields(log.Fields{"file": "./config.cfg"}).Info("Using config file")
 		Config = readConfig("./config.cfg")
 	} else {
-	       log.Errorf("Configuration file not found")
-	       os.Exit(1)
+		log.Errorf("Configuration file not found")
+		os.Exit(1)
 	}
 
 	setupLogging(Config.Logconfig.Format, Config.Logconfig.Level)

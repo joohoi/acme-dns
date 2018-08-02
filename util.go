@@ -35,8 +35,8 @@ func fileExists(fname string) bool {
 	return true
 }
 
-func isFileAccessible(fname string) bool {
-	return  fileExists(fname) && isFileReadable(fname)
+func fileIsAccessible(fname string) bool {
+	return fileExists(fname) && isFileReadable(fname)
 }
 
 func readConfig(fname string) DNSConfig {
@@ -45,7 +45,7 @@ func readConfig(fname string) DNSConfig {
 	// but will if there is an error in the config file
 	_, err := toml.DecodeFile(fname, &conf)
 	if err != nil {
-		log.Error("Error decoding configuration file [%v]", err)
+		log.Errorf("Error decoding configuration file [%v]", err)
 		os.Exit(1)
 	}
 	return conf
