@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/satori/go.uuid"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestGetValidUsername(t *testing.T) {
-	v1, _ := uuid.FromString("a097455b-52cc-4569-90c8-7a4b97c6eba8")
+	v1, _ := uuid.Parse("a097455b-52cc-4569-90c8-7a4b97c6eba8")
 	for i, test := range []struct {
 		uname     string
 		output    uuid.UUID

@@ -59,9 +59,38 @@ var sample = map[string]interface{}{
 	"D": map[string]interface{}{
 		"C": 3.1415,
 		"V": []interface{}{
-			"string2",
+			"string2a",
+			"string2b",
 			map[string]interface{}{
 				"C": 3.141592,
+			},
+		},
+	},
+	"E": map[string]interface{}{
+		"A": []interface{}{"string3"},
+		"D": map[string]interface{}{
+			"V": map[string]interface{}{
+				"C": 3.14159265,
+			},
+		},
+	},
+	"F": map[string]interface{}{
+		"V": []interface{}{
+			"string4a",
+			"string4b",
+			map[string]interface{}{
+				"CC": 3.1415926535,
+			},
+			map[string]interface{}{
+				"CC": "hello",
+			},
+			[]interface{}{
+				"string5a",
+				"string5b",
+			},
+			[]interface{}{
+				"string6a",
+				"string6b",
 			},
 		},
 	},
@@ -79,52 +108,131 @@ func TestGossner(t *testing.T) {
 }
 
 func TestParsing(t *testing.T) {
+	t.Run("pick", func(t *testing.T) {
+		assert(t, sample, map[string]interface{}{
+			"$":         sample,
+			"$.A[0]":    "string",
+			`$["A"][0]`: "string",
+			"$.A":       []interface{}{"string", 23.3, 3, true, false, nil},
+			"$.A[*]":    []interface{}{"string", 23.3, 3, true, false, nil},
+			"$.A.*":     []interface{}{"string", 23.3, 3, true, false, nil},
+			"$.A.*.a":   []interface{}{},
+		})
+	})
 
-	tests := map[string]interface{}{
-		"$":          sample,
-		"$.A[0]":     "string",
-		`$["A"][0]`:  "string",
-		`$[A][0]`:    "string",
-		"$.A":        []interface{}{"string", 23.3, 3, true, false, nil},
-		"$.A[*]":     []interface{}{"string", 23.3, 3, true, false, nil},
-		"$.A.*":      []interface{}{"string", 23.3, 3, true, false, nil},
-		"$.A.*.a":    []interface{}{},
-		"$.*.V[0]":   []interface{}{"string2"},
-		"$[B,C]":     []interface{}{"value", 3.14},
-		"$.A[1,4,2]": []interface{}{23.3, false, 3},
-		"$[C,B]":     []interface{}{3.14, "value"},
-		"$.A[1:4]":   []interface{}{23.3, 3, true},
-		"$.A[::2]":   []interface{}{"string", 3, false},
-		"$.A[-2:]":   []interface{}{false, nil},
-		"$.A[:-1]":   []interface{}{"string", 23.3, 3, true, false},
-		"$.A[::-1]":  []interface{}{nil, false, true, 3, 23.3, "string"},
-		"$..C":       []interface{}{3.1415, 3.141592},
-		"$..V[1].C":  []interface{}{3.141592},
-		"$..[C]":     []interface{}{3.1415, 3.141592},
-		"$.D.V..*": []interface{}{
-			"string2",
-			map[string]interface{}{
-				"C": 3.141592,
+	t.Run("slice", func(t *testing.T) {
+		assert(t, sample, map[string]interface{}{
+			"$.A[1,4,2]":      []interface{}{23.3, false, 3},
+			`$["B","C"]`:      []interface{}{"value", 3.14},
+			`$["C","B"]`:      []interface{}{3.14, "value"},
+			"$.A[1:4]":        []interface{}{23.3, 3, true},
+			"$.A[::2]":        []interface{}{"string", 3, false},
+			"$.A[-2:]":        []interface{}{false, nil},
+			"$.A[:-1]":        []interface{}{"string", 23.3, 3, true, false},
+			"$.A[::-1]":       []interface{}{nil, false, true, 3, 23.3, "string"},
+			"$.F.V[4:5][0,1]": []interface{}{"string5a", "string5b"},
+			"$.F.V[4:6][1]":   []interface{}{"string5b", "string6b"},
+			"$.F.V[4:6][0,1]": []interface{}{"string5a", "string5b", "string6a", "string6b"},
+			"$.F.V[4,5][0:2]": []interface{}{"string5a", "string5b", "string6a", "string6b"},
+			"$.F.V[4:6]": []interface{}{
+				[]interface{}{
+					"string5a",
+					"string5b",
+				},
+				[]interface{}{
+					"string6a",
+					"string6b",
+				},
 			},
-			3.141592,
-		},
-		"$..[0]": []interface{}{"string", "string2"},
-		"$..ZZ":  []interface{}{},
-	}
-	assert(t, sample, tests)
+		})
+	})
+
+	t.Run("quote", func(t *testing.T) {
+		assert(t, sample, map[string]interface{}{
+			`$[A][0]`:    "string",
+			`$["A"][0]`:  "string",
+			`$[B,C]`:     []interface{}{"value", 3.14},
+			`$["B","C"]`: []interface{}{"value", 3.14},
+		})
+	})
+
+	t.Run("search", func(t *testing.T) {
+		assert(t, sample, map[string]interface{}{
+			"$..C":       []interface{}{3.14, 3.1415, 3.141592, 3.14159265},
+			`$..["C"]`:   []interface{}{3.14, 3.1415, 3.141592, 3.14159265},
+			"$.D.V..C":   []interface{}{3.141592},
+			"$.D.V.*.C":  []interface{}{3.141592},
+			"$.D.V..*.C": []interface{}{3.141592},
+			"$.D.*..C":   []interface{}{3.141592},
+			"$.*.V..C":   []interface{}{3.141592},
+			"$.*.D.V.C":  []interface{}{3.14159265},
+			"$.*.D..C":   []interface{}{3.14159265},
+			"$.*.D.V..*": []interface{}{3.14159265},
+			"$..D..V..C": []interface{}{3.141592, 3.14159265},
+			"$.*.*.*.C":  []interface{}{3.141592, 3.14159265},
+			"$..V..C":    []interface{}{3.141592, 3.14159265},
+			"$.D.V..*": []interface{}{
+				"string2a",
+				"string2b",
+				map[string]interface{}{
+					"C": 3.141592,
+				},
+				3.141592,
+			},
+			"$..A": []interface{}{
+				[]interface{}{"string", 23.3, 3, true, false, nil},
+				[]interface{}{"string3"},
+			},
+			"$..A..*":      []interface{}{"string", 23.3, 3, true, false, nil, "string3"},
+			"$.A..*":       []interface{}{"string", 23.3, 3, true, false, nil},
+			"$.A.*":        []interface{}{"string", 23.3, 3, true, false, nil},
+			"$..A[0,1]":    []interface{}{"string", 23.3},
+			"$..A[0]":      []interface{}{"string", "string3"},
+			"$.*.V[0]":     []interface{}{"string2a", "string4a"},
+			"$.*.V[1]":     []interface{}{"string2b", "string4b"},
+			"$.*.V[0,1]":   []interface{}{"string2a", "string2b", "string4a", "string4b"},
+			"$.*.V[0:2]":   []interface{}{"string2a", "string2b", "string4a", "string4b"},
+			"$.*.V[2].C":   []interface{}{3.141592},
+			"$..V[2].C":    []interface{}{3.141592},
+			"$..V[*].C":    []interface{}{3.141592},
+			"$.*.V[2].*":   []interface{}{3.141592, 3.1415926535},
+			"$.*.V[2:3].*": []interface{}{3.141592, 3.1415926535},
+			"$.*.V[2:4].*": []interface{}{3.141592, 3.1415926535, "hello"},
+			"$..V[2,3].CC": []interface{}{3.1415926535, "hello"},
+			"$..V[2:4].CC": []interface{}{3.1415926535, "hello"},
+			"$..V[*].*": []interface{}{
+				3.141592,
+				3.1415926535,
+				"hello",
+				"string5a",
+				"string5b",
+				"string6a",
+				"string6b",
+			},
+			"$..[0]": []interface{}{
+				"string",
+				"string2a",
+				"string3",
+				"string4a",
+				"string5a",
+				"string6a",
+			},
+			"$..ZZ": []interface{}{},
+		})
+	})
 }
 
 func TestErrors(t *testing.T) {
 	tests := map[string]string{
 		".A":           "path must start with a '$'",
 		"$.":           "expected JSON child identifier after '.'",
-		"$.1":          "unexcepted token .1",
+		"$.1":          "unexpected token .1",
 		"$.A[]":        "expected at least one key, index or expression",
 		`$["]`:         "bad string invalid syntax",
 		`$[A][0`:       "unexpected end of path",
 		"$.ZZZ":        "child 'ZZZ' not found in JSON object",
-		"$.A*]":        "unexcepted token *",
-		"$.*V":         "unexcepted token V",
+		"$.A*]":        "unexpected token *",
+		"$.*V":         "unexpected token V",
 		"$[B,C":        "unexpected end of path",
 		"$.A[1,4.2]":   "unexpected token '.'",
 		"$[C:B]":       "expected JSON array",

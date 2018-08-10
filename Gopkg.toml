@@ -60,10 +60,6 @@ required = ["github.com/valyala/fasthttp"]
   version = "1.2.0"
 
 [[constraint]]
-  name = "github.com/satori/go.uuid"
-  version = "1.2.0"
-
-[[constraint]]
   name = "github.com/sirupsen/logrus"
   version = "1.0.4"
 
