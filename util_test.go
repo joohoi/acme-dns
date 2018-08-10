@@ -62,7 +62,7 @@ func TestReadConfig(t *testing.T) {
 		if err := tmpfile.Close(); err != nil {
 			t.Error("Could not close temporary file")
 		}
-		ret := readConfig(tmpfile.Name())
+		ret, _ := readConfig(tmpfile.Name())
 		if ret.General.Listen != test.output.General.Listen {
 			t.Errorf("Test %d: Expected listen value %s, but got %s", i, test.output.General.Listen, ret.General.Listen)
 		}

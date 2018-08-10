@@ -16,15 +16,19 @@ import (
 
 func main() {
 	// Read global config
+	var err error
 	if fileIsAccessible("/etc/acme-dns/config.cfg") {
 		log.WithFields(log.Fields{"file": "/etc/acme-dns/config.cfg"}).Info("Using config file")
-		Config = readConfig("/etc/acme-dns/config.cfg")
-
+		Config, err = readConfig("/etc/acme-dns/config.cfg")
 	} else if fileIsAccessible("./config.cfg") {
 		log.WithFields(log.Fields{"file": "./config.cfg"}).Info("Using config file")
-		Config = readConfig("./config.cfg")
+		Config, err = readConfig("./config.cfg")
 	} else {
-		log.Errorf("Configuration file not found")
+		log.Errorf("Configuration file not found.")
+		os.Exit(1)
+	}
+	if err != nil {
+		log.Errorf("Encountered an error while trying to read configuration file:  %s", err)
 		os.Exit(1)
 	}
 
@@ -35,7 +39,7 @@ func main() {
 
 	// Open database
 	newDB := new(acmedb)
-	err := newDB.Init(Config.Database.Engine, Config.Database.Connection)
+	err = newDB.Init(Config.Database.Engine, Config.Database.Connection)
 	if err != nil {
 		log.Errorf("Could not open database [%v]", err)
 		os.Exit(1)
