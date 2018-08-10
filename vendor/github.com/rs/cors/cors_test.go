@@ -83,7 +83,7 @@ func TestSpec(t *testing.T) {
 			},
 			map[string]string{
 				"Vary": "Origin",
-				"Access-Control-Allow-Origin":      "http://foobar.com",
+				"Access-Control-Allow-Origin":      "*",
 				"Access-Control-Allow-Credentials": "true",
 			},
 		},
@@ -240,6 +240,25 @@ func TestSpec(t *testing.T) {
 				"Access-Control-Allow-Origin":  "http://foobar.com",
 				"Access-Control-Allow-Methods": "GET",
 				"Access-Control-Allow-Headers": "X-Header-2, X-Header-1",
+			},
+		},
+		{
+			"DefaultAllowedHeaders",
+			Options{
+				AllowedOrigins: []string{"http://foobar.com"},
+				AllowedHeaders: []string{},
+			},
+			"OPTIONS",
+			map[string]string{
+				"Origin":                         "http://foobar.com",
+				"Access-Control-Request-Method":  "GET",
+				"Access-Control-Request-Headers": "X-Requested-With",
+			},
+			map[string]string{
+				"Vary": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
+				"Access-Control-Allow-Origin":  "http://foobar.com",
+				"Access-Control-Allow-Methods": "GET",
+				"Access-Control-Allow-Headers": "X-Requested-With",
 			},
 		},
 		{
@@ -411,7 +430,7 @@ func TestDefault(t *testing.T) {
 	}
 }
 
-func TestHandlePreflightInvlaidOriginAbortion(t *testing.T) {
+func TestHandlePreflightInvalidOriginAbortion(t *testing.T) {
 	s := New(Options{
 		AllowedOrigins: []string{"http://foo.com"},
 	})
@@ -451,7 +470,7 @@ func TestHandleActualRequestAbortsOptionsMethod(t *testing.T) {
 	assertHeaders(t, res.Header(), map[string]string{})
 }
 
-func TestHandleActualRequestInvlaidOriginAbortion(t *testing.T) {
+func TestHandleActualRequestInvalidOriginAbortion(t *testing.T) {
 	s := New(Options{
 		AllowedOrigins: []string{"http://foo.com"},
 	})
@@ -466,7 +485,7 @@ func TestHandleActualRequestInvlaidOriginAbortion(t *testing.T) {
 	})
 }
 
-func TestHandleActualRequestInvlaidMethodAbortion(t *testing.T) {
+func TestHandleActualRequestInvalidMethodAbortion(t *testing.T) {
 	s := New(Options{
 		AllowedMethods:   []string{"POST"},
 		AllowCredentials: true,
