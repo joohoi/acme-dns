@@ -2,9 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"github.com/miekg/dns"
-	"github.com/satori/go.uuid"
 	"sync"
+
+	"github.com/google/uuid"
+	"github.com/miekg/dns"
 )
 
 // Config is global configuration struct

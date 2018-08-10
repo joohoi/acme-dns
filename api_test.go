@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect"
+	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
-	"github.com/satori/go.uuid"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -25,7 +25,7 @@ func noAuth(update httprouter.Handle) httprouter.Handle {
 		dec := json.NewDecoder(r.Body)
 		_ = dec.Decode(&postData)
 		// Set user info to the decoded ACMETxt object
-		postData.Username, _ = uuid.FromString(uname)
+		postData.Username, _ = uuid.Parse(uname)
 		postData.Password = passwd
 		// Set the ACMETxt struct to context to pull in from update function
 		ctx := r.Context()

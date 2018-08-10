@@ -7,11 +7,9 @@ os:
   - osx
 
 go:
-  - 1.4
-  - 1.5
-  - 1.6
-  - 1.7
-  - tip
+  - 1.9.x
+  - 1.10.x
+  - master
 
 install:
  - go get -t ./...
@@ -22,3 +20,8 @@ script:
  - go test -cpu=2 -tags=noasm ./...
  - go test -cpu=1,2,4 -short -race ./...
  - go test -cpu=2,4 -short -race -tags=noasm ./...
+
+matrix:
+  allow_failures:
+    - go: 'master'
+  fast_finish: true 
