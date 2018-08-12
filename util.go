@@ -44,10 +44,10 @@ func readConfig(fname string) (DNSConfig, error) {
 // prepareConfig checks that mandatory values exist, and can be used to set default values in the future
 func prepareConfig(conf DNSConfig) (DNSConfig, error) {
 	if conf.Database.Engine == "" {
-		return conf, errors.New("Missing database configuration option \"engine\".")
+		return conf, errors.New("missing database configuration option \"engine\"")
 	}
 	if conf.Database.Connection == "" {
-		return conf, errors.New("Missing database configuration option \"connection\".")
+		return conf, errors.New("missing database configuration option \"connection\"")
 	}
 	return conf, nil
 }
