@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"os"
@@ -33,7 +34,22 @@ func fileIsAccessible(fname string) bool {
 func readConfig(fname string) (DNSConfig, error) {
 	var conf DNSConfig
 	_, err := toml.DecodeFile(fname, &conf)
-	return conf, err
+	if err != nil {
+		// Return with config file parsing errors from toml package
+		return conf, err
+	}
+	return prepareConfig(conf)
+}
+
+// prepareConfig checks that mandatory values exist, and can be used to set default values in the future
+func prepareConfig(conf DNSConfig) (DNSConfig, error) {
+	if conf.Database.Engine == "" {
+		return conf, errors.New("missing database configuration option \"engine\"")
+	}
+	if conf.Database.Connection == "" {
+		return conf, errors.New("missing database configuration option \"connection\"")
+	}
+	return conf, nil
 }
 
 func sanitizeString(s string) string {
