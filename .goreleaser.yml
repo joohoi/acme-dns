@@ -16,3 +16,6 @@ archive:
     - Dockerfile
     - config.cfg
     - acme-dns.service
+
+sign:
+  artifacts: checksum
