@@ -127,3 +127,25 @@ func TestFileCheckOK(t *testing.T) {
 		t.Errorf("File should be accessible")
 	}
 }
+
+func TestPrepareConfig(t *testing.T) {
+	for i, test := range []struct {
+		input       DNSConfig
+		shoulderror bool
+	}{
+		{DNSConfig{Database: dbsettings{Engine: "whatever", Connection: "whatever_too"}}, false},
+		{DNSConfig{Database: dbsettings{Engine: "", Connection: "whatever_too"}}, true},
+		{DNSConfig{Database: dbsettings{Engine: "whatever", Connection: ""}}, true},
+	} {
+		_, err := prepareConfig(test.input)
+		if test.shoulderror {
+			if err == nil {
+				t.Errorf("Test %d: Expected error with prepareConfig input data [%v]", i, test.input)
+			}
+		} else {
+			if err != nil {
+				t.Errorf("Test %d: Expected no error with prepareConfig input data [%v]", i, test.input)
+			}
+		}
+	}
+}
