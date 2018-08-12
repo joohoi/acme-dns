@@ -49,6 +49,12 @@ func prepareConfig(conf DNSConfig) (DNSConfig, error) {
 	if conf.Database.Connection == "" {
 		return conf, errors.New("missing database configuration option \"connection\"")
 	}
+
+	// Default values for options added to config to keep backwards compatibility with old config
+	if conf.API.ACMECacheDir == "" {
+		conf.API.ACMECacheDir = "api-certs"
+	}
+
 	return conf, nil
 }
 
