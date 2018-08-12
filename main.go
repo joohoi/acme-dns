@@ -7,6 +7,7 @@ import (
 	stdlog "log"
 	"net/http"
 	"os"
+	"syscall"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
@@ -15,6 +16,8 @@ import (
 )
 
 func main() {
+	// Created files are not world writable
+	syscall.Umask(0077)
 	// Read global config
 	var err error
 	if fileIsAccessible("/etc/acme-dns/config.cfg") {
