@@ -300,6 +300,14 @@ header_name = "X-Forwarded-For"
 
 
 ## Changelog
+- v0.5
+   - New
+      - Configurable certificate cache directory
+   - Changed
+      - Process wide umask to ensure created files are only readable by the user running acme-dns
+      - Replaced package that handles UUIDs because of a flaw in the original package
+      - Updated dependencies
+      - Better error messages
 - v0.4 Clear error messages for bad TXT record content, proper handling of static CNAME records, fixed IP address parsing from the request, added option to disable registration endpoint in the configuration.
 - v0.3.2 Dockerfile was fixed for users using autocert feature
 - v0.3.1 Added goreleaser for distributing binary builds of the releases
