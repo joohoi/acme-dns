@@ -1,10 +1,12 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
+	"syscall"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func TestSetupLogging(t *testing.T) {
@@ -62,7 +64,7 @@ func TestReadConfig(t *testing.T) {
 		if err := tmpfile.Close(); err != nil {
 			t.Error("Could not close temporary file")
 		}
-		ret := readConfig(tmpfile.Name())
+		ret, _ := readConfig(tmpfile.Name())
 		if ret.General.Listen != test.output.General.Listen {
 			t.Errorf("Test %d: Expected listen value %s, but got %s", i, test.output.General.Listen, ret.General.Listen)
 		}
@@ -93,5 +95,35 @@ func TestGetIPListFromHeader(t *testing.T) {
 
 			}
 		}
+	}
+}
+
+func TestFileCheckPermissionDenied(t *testing.T) {
+	tmpfile, err := ioutil.TempFile("", "acmedns")
+	if err != nil {
+		t.Error("Could not create temporary file")
+	}
+	defer os.Remove(tmpfile.Name())
+	syscall.Chmod(tmpfile.Name(), 0000)
+	if fileIsAccessible(tmpfile.Name()) {
+		t.Errorf("File should not be accessible")
+	}
+	syscall.Chmod(tmpfile.Name(), 0644)
+}
+
+func TestFileCheckNotExists(t *testing.T) {
+	if fileIsAccessible("/path/that/does/not/exist") {
+		t.Errorf("File should not be accessible")
+	}
+}
+
+func TestFileCheckOK(t *testing.T) {
+	tmpfile, err := ioutil.TempFile("", "acmedns")
+	if err != nil {
+		t.Error("Could not create temporary file")
+	}
+	defer os.Remove(tmpfile.Name())
+	if !fileIsAccessible(tmpfile.Name()) {
+		t.Errorf("File should be accessible")
 	}
 }

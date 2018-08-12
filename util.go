@@ -17,19 +17,23 @@ func jsonError(message string) []byte {
 	return []byte(fmt.Sprintf("{\"error\": \"%s\"}", message))
 }
 
-func fileExists(fname string) bool {
+func fileIsAccessible(fname string) bool {
 	_, err := os.Stat(fname)
 	if err != nil {
 		return false
 	}
+	f, err := os.Open(fname)
+	if err != nil {
+		return false
+	}
+	f.Close()
 	return true
 }
 
-func readConfig(fname string) DNSConfig {
+func readConfig(fname string) (DNSConfig, error) {
 	var conf DNSConfig
-	// Practically never errors
-	_, _ = toml.DecodeFile(fname, &conf)
-	return conf
+	_, err := toml.DecodeFile(fname, &conf)
+	return conf, err
 }
 
 func sanitizeString(s string) string {
