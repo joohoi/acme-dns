@@ -175,8 +175,8 @@ Note: In this documentation:
 These values should be changed based on your environment.
 
 You will need to add some DNS records on your domain's regular DNS server:
-- `NS` record for `auth.example.com` pointing to `ns.auth.example.com`
-- `A` record for `ns.auth.example.com` pointing to `198.51.100.1`
+- `NS` record for `auth.example.com` pointing to `auth.example.com` (this means, that `auth.example.com` is responsible for any `*.auth.example.com` records)
+- `A` record for `auth.example.com` pointing to `198.51.100.1`
 - If using IPv6, an `AAAA` record pointing to the IPv6 address.
 - Each domain you will be authenticating will need a `_acme-challenge` `CNAME` subdomain added. The [client](README.md#clients) you use will explain how to do this.
 
@@ -219,19 +219,15 @@ protocol = "udp"
 # domain name to serve the requests off of
 domain = "auth.example.org"
 # zone name server
-nsname = "ns1.auth.example.org"
+nsname = "auth.example.org"
 # admin email address, where @ is substituted with .
 nsadmin = "admin.example.org"
 # predefined records served in addition to the TXT
 records = [
     # default A
     "auth.example.org. A 192.168.1.100",
-    # A
-    "ns1.auth.example.org. A 192.168.1.100",
-    "ns2.auth.example.org. A 192.168.1.100",
-    # NS
-    "auth.example.org. NS ns1.auth.example.org.",
-    "auth.example.org. NS ns2.auth.example.org.",
+    # specify that auth.example.org will resolve any *.auth.example.org records
+    "auth.example.org. NS auth.example.org.",
 ]
 # debug messages from CORS etc
 debug = false
