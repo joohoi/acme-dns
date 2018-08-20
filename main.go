@@ -78,7 +78,12 @@ func startHTTPAPI() {
 		c.Log = stdlog.New(logwriter, "", 0)
 	}
 	if !Config.API.DisableRegistration {
-		api.POST("/register", webRegisterPost)
+		uri := Config.API.RegistrationUri
+		if (uri == "") {
+		    uri = "/register"
+		}
+		log.WithFields(log.Fields{"register_uri": uri}).Debug("Register endpoint")
+		api.POST(uri, webRegisterPost)
 	}
 	api.POST("/update", Auth(webUpdatePost))
 
