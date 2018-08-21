@@ -300,6 +300,9 @@ header_name = "X-Forwarded-For"
 
 
 ## Changelog
+- unreleased
+   - New
+      - Registration URI configurable
 - v0.5
    - New
       - Configurable certificate cache directory
