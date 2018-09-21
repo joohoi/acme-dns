@@ -115,7 +115,7 @@ See the INSTALL section for information on how to do this.
 
 2) Install acme-dns: `go get github.com/joohoi/acme-dns/...`. This will install acme-dns to `~/go/bin/acme-dns`.
 
-3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`.
+3) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`, or a location specified with the `-c` flag.
 
 4) If your system has systemd, you can optionally install acme-dns as a service so that it will start on boot and be tracked by systemd. This also allows us to add the `CAP_NET_BIND_SERVICE` capability so that acme-dns can be run by a user other than root.
 
@@ -300,6 +300,9 @@ header_name = "X-Forwarded-For"
 
 
 ## Changelog
+- unreleased
+   - New
+      - Command line flag `-c` to specify location of config file.
 - v0.5
    - New
       - Configurable certificate cache directory
