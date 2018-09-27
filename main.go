@@ -4,6 +4,7 @@ package main
 
 import (
 	"crypto/tls"
+	"flag"
 	stdlog "log"
 	"net/http"
 	"os"
@@ -18,11 +19,13 @@ import (
 func main() {
 	// Created files are not world writable
 	syscall.Umask(0077)
+	configPtr := flag.String("c", "/etc/acme-dns/config.cfg", "config file location")
+	flag.Parse()
 	// Read global config
 	var err error
-	if fileIsAccessible("/etc/acme-dns/config.cfg") {
-		log.WithFields(log.Fields{"file": "/etc/acme-dns/config.cfg"}).Info("Using config file")
-		Config, err = readConfig("/etc/acme-dns/config.cfg")
+	if fileIsAccessible(*configPtr) {
+		log.WithFields(log.Fields{"file": *configPtr}).Info("Using config file")
+		Config, err = readConfig(*configPtr)
 	} else if fileIsAccessible("./config.cfg") {
 		log.WithFields(log.Fields{"file": "./config.cfg"}).Info("Using config file")
 		Config, err = readConfig("./config.cfg")
