@@ -265,6 +265,10 @@ acme_cache_dir = "api-certs"
 corsorigins = [
     "*"
 ]
+# use HTTP header to get the client ip
+use_header = false
+# header name to pull the ip address / list of ip addresses from
+header_name = "X-Forwarded-For"
 
 [logconfig]
 # logging level: "error", "warning", "info" or "debug"
@@ -275,10 +279,6 @@ logtype = "stdout"
 # logfile = "./acme-dns.log"
 # format, either "json" or "text"
 logformat = "text"
-# use HTTP header to get the client ip
-use_header = false
-# header name to pull the ip address / list of ip addresses from
-header_name = "X-Forwarded-For"
 ```
 
 ## Clients
