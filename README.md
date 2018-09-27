@@ -224,7 +224,7 @@ nsname = "auth.example.org"
 nsadmin = "admin.example.org"
 # predefined records served in addition to the TXT
 records = [
-    # default A
+    # domain pointing to the public IP of your acme-dns server
     "auth.example.org. A 198.51.100.1",
     # specify that auth.example.org will resolve any *.auth.example.org records
     "auth.example.org. NS auth.example.org.",
