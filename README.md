@@ -168,15 +168,15 @@ docker run --rm --name acmedns                 \
 ## DNS Records
 
 Note: In this documentation:
-- `example.com` is your domain name
-- `auth.example.com` is the subdomain you want to use for acme-dns
+- `auth.example.org` is the hostname of the acme-dns server
+- acme-dns will serve `*.auth.example.org` records
 - `198.51.100.1` is the **public** IP address of the system running acme-dns  
 
 These values should be changed based on your environment.
 
 You will need to add some DNS records on your domain's regular DNS server:
-- `NS` record for `auth.example.com` pointing to `auth.example.com` (this means, that `auth.example.com` is responsible for any `*.auth.example.com` records)
-- `A` record for `auth.example.com` pointing to `198.51.100.1`
+- `NS` record for `auth.example.org` pointing to `auth.example.org` (this means, that `auth.example.org` is responsible for any `*.auth.example.org` records)
+- `A` record for `auth.example.org` pointing to `198.51.100.1`
 - If using IPv6, an `AAAA` record pointing to the IPv6 address.
 - Each domain you will be authenticating will need a `_acme-challenge` `CNAME` subdomain added. The [client](README.md#clients) you use will explain how to do this.
 
@@ -184,12 +184,12 @@ You will need to add some DNS records on your domain's regular DNS server:
 
 You may want to test that acme-dns is working before using it for real queries.
 
-1) Confirm that DNS lookups for the acme-dns subdomain works as expected: `dig auth.example.com`.
+1) Confirm that DNS lookups for the acme-dns subdomain works as expected: `dig auth.example.org`.
 
 2) Call the `/register` API endpoint to register a test domain:
 ```
-$ curl -X POST http://auth.example.com/register
-{"username":"eabcdb41-d89f-4580-826f-3e62e9755ef2","password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0","fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com","subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf","allowfrom":[]}
+$ curl -X POST http://auth.example.org/register
+{"username":"eabcdb41-d89f-4580-826f-3e62e9755ef2","password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0","fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org","subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf","allowfrom":[]}
 ```
 
 3) Call the `/update` API endpoint to set a test TXT record. Pass the `username`, `password` and `subdomain` received from the `register` call performed above:
@@ -198,14 +198,14 @@ $ curl -X POST \
   -H "X-Api-User: eabcdb41-d89f-4580-826f-3e62e9755ef2" \
   -H "X-Api-Key: pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0" \
   -d '{"subdomain": "d420c923-bbd7-4056-ab64-c3ca54c9b3cf", "txt": "___validation_token_received_from_the_ca___"}' \
-  http://auth.example.com/update
+  http://auth.example.org/update
 ```
 
 Note: The `txt` field must be exactly 43 characters long, otherwise acme-dns will reject it
 
 4) Perform a DNS lookup to the test subdomain to confirm that everything is working properly:
 ```
-$ dig @ns.auth.example.com d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com
+$ dig @ns.auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org
 ```
 
 ## Configuration
@@ -225,7 +225,7 @@ nsadmin = "admin.example.org"
 # predefined records served in addition to the TXT
 records = [
     # default A
-    "auth.example.org. A 192.168.1.100",
+    "auth.example.org. A 198.51.100.1",
     # specify that auth.example.org will resolve any *.auth.example.org records
     "auth.example.org. NS auth.example.org.",
 ]
