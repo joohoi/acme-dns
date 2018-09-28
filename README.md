@@ -205,7 +205,7 @@ Note: The `txt` field must be exactly 43 characters long, otherwise acme-dns wil
 
 4) Perform a DNS lookup to the test subdomain to confirm that everything is working properly:
 ```
-$ dig @ns.auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org
+$ dig @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org
 ```
 
 ## Configuration
