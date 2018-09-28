@@ -236,7 +236,7 @@ debug = false
 # Database engine to use, sqlite3 or postgres
 engine = "sqlite3"
 # Connection string, filename for sqlite3 and postgres://$username:$password@$host/$db_name for postgres
-connection = "acme-dns.db"
+connection = "/var/lib/acme-dns/acme-dns.db"
 # connection = "postgres://user:password@localhost/acmedns_db"
 
 [api]
