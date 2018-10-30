@@ -42,7 +42,8 @@ func TestMain(m *testing.M) {
 		_ = newDb.Init("sqlite3", ":memory:")
 	}
 	DB = newDb
-	server := startDNS("0.0.0.0:15353", "udp")
+	server := setupDNSServer()
+	go startDNS(server, make(chan error, 1))
 	exitval := m.Run()
 	server.Shutdown()
 	DB.Close()
@@ -57,6 +58,8 @@ func setupConfig() {
 
 	var generalcfg = general{
 		Domain:        "auth.example.org",
+		Listen:        "127.0.0.1:15553",
+		Proto:         "udp",
 		Nsname:        "ns1.auth.example.org",
 		Nsadmin:       "admin.example.org",
 		StaticRecords: records,

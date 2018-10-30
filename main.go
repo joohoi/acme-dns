@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/miekg/dns"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/acme/autocert"
@@ -55,16 +56,42 @@ func main() {
 	DB = newDB
 	defer DB.Close()
 
+	// Error channel for servers
+	errChan := make(chan error, 1)
+
 	// DNS server
-	startDNS(Config.General.Listen, Config.General.Proto)
+	dnsServer := setupDNSServer()
+	go startDNS(dnsServer, errChan)
 
 	// HTTP API
-	startHTTPAPI()
+	go startHTTPAPI(errChan)
 
+	// block waiting for error
+	select {
+	case err = <-errChan:
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 	log.Debugf("Shutting down...")
 }
 
-func startHTTPAPI() {
+func startDNS(server *dns.Server, errChan chan error) {
+	// DNS server part
+	dns.HandleFunc(".", handleRequest)
+	host := Config.General.Listen + ":" + Config.General.Proto
+	log.WithFields(log.Fields{"host": host}).Info("Listening DNS")
+	err := server.ListenAndServe()
+	if err != nil {
+		errChan <- err
+	}
+}
+
+func setupDNSServer() *dns.Server {
+	return &dns.Server{Addr: Config.General.Listen, Net: Config.General.Proto}
+}
+
+func startHTTPAPI(errChan chan error) {
 	// Setup http logger
 	logger := log.New()
 	logwriter := logger.Writer()
@@ -90,7 +117,7 @@ func startHTTPAPI() {
 	cfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 	}
-
+	var err error
 	switch Config.API.TLS {
 	case "letsencrypt":
 		m := autocert.Manager{
@@ -109,7 +136,7 @@ func startHTTPAPI() {
 			ErrorLog:  stdlog.New(logwriter, "", 0),
 		}
 		log.WithFields(log.Fields{"host": host, "domain": Config.API.Domain}).Info("Listening HTTPS, using certificate from autocert")
-		log.Fatal(srv.ListenAndServeTLS("", ""))
+		err = srv.ListenAndServeTLS("", "")
 	case "cert":
 		srv := &http.Server{
 			Addr:      host,
@@ -118,9 +145,12 @@ func startHTTPAPI() {
 			ErrorLog:  stdlog.New(logwriter, "", 0),
 		}
 		log.WithFields(log.Fields{"host": host}).Info("Listening HTTPS")
-		log.Fatal(srv.ListenAndServeTLS(Config.API.TLSCertFullchain, Config.API.TLSCertPrivkey))
+		err = srv.ListenAndServeTLS(Config.API.TLSCertFullchain, Config.API.TLSCertPrivkey)
 	default:
 		log.WithFields(log.Fields{"host": host}).Info("Listening HTTP")
-		log.Fatal(http.ListenAndServe(host, c.Handler(api)))
+		err = http.ListenAndServe(host, c.Handler(api))
+	}
+	if err != nil {
+		errChan <- err
 	}
 }

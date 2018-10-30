@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -106,14 +105,6 @@ func setupLogging(format string, level string) {
 		log.SetLevel(log.ErrorLevel)
 	}
 	// TODO: file logging
-}
-
-func startDNS(listen string, proto string) *dns.Server {
-	// DNS server part
-	dns.HandleFunc(".", handleRequest)
-	server := &dns.Server{Addr: listen, Net: proto}
-	go server.ListenAndServe()
-	return server
 }
 
 func getIPListFromHeader(header string) []string {
