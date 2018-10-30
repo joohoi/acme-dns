@@ -212,7 +212,9 @@ $ dig @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org
 
 ```bash
 [general]
-# dns interface
+# DNS interface. Note that systemd-resolved may reserve port 53 on 127.0.0.53
+# In this case acme-dns will error out and you will need to define the listening interface
+# for example: listen = "127.0.0.1:53"
 listen = ":53"
 # protocol, "udp", "udp4", "udp6" or "tcp", "tcp4", "tcp6"
 protocol = "udp"
