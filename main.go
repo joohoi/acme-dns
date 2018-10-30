@@ -79,8 +79,7 @@ func main() {
 func startDNS(server *dns.Server, errChan chan error) {
 	// DNS server part
 	dns.HandleFunc(".", handleRequest)
-	host := Config.General.Listen + ":" + Config.General.Proto
-	log.WithFields(log.Fields{"host": host}).Info("Listening DNS")
+	log.WithFields(log.Fields{"addr": Config.General.Listen}).Info("Listening DNS")
 	err := server.ListenAndServe()
 	if err != nil {
 		errChan <- err

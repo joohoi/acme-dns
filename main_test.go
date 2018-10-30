@@ -7,6 +7,7 @@ import (
 	logrustest "github.com/sirupsen/logrus/hooks/test"
 	"io/ioutil"
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -43,7 +44,14 @@ func TestMain(m *testing.M) {
 	}
 	DB = newDb
 	server := setupDNSServer()
+	// Make sure that we're not creating a race condition in tests
+	var wg sync.WaitGroup
+	wg.Add(1)
+	server.NotifyStartedFunc = func() {
+		wg.Done()
+	}
 	go startDNS(server, make(chan error, 1))
+	wg.Wait()
 	exitval := m.Run()
 	server.Shutdown()
 	DB.Close()
@@ -58,7 +66,7 @@ func setupConfig() {
 
 	var generalcfg = general{
 		Domain:        "auth.example.org",
-		Listen:        "127.0.0.1:15553",
+		Listen:        "127.0.0.1:15353",
 		Proto:         "udp",
 		Nsname:        "ns1.auth.example.org",
 		Nsadmin:       "admin.example.org",
