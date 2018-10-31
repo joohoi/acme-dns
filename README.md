@@ -300,10 +300,13 @@ logformat = "text"
 
 
 ## Changelog
-- unreleased
+- v0.6
    - New
       - Command line flag `-c` to specify location of config file.
       - Proper refusal of dynamic update requests.
+      - Release signing
+   - Changed
+      - Better error messages for goroutines
 - v0.5
    - New
       - Configurable certificate cache directory
