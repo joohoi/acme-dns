@@ -303,6 +303,7 @@ logformat = "text"
 - unreleased
    - New
       - Command line flag `-c` to specify location of config file.
+      - Proper refusal of dynamic update requests.
 - v0.5
    - New
       - Configurable certificate cache directory
