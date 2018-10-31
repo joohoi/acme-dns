@@ -56,7 +56,6 @@ func answer(q dns.Question) ([]dns.RR, int, error) {
 		if !ok {
 			rcode = dns.RcodeNameError
 		}
-			
 	}
 	log.WithFields(log.Fields{"qtype": dns.TypeToString[rtype], "domain": domain, "rcode": dns.RcodeToString[rcode]}).Debug("Answering question for domain")
 	return r, rcode, nil
@@ -68,6 +67,9 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 	if r.Opcode == dns.OpcodeQuery {
 		readQuery(m)
+	} else if r.Opcode == dns.OpcodeUpdate {
+		log.Debug("Refusing DNS Dynamic update request")
+		m.MsgHdr.Rcode = dns.RcodeRefused
 	}
 
 	w.WriteMsg(m)
