@@ -149,6 +149,7 @@ See the INSTALL section for information on how to do this.
 ```
 docker run --rm --name acmedns                 \
  -p 53:53                                      \
+ -p 53:53/udp                                  \
  -p 80:80                                      \
  -v /path/to/your/config:/etc/acme-dns:ro      \
  -v /path/to/your/data:/var/lib/acme-dns       \
@@ -216,8 +217,8 @@ $ dig @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org
 # In this case acme-dns will error out and you will need to define the listening interface
 # for example: listen = "127.0.0.1:53"
 listen = ":53"
-# protocol, "udp", "udp4", "udp6" or "tcp", "tcp4", "tcp6"
-protocol = "udp"
+# protocol, "both", "both4", "both6", "udp", "udp4", "udp6" or "tcp", "tcp4", "tcp6"
+protocol = "both"
 # domain name to serve the requests off of
 domain = "auth.example.org"
 # zone name server
@@ -300,6 +301,10 @@ logformat = "text"
 
 
 ## Changelog
+
+- master
+   - Changed
+      - A new protocol selection for DNS server "both", that binds both - UDP and TCP ports.
 - v0.6
    - New
       - Command line flag `-c` to specify location of config file.
