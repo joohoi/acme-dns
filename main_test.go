@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 		_ = newDb.Init("sqlite3", ":memory:")
 	}
 	DB = newDb
-	server := setupDNSServer()
+	server := setupDNSServer("udp")
 	// Make sure that we're not creating a race condition in tests
 	var wg sync.WaitGroup
 	wg.Add(1)

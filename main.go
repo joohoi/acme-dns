@@ -8,6 +8,7 @@ import (
 	stdlog "log"
 	"net/http"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/julienschmidt/httprouter"
@@ -60,8 +61,25 @@ func main() {
 	errChan := make(chan error, 1)
 
 	// DNS server
-	dnsServer := setupDNSServer()
-	go startDNS(dnsServer, errChan)
+	if strings.HasPrefix(Config.General.Proto, "both") {
+		// Handle the case where DNS server should be started for both udp and tcp
+		udpProto := "udp"
+		tcpProto := "tcp"
+		if strings.HasSuffix(Config.General.Proto, "4") {
+			udpProto += "4"
+			tcpProto += "4"
+		} else if strings.HasSuffix(Config.General.Proto, "6") {
+			udpProto += "6"
+			tcpProto += "6"
+		}
+		dnsServerUDP := setupDNSServer(udpProto)
+		dnsServerTCP := setupDNSServer(tcpProto)
+		go startDNS(dnsServerUDP, errChan)
+		go startDNS(dnsServerTCP, errChan)
+	} else {
+		dnsServer := setupDNSServer(Config.General.Proto)
+		go startDNS(dnsServer, errChan)
+	}
 
 	// HTTP API
 	go startHTTPAPI(errChan)
@@ -79,15 +97,15 @@ func main() {
 func startDNS(server *dns.Server, errChan chan error) {
 	// DNS server part
 	dns.HandleFunc(".", handleRequest)
-	log.WithFields(log.Fields{"addr": Config.General.Listen}).Info("Listening DNS")
+	log.WithFields(log.Fields{"addr": Config.General.Listen, "proto": server.Net}).Info("Listening DNS")
 	err := server.ListenAndServe()
 	if err != nil {
 		errChan <- err
 	}
 }
 
-func setupDNSServer() *dns.Server {
-	return &dns.Server{Addr: Config.General.Listen, Net: Config.General.Proto}
+func setupDNSServer(proto string) *dns.Server {
+	return &dns.Server{Addr: Config.General.Listen, Net: proto}
 }
 
 func startHTTPAPI(errChan chan error) {
