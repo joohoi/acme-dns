@@ -283,6 +283,7 @@ logformat = "text"
 ## Clients
 
 - acme.sh: [https://github.com/Neilpang/acme.sh](https://github.com/Neilpang/acme.sh)
+- Certify The Web: [https://github.com/webprofusion/certify](https://github.com/webprofusion/certify)
 - cert-manager: [https://github.com/jetstack/cert-manager](https://github.com/jetstack/cert-manager)
 - Lego: [https://github.com/xenolf/lego](https://github.com/xenolf/lego)
 - Posh-ACME: [https://github.com/rmbolger/Posh-ACME](https://github.com/rmbolger/Posh-ACME)
