@@ -204,9 +204,9 @@ $ curl -X POST \
 
 Note: The `txt` field must be exactly 43 characters long, otherwise acme-dns will reject it
 
-4) Perform a DNS lookup to the test subdomain to confirm that everything is working properly:
+4) Perform a DNS lookup to the test subdomain to confirm the updated TXT record is being served:
 ```
-$ dig @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org
+$ dig -t txt @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org
 ```
 
 ## Configuration
