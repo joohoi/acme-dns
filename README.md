@@ -289,7 +289,7 @@ logformat = "text"
 - Posh-ACME: [https://github.com/rmbolger/Posh-ACME](https://github.com/rmbolger/Posh-ACME)
 - Sewer: [https://github.com/komuw/sewer](https://github.com/komuw/sewer)
 - Traefik: [https://github.com/containous/traefik](https://github.com/containous/traefik)
-- win-acme (since v2.0.0-alpha4): [https://github.com/PKISharp/win-acme](https://github.com/PKISharp/win-acme)
+- Windows ACME Simple (WACS), since v2.0.0-alpha4: [https://github.com/PKISharp/win-acme](https://github.com/PKISharp/win-acme)
 
 ### Authentication hooks
 
