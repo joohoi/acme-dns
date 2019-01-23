@@ -6,10 +6,13 @@ services:
       dockerfile: Dockerfile
     image: joohoi/acme-dns:latest
     ports:
-      - "443:443"
-      - "53:53"
-      - "53:53/udp"
-      - "80:80"
+      - "443:8443"
+      - "53:5353"
+      - "53:5353/udp"
+      - "80:8080"
     volumes:
       - ./config:/etc/acme-dns:ro
-      - ./data:/var/lib/acme-dns
+      - acmedns_data:/var/lib/acme-dns
+
+volumes:
+  acmedns_data: {}
