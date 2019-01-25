@@ -96,5 +96,5 @@ func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 // Endpoint used to check the readiness and/or liveness (health) of the server.
 func healthCheck(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// does nothing except returning status code 200 (which it does by default)
+	w.WriteHeader(http.StatusOK)
 }
