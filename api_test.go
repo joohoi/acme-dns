@@ -413,5 +413,5 @@ func TestApiHealthCheck(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 	e := getExpect(t, server)
-	e.POST("/health").Expect().Status(http.StatusOK)
+	e.GET("/health").Expect().Status(http.StatusOK)
 }
