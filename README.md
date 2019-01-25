@@ -102,6 +102,28 @@ The method allows you to update the TXT answer contents of your unique subdomain
 }
 ```
 
+### Health check endpoint
+
+The method can be used to check readiness and/or liveness of the server. It will return status code 200 on success or won't be reachable.
+
+```GET /health```
+
+#### Example using a Kubernetes deployment
+
+```
+# ...
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 80
+  periodSeconds: 2
+  initialDelaySeconds: 2
+  failureThreshold: 3
+  successThreshold: 1
+livenessProbe:
+  # same as for readinessProbe...
+```
+
 ## Self-hosted
 
 You are encouraged to run your own acme-dns instance, because you are effectively authorizing the acme-dns server to act on your behalf in providing the answer to the challenging CA, making the instance able to request (and get issued) a TLS certificate for the domain that has CNAME pointing to it.
