@@ -7,7 +7,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -93,7 +92,7 @@ func TestClientLocalAddress(t *testing.T) {
 		t.Errorf("failed to get an valid answer\n%v", r)
 	}
 	if len(r.Extra) != 1 {
-		t.Errorf("failed to get additional answers\n%v", r)
+		t.Fatalf("failed to get additional answers\n%v", r)
 	}
 	txt := r.Extra[0].(*TXT)
 	if txt == nil {
@@ -373,12 +372,12 @@ func TestTruncatedMsg(t *testing.T) {
 	m.Truncated = true
 	buf, err = m.Pack()
 	if err != nil {
-		t.Errorf("failed to pack truncated: %v", err)
+		t.Errorf("failed to pack truncated message: %v", err)
 	}
 
 	r = new(Msg)
-	if err = r.Unpack(buf); err != nil && err != ErrTruncated {
-		t.Errorf("unable to unpack truncated message: %v", err)
+	if err = r.Unpack(buf); err != nil {
+		t.Errorf("failed to unpack truncated message: %v", err)
 	}
 	if !r.Truncated {
 		t.Errorf("truncated message wasn't unpacked as truncated")
@@ -407,9 +406,10 @@ func TestTruncatedMsg(t *testing.T) {
 	buf1 = buf[:len(buf)-off]
 
 	r = new(Msg)
-	if err = r.Unpack(buf1); err != nil && err != ErrTruncated {
-		t.Errorf("unable to unpack cutoff message: %v", err)
+	if err = r.Unpack(buf1); err == nil {
+		t.Error("cutoff message should have failed to unpack")
 	}
+	// r's header might be still usable.
 	if !r.Truncated {
 		t.Error("truncated cutoff message wasn't unpacked as truncated")
 	}
@@ -438,8 +438,8 @@ func TestTruncatedMsg(t *testing.T) {
 	buf1 = buf[:len(buf)-off]
 
 	r = new(Msg)
-	if err = r.Unpack(buf1); err != nil && err != ErrTruncated {
-		t.Errorf("unable to unpack cutoff message: %v", err)
+	if err = r.Unpack(buf1); err == nil {
+		t.Error("cutoff message should have failed to unpack")
 	}
 	if !r.Truncated {
 		t.Error("truncated cutoff message wasn't unpacked as truncated")
@@ -454,8 +454,8 @@ func TestTruncatedMsg(t *testing.T) {
 
 	r = new(Msg)
 	err = r.Unpack(buf1)
-	if err == nil || err == ErrTruncated {
-		t.Errorf("error should not be ErrTruncated from question cutoff unpack: %v", err)
+	if err == nil {
+		t.Errorf("error should be nil after question cutoff unpack: %v", err)
 	}
 
 	// Finally, if we only have the header, we don't return an error.
@@ -484,49 +484,34 @@ func TestTimeout(t *testing.T) {
 	m := new(Msg)
 	m.SetQuestion("miek.nl.", TypeTXT)
 
-	// Use a channel + timeout to ensure we don't get stuck if the
-	// Client Timeout is not working properly
-	done := make(chan struct{}, 2)
+	runTest := func(name string, exchange func(m *Msg, addr string, timeout time.Duration) (*Msg, time.Duration, error)) {
+		t.Run(name, func(t *testing.T) {
+			start := time.Now()
 
-	timeout := time.Millisecond
-	allowable := timeout + (10 * time.Millisecond)
-	abortAfter := timeout + (100 * time.Millisecond)
+			timeout := time.Millisecond
+			allowable := timeout + 10*time.Millisecond
 
-	start := time.Now()
+			_, _, err := exchange(m, addrstr, timeout)
+			if err == nil {
+				t.Errorf("no timeout using Client.%s", name)
+			}
 
-	go func() {
+			length := time.Since(start)
+			if length > allowable {
+				t.Errorf("exchange took longer %v than specified Timeout %v", length, allowable)
+			}
+		})
+	}
+	runTest("Exchange", func(m *Msg, addr string, timeout time.Duration) (*Msg, time.Duration, error) {
 		c := &Client{Timeout: timeout}
-		_, _, err := c.Exchange(m, addrstr)
-		if err == nil {
-			t.Error("no timeout using Client.Exchange")
-		}
-		done <- struct{}{}
-	}()
-
-	go func() {
+		return c.Exchange(m, addr)
+	})
+	runTest("ExchangeContext", func(m *Msg, addr string, timeout time.Duration) (*Msg, time.Duration, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		c := &Client{}
-		_, _, err := c.ExchangeContext(ctx, m, addrstr)
-		if err == nil {
-			t.Error("no timeout using Client.ExchangeContext")
-		}
-		done <- struct{}{}
-	}()
 
-	// Wait for both the Exchange and ExchangeContext tests to be done.
-	for i := 0; i < 2; i++ {
-		select {
-		case <-done:
-		case <-time.After(abortAfter):
-		}
-	}
-
-	length := time.Since(start)
-
-	if length > allowable {
-		t.Errorf("exchange took longer %v than specified Timeout %v", length, allowable)
-	}
+		return new(Client).ExchangeContext(ctx, m, addrstr)
+	})
 }
 
 // Check that responses from deduplicated requests aren't shared between callers
@@ -535,16 +520,13 @@ func TestConcurrentExchanges(t *testing.T) {
 	cases[0] = new(Msg)
 	cases[1] = new(Msg)
 	cases[1].Truncated = true
-	for _, m := range cases {
-		block := make(chan struct{})
-		waiting := make(chan struct{})
 
+	for _, m := range cases {
+		mm := m // redeclare m so as not to trip the race detector
 		handler := func(w ResponseWriter, req *Msg) {
-			r := m.Copy()
+			r := mm.Copy()
 			r.SetReply(req)
 
-			waiting <- struct{}{}
-			<-block
 			w.WriteMsg(r)
 		}
 
@@ -559,54 +541,27 @@ func TestConcurrentExchanges(t *testing.T) {
 
 		m := new(Msg)
 		m.SetQuestion("miek.nl.", TypeSRV)
+
 		c := &Client{
 			SingleInflight: true,
 		}
-		r := make([]*Msg, 2)
+		// Force this client to always return the same request,
+		// even though we're querying sequentially. Running the
+		// Exchange calls below concurrently can fail due to
+		// goroutine scheduling, but this simulates the same
+		// outcome.
+		c.group.dontDeleteForTesting = true
 
-		var wg sync.WaitGroup
-		wg.Add(len(r))
-		for i := 0; i < len(r); i++ {
-			go func(i int) {
-				defer wg.Done()
-				r[i], _, _ = c.Exchange(m.Copy(), addrstr)
-				if r[i] == nil {
-					t.Errorf("response %d is nil", i)
-				}
-			}(i)
+		r := make([]*Msg, 2)
+		for i := range r {
+			r[i], _, _ = c.Exchange(m.Copy(), addrstr)
+			if r[i] == nil {
+				t.Errorf("response %d is nil", i)
+			}
 		}
-		select {
-		case <-waiting:
-		case <-time.After(time.Second):
-			t.FailNow()
-		}
-		close(block)
-		wg.Wait()
 
 		if r[0] == r[1] {
 			t.Errorf("got same response, expected non-shared responses")
 		}
 	}
-}
-
-func TestDoHExchange(t *testing.T) {
-	const addrstr = "https://dns.cloudflare.com/dns-query"
-
-	m := new(Msg)
-	m.SetQuestion("miek.nl.", TypeSOA)
-
-	cl := &Client{Net: "https"}
-
-	r, _, err := cl.Exchange(m, addrstr)
-	if err != nil {
-		t.Fatalf("failed to exchange: %v", err)
-	}
-
-	if r == nil || r.Rcode != RcodeSuccess {
-		t.Errorf("failed to get an valid answer\n%v", r)
-	}
-
-	t.Log(r)
-
-	// TODO: proper tests for this
 }

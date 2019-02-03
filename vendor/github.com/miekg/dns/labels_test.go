@@ -155,19 +155,57 @@ func TestIsDomainName(t *testing.T) {
 		lab int
 	}
 	names := map[string]*ret{
-		"..":               {false, 1},
-		"@.":               {true, 1},
-		"www.example.com":  {true, 3},
-		"www.e%ample.com":  {true, 3},
-		"www.example.com.": {true, 3},
-		"mi\\k.nl.":        {true, 2},
-		"mi\\k.nl":         {true, 2},
+		"..":                     {false, 1},
+		"@.":                     {true, 1},
+		"www.example.com":        {true, 3},
+		"www.e%ample.com":        {true, 3},
+		"www.example.com.":       {true, 3},
+		"mi\\k.nl.":              {true, 2},
+		"mi\\k.nl":               {true, 2},
+		longestDomain:            {true, 4},
+		longestUnprintableDomain: {true, 4},
 	}
 	for d, ok := range names {
 		l, k := IsDomainName(d)
 		if ok.ok != k || ok.lab != l {
 			t.Errorf(" got %v %d for %s ", k, l, d)
 			t.Errorf("have %v %d for %s ", ok.ok, ok.lab, d)
+		}
+	}
+}
+
+func TestIsFqdnEscaped(t *testing.T) {
+	for s, expect := range map[string]bool{
+		".":                  true,
+		"\\.":                false,
+		"\\\\.":              true,
+		"\\\\\\.":            false,
+		"\\\\\\\\.":          true,
+		"a.":                 true,
+		"a\\.":               false,
+		"a\\\\.":             true,
+		"a\\\\\\.":           false,
+		"ab.":                true,
+		"ab\\.":              false,
+		"ab\\\\.":            true,
+		"ab\\\\\\.":          false,
+		"..":                 true,
+		".\\.":               false,
+		".\\\\.":             true,
+		".\\\\\\.":           false,
+		"example.org.":       true,
+		"example.org\\.":     false,
+		"example.org\\\\.":   true,
+		"example.org\\\\\\.": false,
+		"example\\.org.":     true,
+		"example\\\\.org.":   true,
+		"example\\\\\\.org.": true,
+		"\\example.org.":     true,
+		"\\\\example.org.":   true,
+		"\\\\\\example.org.": true,
+	} {
+		if got := IsFqdn(s); got != expect {
+			t.Errorf("IsFqdn(%q) = %t, expected %t", s, got, expect)
 		}
 	}
 }

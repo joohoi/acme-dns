@@ -44,6 +44,9 @@ type Request struct {
 	keepBodyBuffer bool
 
 	isTLS bool
+
+	// To detect scheme changes in redirects
+	schemaUpdate bool
 }
 
 // Response represents HTTP response.
@@ -346,7 +349,7 @@ func (resp *Response) BodyGunzip() ([]byte, error) {
 }
 
 func gunzipData(p []byte) ([]byte, error) {
-	var bb ByteBuffer
+	var bb bytebufferpool.ByteBuffer
 	_, err := WriteGunzip(&bb, p)
 	if err != nil {
 		return nil, err
@@ -373,7 +376,7 @@ func (resp *Response) BodyInflate() ([]byte, error) {
 }
 
 func inflateData(p []byte) ([]byte, error) {
-	var bb ByteBuffer
+	var bb bytebufferpool.ByteBuffer
 	_, err := WriteInflate(&bb, p)
 	if err != nil {
 		return nil, err
@@ -711,7 +714,7 @@ func (req *Request) MultipartForm() (*multipart.Form, error) {
 }
 
 func marshalMultipartForm(f *multipart.Form, boundary string) ([]byte, error) {
-	var buf ByteBuffer
+	var buf bytebufferpool.ByteBuffer
 	if err := WriteMultipartForm(&buf, f, boundary); err != nil {
 		return nil, err
 	}
@@ -722,7 +725,7 @@ func marshalMultipartForm(f *multipart.Form, boundary string) ([]byte, error) {
 // boundary to w.
 func WriteMultipartForm(w io.Writer, f *multipart.Form, boundary string) error {
 	// Do not care about memory allocations here, since multipart
-	// form processing is slooow.
+	// form processing is slow.
 	if len(boundary) == 0 {
 		panic("BUG: form boundary cannot be empty")
 	}
@@ -744,7 +747,7 @@ func WriteMultipartForm(w io.Writer, f *multipart.Form, boundary string) error {
 	// marshal files
 	for k, fvv := range f.File {
 		for _, fv := range fvv {
-			vw, err := mw.CreateFormFile(k, fv.Filename)
+			vw, err := mw.CreatePart(fv.Header)
 			if err != nil {
 				return fmt.Errorf("cannot create form file %q (%q): %s", k, fv.Filename, err)
 			}
@@ -844,7 +847,9 @@ func (req *Request) Read(r *bufio.Reader) error {
 
 const defaultMaxInMemoryFileSize = 16 * 1024 * 1024
 
-var errGetOnly = errors.New("non-GET request received")
+// ErrGetOnly is returned when server expects only GET requests,
+// but some other type of request came (Server.GetOnly option is true).
+var ErrGetOnly = errors.New("non-GET request received")
 
 // ReadLimitBody reads request from the given r, limiting the body size.
 //
@@ -878,11 +883,7 @@ func (req *Request) readLimitBody(r *bufio.Reader, maxBodySize int, getOnly bool
 		return err
 	}
 	if getOnly && !req.Header.IsGet() {
-		return errGetOnly
-	}
-
-	if req.Header.noBody() {
-		return nil
+		return ErrGetOnly
 	}
 
 	if req.MayContinue() {
@@ -918,7 +919,7 @@ func (req *Request) MayContinue() bool {
 // then ErrBodyTooLarge is returned.
 func (req *Request) ContinueReadBody(r *bufio.Reader, maxBodySize int) error {
 	var err error
-	contentLength := req.Header.ContentLength()
+	contentLength := req.Header.realContentLength()
 	if contentLength > 0 {
 		if maxBodySize > 0 && contentLength > maxBodySize {
 			return ErrBodyTooLarge
@@ -988,7 +989,6 @@ func (resp *Response) ReadLimitBody(r *bufio.Reader, maxBodySize int) error {
 		bodyBuf.Reset()
 		bodyBuf.B, err = readBody(r, resp.Header.ContentLength(), maxBodySize, bodyBuf.B)
 		if err != nil {
-			resp.Reset()
 			return err
 		}
 		resp.Header.SetContentLength(len(bodyBuf.B))
@@ -1109,8 +1109,11 @@ func (req *Request) Write(w *bufio.Writer) error {
 		req.Header.SetMultipartFormBoundary(req.multipartFormBoundary)
 	}
 
-	hasBody := !req.Header.noBody()
+	hasBody := !req.Header.ignoreBody()
 	if hasBody {
+		if len(body) == 0 {
+			body = req.postArgs.QueryString()
+		}
 		req.Header.SetContentLength(len(body))
 	}
 	if err = req.Header.Write(w); err != nil {
@@ -1458,7 +1461,7 @@ func (resp *Response) String() string {
 }
 
 func getHTTPString(hw httpWriter) string {
-	w := AcquireByteBuffer()
+	w := bytebufferpool.Get()
 	bw := bufio.NewWriter(w)
 	if err := hw.Write(bw); err != nil {
 		return err.Error()
@@ -1467,7 +1470,7 @@ func getHTTPString(hw httpWriter) string {
 		return err.Error()
 	}
 	s := string(w.B)
-	ReleaseByteBuffer(w)
+	bytebufferpool.Put(w)
 	return s
 }
 
@@ -1650,6 +1653,11 @@ func appendBodyFixedSize(r *bufio.Reader, dst []byte, n int) ([]byte, error) {
 	}
 }
 
+// ErrBrokenChunk is returned when server receives a broken chunked body (Transfer-Encoding: chunked).
+type ErrBrokenChunk struct {
+	error
+}
+
 func readBodyChunked(r *bufio.Reader, maxBodySize int, dst []byte) ([]byte, error) {
 	if len(dst) > 0 {
 		panic("BUG: expected zero-length buffer")
@@ -1669,7 +1677,9 @@ func readBodyChunked(r *bufio.Reader, maxBodySize int, dst []byte) ([]byte, erro
 			return dst, err
 		}
 		if !bytes.Equal(dst[len(dst)-strCRLFLen:], strCRLF) {
-			return dst, fmt.Errorf("cannot find crlf at the end of chunk")
+			return dst, ErrBrokenChunk{
+				error: fmt.Errorf("cannot find crlf at the end of chunk"),
+			}
 		}
 		dst = dst[:len(dst)-strCRLFLen]
 		if chunkSize == 0 {
@@ -1683,19 +1693,34 @@ func parseChunkSize(r *bufio.Reader) (int, error) {
 	if err != nil {
 		return -1, err
 	}
+	for {
+		c, err := r.ReadByte()
+		if err != nil {
+			return -1, ErrBrokenChunk{
+				error: fmt.Errorf("cannot read '\r' char at the end of chunk size: %s", err),
+			}
+		}
+		// Skip any trailing whitespace after chunk size.
+		if c == ' ' {
+			continue
+		}
+		if c != '\r' {
+			return -1, ErrBrokenChunk{
+				error: fmt.Errorf("unexpected char %q at the end of chunk size. Expected %q", c, '\r'),
+			}
+		}
+		break
+	}
 	c, err := r.ReadByte()
 	if err != nil {
-		return -1, fmt.Errorf("cannot read '\r' char at the end of chunk size: %s", err)
-	}
-	if c != '\r' {
-		return -1, fmt.Errorf("unexpected char %q at the end of chunk size. Expected %q", c, '\r')
-	}
-	c, err = r.ReadByte()
-	if err != nil {
-		return -1, fmt.Errorf("cannot read '\n' char at the end of chunk size: %s", err)
+		return -1, ErrBrokenChunk{
+			error: fmt.Errorf("cannot read '\n' char at the end of chunk size: %s", err),
+		}
 	}
 	if c != '\n' {
-		return -1, fmt.Errorf("unexpected char %q at the end of chunk size. Expected %q", c, '\n')
+		return -1, ErrBrokenChunk{
+			error: fmt.Errorf("unexpected char %q at the end of chunk size. Expected %q", c, '\n'),
+		}
 	}
 	return n, nil
 }
