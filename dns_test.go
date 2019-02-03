@@ -150,6 +150,30 @@ func TestResolveCNAME(t *testing.T) {
 	}
 }
 
+func TestAuthoritative(t *testing.T) {
+	resolv := resolver{server: "127.0.0.1:15353"}
+	answer, _ := resolv.lookup("nonexistent.auth.example.org", dns.TypeA)
+	if answer.Rcode != dns.RcodeNameError {
+		t.Errorf("Was expecing NXDOMAIN rcode, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
+	}
+	if len(answer.Answer) != 1 {
+		t.Errorf("Was expecting exactly one answer (SOA) for invalid subdomain, but got %d", len(answer.Answer))
+	}
+	if answer.Answer[0].Header().Rrtype != dns.TypeSOA {
+		t.Errorf("Was expecting SOA record as answer for NXDOMAIN but got [%s]", dns.TypeToString[answer.Answer[0].Header().Rrtype])
+	}
+	if !answer.MsgHdr.Authoritative {
+		t.Errorf("Was expecting authoritative bit to be set")
+	}
+	nanswer, _ := resolv.lookup("nonexsitent.nonauth.tld", dns.TypeA)
+	if len(nanswer.Answer) > 0 {
+		t.Errorf("Didn't expect answers for non authotitative domain query")
+	}
+	if nanswer.MsgHdr.Authoritative {
+		t.Errorf("Authoritative bit should not be set for non-authoritative domain.")
+	}
+}
+
 func TestResolveTXT(t *testing.T) {
 	resolv := resolver{server: "127.0.0.1:15353"}
 	validTXT := "______________valid_response_______________"
@@ -188,17 +212,19 @@ func TestResolveTXT(t *testing.T) {
 		}
 
 		if len(answer.Answer) > 0 {
-			if !test.getAnswer {
+			if !test.getAnswer && answer.Answer[0].Header().Rrtype != dns.TypeSOA {
 				t.Errorf("Test %d: Expected no answer, but got: [%q]", i, answer)
 			}
-			err = hasExpectedTXTAnswer(answer.Answer, test.expTXT)
-			if err != nil {
-				if test.validAnswer {
-					t.Errorf("Test %d: %v", i, err)
-				}
-			} else {
-				if !test.validAnswer {
-					t.Errorf("Test %d: Answer was not expected to be valid, answer [%q], compared to [%s]", i, answer, test.expTXT)
+			if test.getAnswer {
+				err = hasExpectedTXTAnswer(answer.Answer, test.expTXT)
+				if err != nil {
+					if test.validAnswer {
+						t.Errorf("Test %d: %v", i, err)
+					}
+				} else {
+					if !test.validAnswer {
+						t.Errorf("Test %d: Answer was not expected to be valid, answer [%q], compared to [%s]", i, answer, test.expTXT)
+					}
 				}
 			}
 		} else {
