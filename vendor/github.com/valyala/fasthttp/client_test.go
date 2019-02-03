@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
@@ -16,6 +17,386 @@ import (
 
 	"github.com/valyala/fasthttp/fasthttputil"
 )
+
+func TestClientPostArgs(t *testing.T) {
+	ln := fasthttputil.NewInmemoryListener()
+	s := &Server{
+		Handler: func(ctx *RequestCtx) {
+			body := ctx.Request.Body()
+			if len(body) == 0 {
+				return
+			}
+			ctx.Write(body)
+		},
+	}
+	go s.Serve(ln)
+	c := &Client{
+		Dial: func(addr string) (net.Conn, error) {
+			return ln.Dial()
+		},
+	}
+	req, res := AcquireRequest(), AcquireResponse()
+	args := req.PostArgs()
+	args.Add("addhttp2", "support")
+	args.Add("fast", "http")
+	req.Header.SetMethod("POST")
+	req.SetRequestURI("http://make.fasthttp.great?again")
+	err := c.Do(req, res)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Body()) == 0 {
+		t.Fatal("cannot set args as body")
+	}
+}
+
+func TestClientRedirectSameSchema(t *testing.T) {
+
+	listenHTTPS1 := testClientRedirectListener(t, true)
+	defer listenHTTPS1.Close()
+
+	listenHTTPS2 := testClientRedirectListener(t, true)
+	defer listenHTTPS2.Close()
+
+	sHTTPS1 := testClientRedirectChangingSchemaServer(t, listenHTTPS1, listenHTTPS1, true)
+	defer sHTTPS1.Stop()
+
+	sHTTPS2 := testClientRedirectChangingSchemaServer(t, listenHTTPS2, listenHTTPS2, false)
+	defer sHTTPS2.Stop()
+
+	destURL := fmt.Sprintf("https://%s/baz", listenHTTPS1.Addr().String())
+
+	urlParsed, err := url.Parse(destURL)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	reqClient := &HostClient{
+		IsTLS: true,
+		Addr:  urlParsed.Host,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	statusCode, _, err := reqClient.GetTimeout(nil, destURL, 4000*time.Millisecond)
+	if err != nil {
+		t.Fatalf("HostClient error: %s", err)
+		return
+	}
+
+	if statusCode != 200 {
+		t.Fatalf("HostClient error code response %d", statusCode)
+		return
+	}
+
+}
+
+func TestClientRedirectChangingSchemaHttp2Https(t *testing.T) {
+
+	listenHTTPS := testClientRedirectListener(t, true)
+	defer listenHTTPS.Close()
+
+	listenHTTP := testClientRedirectListener(t, false)
+	defer listenHTTP.Close()
+
+	sHTTPS := testClientRedirectChangingSchemaServer(t, listenHTTPS, listenHTTP, true)
+	defer sHTTPS.Stop()
+
+	sHTTP := testClientRedirectChangingSchemaServer(t, listenHTTPS, listenHTTP, false)
+	defer sHTTP.Stop()
+
+	destURL := fmt.Sprintf("http://%s/baz", listenHTTP.Addr().String())
+
+	urlParsed, err := url.Parse(destURL)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	reqClient := &HostClient{
+		Addr: urlParsed.Host,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	statusCode, _, err := reqClient.GetTimeout(nil, destURL, 4000*time.Millisecond)
+	if err != nil {
+		t.Fatalf("HostClient error: %s", err)
+		return
+	}
+
+	if statusCode != 200 {
+		t.Fatalf("HostClient error code response %d", statusCode)
+		return
+	}
+
+}
+
+func testClientRedirectListener(t *testing.T, isTLS bool) net.Listener {
+
+	var ln net.Listener
+	var err error
+	var tlsConfig *tls.Config
+
+	if isTLS {
+		certFile := "./ssl-cert-snakeoil.pem"
+		keyFile := "./ssl-cert-snakeoil.key"
+		cert, err1 := tls.LoadX509KeyPair(certFile, keyFile)
+		if err1 != nil {
+			t.Fatalf("Cannot load TLS certificate: %s", err1)
+		}
+		tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+		ln, err = tls.Listen("tcp", "localhost:0", tlsConfig)
+	} else {
+		ln, err = net.Listen("tcp", "localhost:0")
+	}
+
+	if err != nil {
+		t.Fatalf("cannot listen isTLS %v: %s", isTLS, err)
+	}
+
+	return ln
+}
+
+func testClientRedirectChangingSchemaServer(t *testing.T, https, http net.Listener, isTLS bool) *testEchoServer {
+	s := &Server{
+		Handler: func(ctx *RequestCtx) {
+			if ctx.IsTLS() {
+				ctx.SetStatusCode(200)
+			} else {
+				ctx.Redirect(fmt.Sprintf("https://%s/baz", https.Addr().String()), 301)
+			}
+		},
+	}
+
+	var ln net.Listener
+	if isTLS {
+		ln = https
+	} else {
+		ln = http
+	}
+
+	ch := make(chan struct{})
+	go func() {
+		err := s.Serve(ln)
+		if err != nil {
+			t.Fatalf("unexpected error returned from Serve(): %s", err)
+		}
+		close(ch)
+	}()
+	return &testEchoServer{
+		s:  s,
+		ln: ln,
+		ch: ch,
+		t:  t,
+	}
+}
+
+func TestClientHeaderCase(t *testing.T) {
+	ln := fasthttputil.NewInmemoryListener()
+	defer ln.Close()
+
+	go func() {
+		c, err := ln.Accept()
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.Write([]byte("HTTP/1.1 200 OK\r\n" +
+			"content-type: text/plain\r\n" +
+			"transfer-encoding: chunked\r\n\r\n" +
+			"24\r\nThis is the data in the first chunk \r\n" +
+			"1B\r\nand this is the second one \r\n" +
+			"0\r\n\r\n",
+		))
+	}()
+
+	c := &Client{
+		Dial: func(addr string) (net.Conn, error) {
+			return ln.Dial()
+		},
+		ReadTimeout: time.Millisecond * 10,
+
+		// Even without name normalizing we should parse headers correctly.
+		DisableHeaderNamesNormalizing: true,
+	}
+
+	code, body, err := c.Get(nil, "http://example.com")
+	if err != nil {
+		t.Error(err)
+	} else if code != 200 {
+		t.Errorf("expected status code 200 got %d", code)
+	} else if string(body) != "This is the data in the first chunk and this is the second one " {
+		t.Errorf("wrong body: %q", body)
+	}
+}
+
+func TestClientReadTimeout(t *testing.T) {
+	// This test is rather slow and increase the total test time
+	// from 2.5 seconds to 6.5 seconds.
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	ln := fasthttputil.NewInmemoryListener()
+
+	timeout := false
+	s := &Server{
+		Handler: func(ctx *RequestCtx) {
+			if timeout {
+				time.Sleep(time.Minute)
+			} else {
+				timeout = true
+			}
+		},
+		Logger: &customLogger{}, // Don't print closed pipe errors.
+	}
+	go s.Serve(ln)
+
+	c := &HostClient{
+		ReadTimeout:               time.Second * 4,
+		MaxIdemponentCallAttempts: 1,
+		Dial: func(addr string) (net.Conn, error) {
+			return ln.Dial()
+		},
+	}
+
+	req := AcquireRequest()
+	res := AcquireResponse()
+
+	req.SetRequestURI("http://localhost")
+
+	// Setting Connection: Close will make the connection be
+	// returned to the pool.
+	req.SetConnectionClose()
+
+	if err := c.Do(req, res); err != nil {
+		t.Fatal(err)
+	}
+
+	ReleaseRequest(req)
+	ReleaseResponse(res)
+
+	done := make(chan struct{})
+	go func() {
+		req := AcquireRequest()
+		res := AcquireResponse()
+
+		req.SetRequestURI("http://localhost")
+		req.SetConnectionClose()
+
+		c.Do(req, res)
+
+		ReleaseRequest(req)
+		ReleaseResponse(res)
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// This shouldn't take longer than the timeout times the number of requests it is going to try to do.
+		// Give it 2 seconds extra seconds just to be sure.
+	case <-time.After(c.ReadTimeout*time.Duration(c.MaxIdemponentCallAttempts) + time.Second*2):
+		t.Fatal("Client.ReadTimeout didn't work")
+	}
+}
+
+func TestClientDefaultUserAgent(t *testing.T) {
+	ln := fasthttputil.NewInmemoryListener()
+
+	userAgentSeen := ""
+	s := &Server{
+		Handler: func(ctx *RequestCtx) {
+			userAgentSeen = string(ctx.UserAgent())
+		},
+	}
+	go s.Serve(ln)
+
+	c := &Client{
+		Dial: func(addr string) (net.Conn, error) {
+			return ln.Dial()
+		},
+	}
+	req := AcquireRequest()
+	res := AcquireResponse()
+
+	req.SetRequestURI("http://example.com")
+
+	err := c.Do(req, res)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if userAgentSeen != string(defaultUserAgent) {
+		t.Fatalf("User-Agent defers %q != %q", userAgentSeen, defaultUserAgent)
+	}
+}
+
+func TestClientSetUserAgent(t *testing.T) {
+	ln := fasthttputil.NewInmemoryListener()
+
+	userAgentSeen := ""
+	s := &Server{
+		Handler: func(ctx *RequestCtx) {
+			userAgentSeen = string(ctx.UserAgent())
+		},
+	}
+	go s.Serve(ln)
+
+	userAgent := "I'm not fasthttp"
+	c := &Client{
+		Name: userAgent,
+		Dial: func(addr string) (net.Conn, error) {
+			return ln.Dial()
+		},
+	}
+	req := AcquireRequest()
+	res := AcquireResponse()
+
+	req.SetRequestURI("http://example.com")
+
+	err := c.Do(req, res)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if userAgentSeen != userAgent {
+		t.Fatalf("User-Agent defers %q != %q", userAgentSeen, userAgent)
+	}
+}
+
+func TestClientNoUserAgent(t *testing.T) {
+	ln := fasthttputil.NewInmemoryListener()
+
+	userAgentSeen := ""
+	s := &Server{
+		Handler: func(ctx *RequestCtx) {
+			userAgentSeen = string(ctx.UserAgent())
+		},
+	}
+	go s.Serve(ln)
+
+	c := &Client{
+		NoDefaultUserAgentHeader: true,
+		Dial: func(addr string) (net.Conn, error) {
+			return ln.Dial()
+		},
+	}
+	req := AcquireRequest()
+	res := AcquireResponse()
+
+	req.SetRequestURI("http://example.com")
+
+	err := c.Do(req, res)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if userAgentSeen != "" {
+		t.Fatalf("User-Agent wrong %q != %q", userAgentSeen, "")
+	}
+}
 
 func TestClientDoWithCustomHeaders(t *testing.T) {
 	// make sure that the client sends all the request headers and body.
@@ -562,7 +943,6 @@ func TestHostClientMultipleAddrs(t *testing.T) {
 }
 
 func TestClientFollowRedirects(t *testing.T) {
-	addr := "127.0.0.1:55234"
 	s := &Server{
 		Handler: func(ctx *RequestCtx) {
 			switch string(ctx.Path()) {
@@ -579,10 +959,7 @@ func TestClientFollowRedirects(t *testing.T) {
 			}
 		},
 	}
-	ln, err := net.Listen("tcp4", addr)
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
+	ln := fasthttputil.NewInmemoryListener()
 
 	serverStopCh := make(chan struct{})
 	go func() {
@@ -592,9 +969,15 @@ func TestClientFollowRedirects(t *testing.T) {
 		close(serverStopCh)
 	}()
 
-	uri := fmt.Sprintf("http://%s/foo", addr)
+	c := &HostClient{
+		Addr: "xxx",
+		Dial: func(addr string) (net.Conn, error) {
+			return ln.Dial()
+		},
+	}
+
 	for i := 0; i < 10; i++ {
-		statusCode, body, err := GetTimeout(nil, uri, time.Second)
+		statusCode, body, err := c.GetTimeout(nil, "http://xxx/foo", time.Second)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -606,9 +989,8 @@ func TestClientFollowRedirects(t *testing.T) {
 		}
 	}
 
-	uri = fmt.Sprintf("http://%s/aaab/sss", addr)
 	for i := 0; i < 10; i++ {
-		statusCode, body, err := Get(nil, uri)
+		statusCode, body, err := c.Get(nil, "http://xxx/aaab/sss")
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -622,52 +1004,44 @@ func TestClientFollowRedirects(t *testing.T) {
 }
 
 func TestClientGetTimeoutSuccess(t *testing.T) {
-	addr := "127.0.0.1:56889"
-	s := startEchoServer(t, "tcp", addr)
+	s := startEchoServer(t, "tcp", "127.0.0.1:")
 	defer s.Stop()
 
-	addr = "http://" + addr
-	testClientGetTimeoutSuccess(t, &defaultClient, addr, 100)
+	testClientGetTimeoutSuccess(t, &defaultClient, "http://"+s.Addr(), 100)
 }
 
 func TestClientGetTimeoutSuccessConcurrent(t *testing.T) {
-	addr := "127.0.0.1:56989"
-	s := startEchoServer(t, "tcp", addr)
+	s := startEchoServer(t, "tcp", "127.0.0.1:")
 	defer s.Stop()
 
-	addr = "http://" + addr
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			testClientGetTimeoutSuccess(t, &defaultClient, addr, 100)
+			testClientGetTimeoutSuccess(t, &defaultClient, "http://"+s.Addr(), 100)
 		}()
 	}
 	wg.Wait()
 }
 
 func TestClientDoTimeoutSuccess(t *testing.T) {
-	addr := "127.0.0.1:63897"
-	s := startEchoServer(t, "tcp", addr)
+	s := startEchoServer(t, "tcp", "127.0.0.1:")
 	defer s.Stop()
 
-	addr = "http://" + addr
-	testClientDoTimeoutSuccess(t, &defaultClient, addr, 100)
+	testClientDoTimeoutSuccess(t, &defaultClient, "http://"+s.Addr(), 100)
 }
 
 func TestClientDoTimeoutSuccessConcurrent(t *testing.T) {
-	addr := "127.0.0.1:63898"
-	s := startEchoServer(t, "tcp", addr)
+	s := startEchoServer(t, "tcp", "127.0.0.1:")
 	defer s.Stop()
 
-	addr = "http://" + addr
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			testClientDoTimeoutSuccess(t, &defaultClient, addr, 100)
+			testClientDoTimeoutSuccess(t, &defaultClient, "http://"+s.Addr(), 100)
 		}()
 	}
 	wg.Wait()
@@ -937,16 +1311,13 @@ func (r *singleReadConn) Close() error {
 }
 
 func TestClientHTTPSInvalidServerName(t *testing.T) {
-	addrHTTPS := "127.0.0.1:57794"
-	sHTTPS := startEchoServerTLS(t, "tcp", addrHTTPS)
+	sHTTPS := startEchoServerTLS(t, "tcp", "127.0.0.1:")
 	defer sHTTPS.Stop()
 
 	var c Client
 
-	addr := "https://" + addrHTTPS
-
 	for i := 0; i < 10; i++ {
-		_, _, err := c.GetTimeout(nil, addr, time.Second)
+		_, _, err := c.GetTimeout(nil, "https://"+sHTTPS.Addr(), time.Second)
 		if err == nil {
 			t.Fatalf("expecting TLS error")
 		}
@@ -954,12 +1325,10 @@ func TestClientHTTPSInvalidServerName(t *testing.T) {
 }
 
 func TestClientHTTPSConcurrent(t *testing.T) {
-	addrHTTP := "127.0.0.1:56793"
-	sHTTP := startEchoServer(t, "tcp", addrHTTP)
+	sHTTP := startEchoServer(t, "tcp", "127.0.0.1:")
 	defer sHTTP.Stop()
 
-	addrHTTPS := "127.0.0.1:56794"
-	sHTTPS := startEchoServerTLS(t, "tcp", addrHTTPS)
+	sHTTPS := startEchoServerTLS(t, "tcp", "127.0.0.1:")
 	defer sHTTPS.Stop()
 
 	c := &Client{
@@ -971,9 +1340,9 @@ func TestClientHTTPSConcurrent(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
-		addr := "http://" + addrHTTP
+		addr := "http://" + sHTTP.Addr()
 		if i&1 != 0 {
-			addr = "https://" + addrHTTPS
+			addr = "https://" + sHTTPS.Addr()
 		}
 		go func() {
 			defer wg.Done()
@@ -987,10 +1356,9 @@ func TestClientHTTPSConcurrent(t *testing.T) {
 func TestClientManyServers(t *testing.T) {
 	var addrs []string
 	for i := 0; i < 10; i++ {
-		addr := fmt.Sprintf("127.0.0.1:%d", 56904+i)
-		s := startEchoServer(t, "tcp", addr)
+		s := startEchoServer(t, "tcp", "127.0.0.1:")
 		defer s.Stop()
-		addrs = append(addrs, addr)
+		addrs = append(addrs, s.Addr())
 	}
 
 	var wg sync.WaitGroup
@@ -1007,29 +1375,24 @@ func TestClientManyServers(t *testing.T) {
 }
 
 func TestClientGet(t *testing.T) {
-	addr := "127.0.0.1:56789"
-	s := startEchoServer(t, "tcp", addr)
+	s := startEchoServer(t, "tcp", "127.0.0.1:")
 	defer s.Stop()
 
-	addr = "http://" + addr
-	testClientGet(t, &defaultClient, addr, 100)
+	testClientGet(t, &defaultClient, "http://"+s.Addr(), 100)
 }
 
 func TestClientPost(t *testing.T) {
-	addr := "127.0.0.1:56798"
-	s := startEchoServer(t, "tcp", addr)
+	s := startEchoServer(t, "tcp", "127.0.0.1:")
 	defer s.Stop()
 
-	addr = "http://" + addr
-	testClientPost(t, &defaultClient, addr, 100)
+	testClientPost(t, &defaultClient, "http://"+s.Addr(), 100)
 }
 
 func TestClientConcurrent(t *testing.T) {
-	addr := "127.0.0.1:55780"
-	s := startEchoServer(t, "tcp", addr)
+	s := startEchoServer(t, "tcp", "127.0.0.1:")
 	defer s.Stop()
 
-	addr = "http://" + addr
+	addr := "http://" + s.Addr()
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
@@ -1219,6 +1582,10 @@ func (s *testEchoServer) Stop() {
 	}
 }
 
+func (s *testEchoServer) Addr() string {
+	return s.ln.Addr().String()
+}
+
 func startEchoServerTLS(t *testing.T, network, addr string) *testEchoServer {
 	return startEchoServerExt(t, network, addr, true)
 }
@@ -1259,6 +1626,7 @@ func startEchoServerExt(t *testing.T, network, addr string, isTLS bool) *testEch
 				ctx.PostArgs().WriteTo(ctx)
 			}
 		},
+		Logger: &customLogger{}, // Ignore log output.
 	}
 	ch := make(chan struct{})
 	go func() {

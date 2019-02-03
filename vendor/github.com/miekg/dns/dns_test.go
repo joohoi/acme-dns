@@ -10,8 +10,7 @@ import (
 func TestPackUnpack(t *testing.T) {
 	out := new(Msg)
 	out.Answer = make([]RR, 1)
-	key := new(DNSKEY)
-	key = &DNSKEY{Flags: 257, Protocol: 3, Algorithm: RSASHA1}
+	key := &DNSKEY{Flags: 257, Protocol: 3, Algorithm: RSASHA1}
 	key.Hdr = RR_Header{Name: "miek.nl.", Rrtype: TypeDNSKEY, Class: ClassINET, Ttl: 3600}
 	key.PublicKey = "AwEAAaHIwpx3w4VHKi6i1LHnTaWeHCL154Jug0Rtc9ji5qwPXpBo6A5sRv7cSsPQKPIwxLpyCrbJ4mr2L0EPOdvP6z6YfljK2ZmTbogU9aSU2fiq/4wjxbdkLyoDVgtO+JsxNN4bjr4WcWhsmk1Hg93FV9ZpkWb0Tbad8DFqNDzr//kZ"
 
@@ -25,8 +24,7 @@ func TestPackUnpack(t *testing.T) {
 		t.Error("failed to unpack msg with DNSKEY")
 	}
 
-	sig := new(RRSIG)
-	sig = &RRSIG{TypeCovered: TypeDNSKEY, Algorithm: RSASHA1, Labels: 2,
+	sig := &RRSIG{TypeCovered: TypeDNSKEY, Algorithm: RSASHA1, Labels: 2,
 		OrigTtl: 3600, Expiration: 4000, Inception: 4000, KeyTag: 34641, SignerName: "miek.nl.",
 		Signature: "AwEAAaHIwpx3w4VHKi6i1LHnTaWeHCL154Jug0Rtc9ji5qwPXpBo6A5sRv7cSsPQKPIwxLpyCrbJ4mr2L0EPOdvP6z6YfljK2ZmTbogU9aSU2fiq/4wjxbdkLyoDVgtO+JsxNN4bjr4WcWhsmk1Hg93FV9ZpkWb0Tbad8DFqNDzr//kZ"}
 	sig.Hdr = RR_Header{Name: "miek.nl.", Rrtype: TypeRRSIG, Class: ClassINET, Ttl: 3600}
@@ -134,10 +132,10 @@ func TestPackNAPTR(t *testing.T) {
 		`apple.com. IN NAPTR   50 50 "se" "SIPS+D2T" "" _sips._tcp.apple.com.`,
 	} {
 		rr := testRR(n)
-		msg := make([]byte, rr.len())
+		msg := make([]byte, Len(rr))
 		if off, err := PackRR(rr, msg, 0, nil, false); err != nil {
 			t.Errorf("packing failed: %v", err)
-			t.Errorf("length %d, need more than %d", rr.len(), off)
+			t.Errorf("length %d, need more than %d", Len(rr), off)
 		}
 	}
 }
@@ -281,8 +279,8 @@ func TestTKEY(t *testing.T) {
 		t.Fatal("Unable to decode TKEY")
 	}
 	// Make sure we get back the same length
-	if rr.len() != len(tkeyBytes) {
-		t.Fatalf("Lengths don't match %d != %d", rr.len(), len(tkeyBytes))
+	if Len(rr) != len(tkeyBytes) {
+		t.Fatalf("Lengths don't match %d != %d", Len(rr), len(tkeyBytes))
 	}
 	// make space for it with some fudge room
 	msg := make([]byte, tkeyLen+1000)
@@ -293,10 +291,10 @@ func TestTKEY(t *testing.T) {
 	if offset != len(tkeyBytes) {
 		t.Fatalf("mismatched TKEY RR size %d != %d", len(tkeyBytes), offset)
 	}
-	if bytes.Compare(tkeyBytes, msg[0:offset]) != 0 {
+	if !bytes.Equal(tkeyBytes, msg[0:offset]) {
 		t.Fatal("mismatched TKEY data after rewriting bytes")
 	}
-	t.Logf("got TKEY of: " + rr.String())
+
 	// Now add some bytes to this and make sure we can encode OtherData properly
 	tkey := rr.(*TKEY)
 	tkey.OtherData = "abcd"
@@ -305,16 +303,14 @@ func TestTKEY(t *testing.T) {
 	if packErr != nil {
 		t.Fatal("unable to pack TKEY RR after modification", packErr)
 	}
-	if offset != (len(tkeyBytes) + 2) {
+	if offset != len(tkeyBytes)+2 {
 		t.Fatalf("mismatched TKEY RR size %d != %d", offset, len(tkeyBytes)+2)
 	}
-	t.Logf("modified to TKEY of: " + rr.String())
 
 	// Make sure we can parse our string output
 	tkey.Hdr.Class = ClassINET // https://github.com/miekg/dns/issues/577
-	newRR, newError := NewRR(tkey.String())
+	_, newError := NewRR(tkey.String())
 	if newError != nil {
 		t.Fatalf("unable to parse TKEY string: %s", newError)
 	}
-	t.Log("got reparsed TKEY of newRR: " + newRR.String())
 }

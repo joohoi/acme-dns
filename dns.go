@@ -84,11 +84,7 @@ func (d *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 	if r.Opcode == dns.OpcodeQuery {
 		d.readQuery(m)
-	} else if r.Opcode == dns.OpcodeUpdate {
-		log.Debug("Refusing DNS Dynamic update request")
-		m.MsgHdr.Rcode = dns.RcodeRefused
 	}
-
 	w.WriteMsg(m)
 }
 
