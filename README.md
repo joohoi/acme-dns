@@ -326,10 +326,12 @@ logformat = "text"
 ## Changelog
 
 - master
-   - Unreleased
-      - Added new endpoint to perform health checks
+   - Added
+      - New endpoint to perform health checks
    - Changed
       - A new protocol selection for DNS server "both", that binds both - UDP and TCP ports.
+      - Refactored DNS server internals.
+      - Handle some aspects of DNS spec better.
 - v0.6
    - New
       - Command line flag `-c` to specify location of config file.

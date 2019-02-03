@@ -17,6 +17,7 @@ type Records struct {
 type DNSServer struct {
 	DB      database
 	Server  *dns.Server
+	SOA     dns.RR
 	Domains map[string]Records
 }
 
@@ -60,6 +61,7 @@ func (d *DNSServer) ParseRecords(config DNSConfig) {
 		log.WithFields(log.Fields{"error": err.Error(), "soa": SOAstring}).Error("Error while adding SOA record")
 	} else {
 		d.appendRR(soarr)
+		d.SOA = soarr
 	}
 }
 
@@ -91,14 +93,25 @@ func (d *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func (d *DNSServer) readQuery(m *dns.Msg) {
+	var authoritative = false
 	for _, que := range m.Question {
-		if rr, rc, err := d.answer(que); err == nil {
+		if rr, rc, auth, err := d.answer(que); err == nil {
+			if auth {
+				authoritative = auth
+			}
 			m.MsgHdr.Rcode = rc
 			for _, r := range rr {
 				m.Answer = append(m.Answer, r)
 			}
 		}
 	}
+	m.MsgHdr.Authoritative = authoritative
+	if authoritative {
+		if m.MsgHdr.Rcode == dns.RcodeNameError {
+			m.Answer = append(m.Answer, d.SOA)
+		}
+	}
+
 }
 
 func (d *DNSServer) getRecord(q dns.Question) ([]dns.RR, error) {
@@ -123,14 +136,28 @@ func (d *DNSServer) getRecord(q dns.Question) ([]dns.RR, error) {
 }
 
 // answeringForDomain checks if we have any records for a domain
-func (d *DNSServer) answeringForDomain(q dns.Question) bool {
-	_, ok := d.Domains[q.Name]
+func (d *DNSServer) answeringForDomain(name string) bool {
+	_, ok := d.Domains[name]
 	return ok
 }
 
-func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, error) {
+func (d *DNSServer) isAuthoritative(q dns.Question) bool {
+	if d.answeringForDomain(q.Name) {
+		return true
+	}
+	domainParts := strings.Split(q.Name, ".")
+	for i := range domainParts {
+		if d.answeringForDomain(strings.Join(domainParts[i:], ".")) {
+			return true
+		}
+	}
+	return false
+}
+
+func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 	var rcode int
-	if !d.answeringForDomain(q) {
+	var authoritative = d.isAuthoritative(q)
+	if !d.answeringForDomain(q.Name) {
 		rcode = dns.RcodeNameError
 	}
 	r, _ := d.getRecord(q)
@@ -146,8 +173,12 @@ func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, error) {
 		// Make sure that we return NOERROR if there were dynamic records for the domain
 		rcode = dns.RcodeSuccess
 	}
+	// Handle EDNS (no support at the moment)
+	if q.Qtype == dns.TypeOPT {
+		return []dns.RR{}, dns.RcodeFormatError, authoritative, nil
+	}
 	log.WithFields(log.Fields{"qtype": dns.TypeToString[q.Qtype], "domain": q.Name, "rcode": dns.RcodeToString[rcode]}).Debug("Answering question for domain")
-	return r, rcode, nil
+	return r, rcode, authoritative, nil
 }
 
 func (d *DNSServer) answerTXT(q dns.Question) ([]dns.RR, error) {
