@@ -17,6 +17,7 @@ type Records struct {
 type DNSServer struct {
 	DB      database
 	Server  *dns.Server
+	SOA     dns.RR
 	Domains map[string]Records
 }
 
@@ -60,6 +61,7 @@ func (d *DNSServer) ParseRecords(config DNSConfig) {
 		log.WithFields(log.Fields{"error": err.Error(), "soa": SOAstring}).Error("Error while adding SOA record")
 	} else {
 		d.appendRR(soarr)
+		d.SOA = soarr
 	}
 }
 
@@ -145,6 +147,10 @@ func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, error) {
 	if len(r) > 0 {
 		// Make sure that we return NOERROR if there were dynamic records for the domain
 		rcode = dns.RcodeSuccess
+	}
+	// Handle EDNS (no support at the moment)
+	if q.Qtype == dns.TypeOPT {
+		return []dns.RR{}, dns.RcodeFormatError, nil
 	}
 	log.WithFields(log.Fields{"qtype": dns.TypeToString[q.Qtype], "domain": q.Name, "rcode": dns.RcodeToString[rcode]}).Debug("Answering question for domain")
 	return r, rcode, nil

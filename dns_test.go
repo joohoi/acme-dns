@@ -18,20 +18,20 @@ type resolver struct {
 	server string
 }
 
-func (r *resolver) lookup(host string, qtype uint16) ([]dns.RR, error) {
+func (r *resolver) lookup(host string, qtype uint16) (*dns.Msg, error) {
 	msg := new(dns.Msg)
 	msg.Id = dns.Id()
 	msg.Question = make([]dns.Question, 1)
 	msg.Question[0] = dns.Question{Name: dns.Fqdn(host), Qtype: qtype, Qclass: dns.ClassINET}
 	in, err := dns.Exchange(msg, r.server)
 	if err != nil {
-		return []dns.RR{}, fmt.Errorf("Error querying the server [%v]", err)
+		return in, fmt.Errorf("Error querying the server [%v]", err)
 	}
 	if in != nil && in.Rcode != dns.RcodeSuccess {
-		return []dns.RR{}, fmt.Errorf("Received error from the server [%s]", dns.RcodeToString[in.Rcode])
+		return in, fmt.Errorf("Received error from the server [%s]", dns.RcodeToString[in.Rcode])
 	}
 
-	return in.Answer, nil
+	return in, nil
 }
 
 func hasExpectedTXTAnswer(answer []dns.RR, cmpTXT string) error {
@@ -98,13 +98,21 @@ func TestResolveA(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	if len(answer) == 0 {
+	if len(answer.Answer) == 0 {
 		t.Error("No answer for DNS query")
 	}
 
 	_, err = resolv.lookup("nonexistent.domain.tld", dns.TypeA)
 	if err == nil {
 		t.Errorf("Was expecting error because of NXDOMAIN but got none")
+	}
+}
+
+func TestEDNS(t *testing.T) {
+	resolv := resolver{server: "127.0.0.1:15353"}
+	answer, _ := resolv.lookup("auth.example.org", dns.TypeOPT)
+	if answer.Rcode != dns.RcodeFormatError {
+		t.Errorf("Was expecing FORMERR rcode for OPT query, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
 	}
 }
 
@@ -131,14 +139,14 @@ func TestResolveCNAME(t *testing.T) {
 	if err != nil {
 		t.Errorf("Got unexpected error: %s", err)
 	}
-	if len(answer) != 1 {
-		t.Errorf("Expected exactly 1 RR in answer, but got %d instead.", len(answer))
+	if len(answer.Answer) != 1 {
+		t.Errorf("Expected exactly 1 RR in answer, but got %d instead.", len(answer.Answer))
 	}
-	if answer[0].Header().Rrtype != dns.TypeCNAME {
-		t.Errorf("Expected a CNAME answer, but got [%s] instead.", dns.TypeToString[answer[0].Header().Rrtype])
+	if answer.Answer[0].Header().Rrtype != dns.TypeCNAME {
+		t.Errorf("Expected a CNAME answer, but got [%s] instead.", dns.TypeToString[answer.Answer[0].Header().Rrtype])
 	}
-	if answer[0].String() != expected {
-		t.Errorf("Expected CNAME answer [%s] but got [%s] instead.", expected, answer[0].String())
+	if answer.Answer[0].String() != expected {
+		t.Errorf("Expected CNAME answer [%s] but got [%s] instead.", expected, answer.Answer[0].String())
 	}
 }
 
@@ -179,11 +187,11 @@ func TestResolveTXT(t *testing.T) {
 			}
 		}
 
-		if len(answer) > 0 {
+		if len(answer.Answer) > 0 {
 			if !test.getAnswer {
 				t.Errorf("Test %d: Expected no answer, but got: [%q]", i, answer)
 			}
-			err = hasExpectedTXTAnswer(answer, test.expTXT)
+			err = hasExpectedTXTAnswer(answer.Answer, test.expTXT)
 			if err != nil {
 				if test.validAnswer {
 					t.Errorf("Test %d: %v", i, err)
