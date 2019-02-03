@@ -12,18 +12,6 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-func getKey() *DNSKEY {
-	key := new(DNSKEY)
-	key.Hdr.Name = "miek.nl."
-	key.Hdr.Class = ClassINET
-	key.Hdr.Ttl = 14400
-	key.Flags = 256
-	key.Protocol = 3
-	key.Algorithm = RSASHA256
-	key.PublicKey = "AwEAAcNEU67LJI5GEgF9QLNqLO1SMq1EdoQ6E9f85ha0k0ewQGCblyW2836GiVsm6k8Kr5ECIoMJ6fZWf3CQSQ9ycWfTyOHfmI3eQ/1Covhb2y4bAmL/07PhrL7ozWBW3wBfM335Ft9xjtXHPy7ztCbV9qZ4TVDTW/Iyg0PiwgoXVesz"
-	return key
-}
-
 func getSoa() *SOA {
 	soa := new(SOA)
 	soa.Hdr = RR_Header{"miek.nl.", TypeSOA, ClassINET, 14400, 0}
@@ -856,5 +844,15 @@ func TestRsaExponentUnpack(t *testing.T) {
 
 	if e := kskSig.Verify(ksk, []RR{zsk, ksk}); e != nil {
 		t.Fatalf("cannot verify RRSIG with keytag [%d]. Cause [%s]", ksk.KeyTag(), e.Error())
+	}
+}
+
+func TestParseKeyReadError(t *testing.T) {
+	m, err := parseKey(errReader{}, "")
+	if err == nil || !strings.Contains(err.Error(), errTestReadError.Error()) {
+		t.Errorf("expected error to contain %q, but got %v", errTestReadError, err)
+	}
+	if m != nil {
+		t.Errorf("expected a nil map, but got %v", m)
 	}
 }

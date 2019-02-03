@@ -1,6 +1,9 @@
 package dns
 
-import "testing"
+import (
+	"strconv"
+	"testing"
+)
 
 func TestPackNsec3(t *testing.T) {
 	nsec3 := HashName("dnsex.nl.", SHA1, 0, "DEAD")
@@ -112,6 +115,18 @@ func TestNsec3(t *testing.T) {
 			name:   "asd.com.",
 			covers: false,
 		},
+		{ // empty interval wildcard
+			rr: &NSEC3{
+				Hdr:        RR_Header{Name: "2n1tb3vairuobl6rkdvii42n9tfmialp.com."},
+				Hash:       1,
+				Flags:      1,
+				Iterations: 5,
+				Salt:       "F10E9F7EA83FC8F3",
+				NextDomain: "2N1TB3VAIRUOBL6RKDVII42N9TFMIALP",
+			},
+			name:   "*.asd.com.",
+			covers: true,
+		},
 		{ // name hash is before owner hash, not covered
 			rr: &NSEC3{
 				Hdr:        RR_Header{Name: "3V62ULR0NRE83V0RJA2VJGTLIF9V6RAB.com."},
@@ -137,5 +152,19 @@ func TestNsec3EmptySalt(t *testing.T) {
 
 	if !rr.(*NSEC3).Match("com.") {
 		t.Fatalf("expected record to match com. label")
+	}
+}
+
+func BenchmarkHashName(b *testing.B) {
+	for _, iter := range []uint16{
+		150, 2500, 5000, 10000, ^uint16(0),
+	} {
+		b.Run(strconv.Itoa(int(iter)), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				if HashName("some.example.org.", SHA1, iter, "deadbeef") == "" {
+					b.Fatalf("HashName failed")
+				}
+			}
+		})
 	}
 }

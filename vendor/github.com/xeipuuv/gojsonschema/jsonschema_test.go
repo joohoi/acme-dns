@@ -17,10 +17,12 @@ package gojsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -39,6 +41,84 @@ type jsonSchemaTestCase struct {
 	Valid       bool        `json:"valid"`
 }
 
+//Skip any directories not named appropiately
+// filepath.Walk will also visit files in the root of the test directory
+var testDirectories = regexp.MustCompile(`(draft\d+)`)
+var draftMapping = map[string]Draft{
+	"draft4": Draft4,
+	"draft6": Draft6,
+	"draft7": Draft7,
+}
+
+func executeTests(t *testing.T, path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		t.Errorf("Error (%s)\n", err.Error())
+	}
+	fmt.Println(file.Name())
+
+	var tests []jsonSchemaTest
+	d := json.NewDecoder(file)
+	d.UseNumber()
+	err = d.Decode(&tests)
+
+	if err != nil {
+		t.Errorf("Error (%s)\n", err.Error())
+	}
+
+	draft := Hybrid
+	if m := testDirectories.FindString(path); m != "" {
+		draft = draftMapping[m]
+	}
+
+	for _, test := range tests {
+		fmt.Println("    " + test.Description)
+
+		if test.Disabled {
+			continue
+		}
+
+		testSchemaLoader := NewRawLoader(test.Schema)
+		sl := NewSchemaLoader()
+		sl.Draft = draft
+		sl.Validate = true
+		testSchema, err := sl.Compile(testSchemaLoader)
+
+		if err != nil {
+			t.Errorf("Error (%s)\n", err.Error())
+		}
+
+		for _, testCase := range test.Tests {
+			testDataLoader := NewRawLoader(testCase.Data)
+			result, err := testSchema.Validate(testDataLoader)
+
+			if err != nil {
+				t.Errorf("Error (%s)\n", err.Error())
+			}
+
+			if result.Valid() != testCase.Valid {
+				schemaString, _ := marshalToJsonString(test.Schema)
+				testCaseString, _ := marshalToJsonString(testCase.Data)
+
+				t.Errorf("Test failed : %s\n"+
+					"%s.\n"+
+					"%s.\n"+
+					"expects: %t, given %t\n"+
+					"Schema: %s\n"+
+					"Data: %s\n",
+					file.Name(),
+					test.Description,
+					testCase.Description,
+					testCase.Valid,
+					result.Valid(),
+					*schemaString,
+					*testCaseString)
+			}
+		}
+	}
+	return nil
+}
+
 func TestSuite(t *testing.T) {
 
 	wd, err := os.Getwd()
@@ -55,10 +135,6 @@ func TestSuite(t *testing.T) {
 		}
 	}()
 
-	//Skip any directories not named appropiately
-	// filepath.Walk will also visit files in the root of the test directory
-	testDirectories := regexp.MustCompile(`^draft\d+$`)
-
 	err = filepath.Walk(wd, func(path string, fileInfo os.FileInfo, err error) error {
 		if fileInfo.IsDir() && path != wd && !testDirectories.MatchString(fileInfo.Name()) {
 			return filepath.SkipDir
@@ -66,66 +142,45 @@ func TestSuite(t *testing.T) {
 		if !strings.HasSuffix(fileInfo.Name(), ".json") {
 			return nil
 		}
-		file, err := os.Open(path)
-		if err != nil {
-			t.Errorf("Error (%s)\n", err.Error())
-		}
-		fmt.Println(file.Name())
+		return executeTests(t, path)
+	})
+	if err != nil {
+		t.Errorf("Error (%s)\n", err.Error())
+	}
+}
 
-		var tests []jsonSchemaTest
-		d := json.NewDecoder(file)
-		d.UseNumber()
-		err = d.Decode(&tests)
+func TestFormats(t *testing.T) {
+	// Go 1.5 and 1.6 contain minor bugs in parsing URIs and unicode which makes the test suite fail uri and idn-email formats
+	// Therefore disable these tests for these go versions
+	if strings.HasPrefix(runtime.Version(), "go1.5") || strings.HasPrefix(runtime.Version(), "go1.6") {
+		return
+	}
 
-		if err != nil {
-			t.Errorf("Error (%s)\n", err.Error())
-		}
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err.Error())
+	}
+	wd = filepath.Join(wd, "testdata")
 
-		for _, test := range tests {
-			fmt.Println("    " + test.Description)
+	dirs, err := ioutil.ReadDir(wd)
 
-			if test.Disabled {
-				continue
-			}
+	if err != nil {
+		panic(err.Error())
+	}
 
-			testSchemaLoader := NewRawLoader(test.Schema)
-			testSchema, err := NewSchema(testSchemaLoader)
+	for _, dir := range dirs {
+		if testDirectories.MatchString(dir.Name()) {
+			formatsDirectory := filepath.Join(wd, dir.Name(), "optional", "format")
+			err = filepath.Walk(formatsDirectory, func(path string, fileInfo os.FileInfo, err error) error {
+				if fileInfo == nil || !strings.HasSuffix(fileInfo.Name(), ".json") {
+					return nil
+				}
+				return executeTests(t, path)
+			})
 
 			if err != nil {
 				t.Errorf("Error (%s)\n", err.Error())
 			}
-
-			for _, testCase := range test.Tests {
-				testDataLoader := NewRawLoader(testCase.Data)
-				result, err := testSchema.Validate(testDataLoader)
-
-				if err != nil {
-					t.Errorf("Error (%s)\n", err.Error())
-				}
-
-				if result.Valid() != testCase.Valid {
-					schemaString, _ := marshalToJsonString(test.Schema)
-					testCaseString, _ := marshalToJsonString(testCase.Data)
-
-					t.Errorf("Test failed : %s\n"+
-						"%s.\n"+
-						"%s.\n"+
-						"expects: %t, given %t\n"+
-						"Schema: %s\n"+
-						"Data: %s\n",
-						file.Name(),
-						test.Description,
-						testCase.Description,
-						testCase.Valid,
-						result.Valid(),
-						*schemaString,
-						*testCaseString)
-				}
-			}
 		}
-		return nil
-	})
-	if err != nil {
-		t.Errorf("Error (%s)\n", err.Error())
 	}
 }

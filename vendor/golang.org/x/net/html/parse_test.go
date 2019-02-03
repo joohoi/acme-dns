@@ -329,6 +329,7 @@ var renderTestBlacklist = map[string]bool{
 	`<a href="blah">aba<table><a href="foo">br<tr><td></td></tr>x</table>aoe`: true,
 	`<a><table><a></table><p><a><div><a>`:                                     true,
 	`<a><table><td><a><table></table><a></tr><a></table><a>`:                  true,
+	`<template><a><table><a>`:                                                 true,
 	// A similar reparenting situation involving <nobr>:
 	`<!DOCTYPE html><body><b><nobr>1<table><nobr></b><i><nobr>2<nobr></i>3`: true,
 	// A <plaintext> element is reparented, putting it before a table.
@@ -366,7 +367,8 @@ var renderTestBlacklist = map[string]bool{
 	`<script><!--<script </s`:                      true,
 	// Reconstructing the active formatting elements results in a <plaintext>
 	// element that contains an <a> element.
-	`<!doctype html><p><a><plaintext>b`: true,
+	`<!doctype html><p><a><plaintext>b`:         true,
+	`<table><math><select><mi><select></table>`: true,
 }
 
 func TestNodeConsistency(t *testing.T) {
