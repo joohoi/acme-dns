@@ -12,6 +12,7 @@ import (
 )
 
 var loghook = new(logrustest.Hook)
+var dnsserver *DNSServer
 
 var (
 	postgres = flag.Bool("postgres", false, "run integration tests against PostgreSQL")
@@ -20,6 +21,7 @@ var (
 var records = []string{
 	"auth.example.org. A 192.168.1.100",
 	"ns1.auth.example.org. A 192.168.1.101",
+	"cn.example.org CNAME something.example.org.",
 	"!''b', unparseable ",
 	"ns2.auth.example.org. A 192.168.1.102",
 }
@@ -27,7 +29,6 @@ var records = []string{
 func TestMain(m *testing.M) {
 	setupTestLogger()
 	setupConfig()
-	RR.Parse(Config.General)
 	flag.Parse()
 
 	newDb := new(acmedb)
@@ -43,17 +44,19 @@ func TestMain(m *testing.M) {
 		_ = newDb.Init("sqlite3", ":memory:")
 	}
 	DB = newDb
-	server := setupDNSServer("udp")
+	dnsserver = NewDNSServer(DB, Config.General.Listen, Config.General.Proto)
+	dnsserver.ParseRecords(Config)
+
 	// Make sure that we're not creating a race condition in tests
 	var wg sync.WaitGroup
 	wg.Add(1)
-	server.NotifyStartedFunc = func() {
+	dnsserver.Server.NotifyStartedFunc = func() {
 		wg.Done()
 	}
-	go startDNS(server, make(chan error, 1))
+	go dnsserver.Start(make(chan error, 1))
 	wg.Wait()
 	exitval := m.Run()
-	server.Shutdown()
+	dnsserver.Server.Shutdown()
 	DB.Close()
 	os.Exit(exitval)
 }
