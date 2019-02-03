@@ -325,9 +325,9 @@ logformat = "text"
 
 ## Changelog
 
-- master
-   - Added
-      - New endpoint to perform health checks
+- v0.7
+   - New
+      - Added an endpoint to perform health checks
    - Changed
       - A new protocol selection for DNS server "both", that binds both - UDP and TCP ports.
       - Refactored DNS server internals.
