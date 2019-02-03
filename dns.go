@@ -146,7 +146,7 @@ func (d *DNSServer) isAuthoritative(q dns.Question) bool {
 		return true
 	}
 	domainParts := strings.Split(q.Name, ".")
-	for i, _ := range domainParts {
+	for i := range domainParts {
 		if d.answeringForDomain(strings.Join(domainParts[i:], ".")) {
 			return true
 		}
