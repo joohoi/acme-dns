@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
+// Records is a slice of ResourceRecords
 type Records struct {
 	Records []dns.RR
 }
 
+// DNSServer is the main struct for acme-dns DNS server
 type DNSServer struct {
 	DB      database
 	Server  *dns.Server
