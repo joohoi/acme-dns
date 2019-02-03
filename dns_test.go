@@ -116,22 +116,6 @@ func TestEDNS(t *testing.T) {
 	}
 }
 
-func TestOpcodeUpdate(t *testing.T) {
-	msg := new(dns.Msg)
-	msg.Id = dns.Id()
-	msg.Question = make([]dns.Question, 1)
-	msg.Question[0] = dns.Question{Name: dns.Fqdn("auth.example.org"), Qtype: dns.TypeANY, Qclass: dns.ClassINET}
-	msg.MsgHdr.Opcode = dns.OpcodeUpdate
-	in, err := dns.Exchange(msg, "127.0.0.1:15353")
-	if err != nil || in == nil {
-		t.Errorf("Encountered an error with UPDATE request")
-	} else if err == nil {
-		if in.Rcode != dns.RcodeRefused {
-			t.Errorf("Expected RCODE Refused from UPDATE request, but got [%s] instead", dns.RcodeToString[in.Rcode])
-		}
-	}
-}
-
 func TestResolveCNAME(t *testing.T) {
 	resolv := resolver{server: "127.0.0.1:15353"}
 	expected := "cn.example.org.	3600	IN	CNAME	something.example.org."
