@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/miekg/dns"
 )
 
 // Config is global configuration struct
@@ -13,14 +12,6 @@ var Config DNSConfig
 
 // DB is used to access the database functions in acme-dns
 var DB database
-
-// RR holds the static DNS records
-var RR Records
-
-// Records is for static records
-type Records struct {
-	Records map[uint16]map[string][]dns.RR
-}
 
 // DNSConfig holds the config structure
 type DNSConfig struct {

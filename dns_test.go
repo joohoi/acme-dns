@@ -5,10 +5,10 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/erikstmartin/go-testdb"
 	"github.com/miekg/dns"
-	"strings"
-	"testing"
 )
 
 var resolv resolver
@@ -51,25 +51,6 @@ func hasExpectedTXTAnswer(answer []dns.RR, cmpTXT string) error {
 	return errors.New("Expected answer not found")
 }
 
-func findRecordFromMemory(rrstr string, host string, qtype uint16) error {
-	var errmsg = "No record found"
-	arr, _ := dns.NewRR(strings.ToLower(rrstr))
-	if arrQt, ok := RR.Records[qtype]; ok {
-		if arrHst, ok := arrQt[host]; ok {
-			for _, v := range arrHst {
-				if arr.String() == v.String() {
-					return nil
-				}
-			}
-		} else {
-			errmsg = "No records for domain"
-		}
-	} else {
-		errmsg = "No records for this type in DB"
-	}
-	return errors.New(errmsg)
-}
-
 func TestQuestionDBError(t *testing.T) {
 	testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
 		columns := []string{"Username", "Password", "Subdomain", "Value", "LastActive"}
@@ -88,44 +69,36 @@ func TestQuestionDBError(t *testing.T) {
 	defer DB.SetBackend(oldDb)
 
 	q := dns.Question{Name: dns.Fqdn("whatever.tld"), Qtype: dns.TypeTXT, Qclass: dns.ClassINET}
-	_, rcode, err := answerTXT(q)
+	_, err = dnsserver.answerTXT(q)
 	if err == nil {
 		t.Errorf("Expected error but got none")
-	}
-	if rcode != dns.RcodeNameError {
-		t.Errorf("Expected [%s] rcode, but got [%s]", dns.RcodeToString[dns.RcodeNameError], dns.RcodeToString[rcode])
 	}
 }
 
 func TestParse(t *testing.T) {
-	var testcfg = general{
-		Domain:        ")",
-		Nsname:        "ns1.auth.example.org",
-		Nsadmin:       "admin.example.org",
-		StaticRecords: []string{},
-		Debug:         false,
+	var testcfg = DNSConfig{
+		General: general{
+			Domain:        ")",
+			Nsname:        "ns1.auth.example.org",
+			Nsadmin:       "admin.example.org",
+			StaticRecords: []string{},
+			Debug:         false,
+		},
 	}
-	var testRR Records
-	testRR.Parse(testcfg)
+	dnsserver.ParseRecords(testcfg)
 	if !loggerHasEntryWithMessage("Error while adding SOA record") {
 		t.Errorf("Expected SOA parsing to return error, but did not find one")
 	}
 }
 
 func TestResolveA(t *testing.T) {
-	resolv := resolver{server: "0.0.0.0:15353"}
+	resolv := resolver{server: "127.0.0.1:15353"}
 	answer, err := resolv.lookup("auth.example.org", dns.TypeA)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	if len(answer) > 0 {
-		err = findRecordFromMemory(answer[0].String(), "auth.example.org.", dns.TypeA)
-		if err != nil {
-			t.Errorf("Answer [%s] did not match the expected, got error: [%s], debug: [%q]", answer[0].String(), err, RR.Records)
-		}
-
-	} else {
+	if len(answer) == 0 {
 		t.Error("No answer for DNS query")
 	}
 
@@ -135,8 +108,42 @@ func TestResolveA(t *testing.T) {
 	}
 }
 
+func TestOpcodeUpdate(t *testing.T) {
+	msg := new(dns.Msg)
+	msg.Id = dns.Id()
+	msg.Question = make([]dns.Question, 1)
+	msg.Question[0] = dns.Question{Name: dns.Fqdn("auth.example.org"), Qtype: dns.TypeANY, Qclass: dns.ClassINET}
+	msg.MsgHdr.Opcode = dns.OpcodeUpdate
+	in, err := dns.Exchange(msg, "127.0.0.1:15353")
+	if err != nil || in == nil {
+		t.Errorf("Encountered an error with UPDATE request")
+	} else if err == nil {
+		if in.Rcode != dns.RcodeRefused {
+			t.Errorf("Expected RCODE Refused from UPDATE request, but got [%s] instead", dns.RcodeToString[in.Rcode])
+		}
+	}
+}
+
+func TestResolveCNAME(t *testing.T) {
+	resolv := resolver{server: "127.0.0.1:15353"}
+	expected := "cn.example.org.	3600	IN	CNAME	something.example.org."
+	answer, err := resolv.lookup("cn.example.org", dns.TypeCNAME)
+	if err != nil {
+		t.Errorf("Got unexpected error: %s", err)
+	}
+	if len(answer) != 1 {
+		t.Errorf("Expected exactly 1 RR in answer, but got %d instead.", len(answer))
+	}
+	if answer[0].Header().Rrtype != dns.TypeCNAME {
+		t.Errorf("Expected a CNAME answer, but got [%s] instead.", dns.TypeToString[answer[0].Header().Rrtype])
+	}
+	if answer[0].String() != expected {
+		t.Errorf("Expected CNAME answer [%s] but got [%s] instead.", expected, answer[0].String())
+	}
+}
+
 func TestResolveTXT(t *testing.T) {
-	resolv := resolver{server: "0.0.0.0:15353"}
+	resolv := resolver{server: "127.0.0.1:15353"}
 	validTXT := "______________valid_response_______________"
 
 	atxt, err := DB.Register(cidrslice{})
