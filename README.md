@@ -163,16 +163,18 @@ See the INSTALL section for information on how to do this.
 
 2) Create directories: `config` for the configuration file, and `data` for the sqlite3 database.
 
-3) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`.
+3) Make sure that the user with id `1000` or group id `0` has read permissions on the configuration file in the `config` directory and write permissions in the `data` directory.
 
-4) Modify the `config.cfg` to suit your needs.
+4) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`.
 
-5) Run Docker, this example expects that you have `port = "80"` in your `config.cfg`:
+5) Modify the `config.cfg` to suit your needs.
+
+6) Run Docker, this example expects that you have `port = "8080"` in your `config.cfg`:
 ```
 docker run --rm --name acmedns                 \
- -p 53:53                                      \
- -p 53:53/udp                                  \
- -p 80:80                                      \
+ -p 53:5353                                    \
+ -p 53:5353/udp                                \
+ -p 80:8080                                    \
  -v /path/to/your/config:/etc/acme-dns:ro      \
  -v /path/to/your/data:/var/lib/acme-dns       \
  -d joohoi/acme-dns
@@ -186,7 +188,9 @@ docker run --rm --name acmedns                 \
 
 3) Copy [docker-compose.yml from the project](https://raw.githubusercontent.com/joohoi/acme-dns/master/docker-compose.yml), or create your own.
 
-4) Edit the `config/config.cfg` and `docker-compose.yml` to suit your needs, and run `docker-compose up -d`.
+4) Make sure that the user with id `1000` or group id `0` has read permissions on the configuration file in the `config` directory.
+
+5) Edit the `config/config.cfg` and `docker-compose.yml` to suit your needs, and run `docker-compose up -d`.
 
 ## DNS Records
 
