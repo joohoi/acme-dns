@@ -341,7 +341,7 @@ func TestParseDirectiveMisc(t *testing.T) {
 
 func TestNSEC(t *testing.T) {
 	nsectests := map[string]string{
-		"nl. IN NSEC3PARAM 1 0 5 30923C44C6CBBB8F":                                                                                                 "nl.\t3600\tIN\tNSEC3PARAM\t1 0 5 30923C44C6CBBB8F",
+		"nl. IN NSEC3PARAM 1 0 5 30923C44C6CBBB8F": "nl.\t3600\tIN\tNSEC3PARAM\t1 0 5 30923C44C6CBBB8F",
 		"p2209hipbpnm681knjnu0m1febshlv4e.nl. IN NSEC3 1 1 5 30923C44C6CBBB8F P90DG1KE8QEAN0B01613LHQDG0SOJ0TA NS SOA TXT RRSIG DNSKEY NSEC3PARAM": "p2209hipbpnm681knjnu0m1febshlv4e.nl.\t3600\tIN\tNSEC3\t1 1 5 30923C44C6CBBB8F P90DG1KE8QEAN0B01613LHQDG0SOJ0TA NS SOA TXT RRSIG DNSKEY NSEC3PARAM",
 		"localhost.dnssex.nl. IN NSEC www.dnssex.nl. A RRSIG NSEC":                                                                                 "localhost.dnssex.nl.\t3600\tIN\tNSEC\twww.dnssex.nl. A RRSIG NSEC",
 		"localhost.dnssex.nl. IN NSEC www.dnssex.nl. A RRSIG NSEC TYPE65534":                                                                       "localhost.dnssex.nl.\t3600\tIN\tNSEC\twww.dnssex.nl. A RRSIG NSEC TYPE65534",
@@ -398,16 +398,16 @@ func TestQuotes(t *testing.T) {
 		`t.example.com. IN TXT "a bc"`: "t.example.com.\t3600\tIN\tTXT\t\"a bc\"",
 		`t.example.com. IN TXT "a
  bc"`: "t.example.com.\t3600\tIN\tTXT\t\"a\\010 bc\"",
-		`t.example.com. IN TXT ""`:                                                           "t.example.com.\t3600\tIN\tTXT\t\"\"",
-		`t.example.com. IN TXT "a"`:                                                          "t.example.com.\t3600\tIN\tTXT\t\"a\"",
-		`t.example.com. IN TXT "aa"`:                                                         "t.example.com.\t3600\tIN\tTXT\t\"aa\"",
-		`t.example.com. IN TXT "aaa" ;`:                                                      "t.example.com.\t3600\tIN\tTXT\t\"aaa\"",
-		`t.example.com. IN TXT "abc" "DEF"`:                                                  "t.example.com.\t3600\tIN\tTXT\t\"abc\" \"DEF\"",
-		`t.example.com. IN TXT "abc" ( "DEF" )`:                                              "t.example.com.\t3600\tIN\tTXT\t\"abc\" \"DEF\"",
-		`t.example.com. IN TXT aaa ;`:                                                        "t.example.com.\t3600\tIN\tTXT\t\"aaa\"",
-		`t.example.com. IN TXT aaa aaa;`:                                                     "t.example.com.\t3600\tIN\tTXT\t\"aaa\" \"aaa\"",
-		`t.example.com. IN TXT aaa aaa`:                                                      "t.example.com.\t3600\tIN\tTXT\t\"aaa\" \"aaa\"",
-		`t.example.com. IN TXT aaa`:                                                          "t.example.com.\t3600\tIN\tTXT\t\"aaa\"",
+		`t.example.com. IN TXT ""`:              "t.example.com.\t3600\tIN\tTXT\t\"\"",
+		`t.example.com. IN TXT "a"`:             "t.example.com.\t3600\tIN\tTXT\t\"a\"",
+		`t.example.com. IN TXT "aa"`:            "t.example.com.\t3600\tIN\tTXT\t\"aa\"",
+		`t.example.com. IN TXT "aaa" ;`:         "t.example.com.\t3600\tIN\tTXT\t\"aaa\"",
+		`t.example.com. IN TXT "abc" "DEF"`:     "t.example.com.\t3600\tIN\tTXT\t\"abc\" \"DEF\"",
+		`t.example.com. IN TXT "abc" ( "DEF" )`: "t.example.com.\t3600\tIN\tTXT\t\"abc\" \"DEF\"",
+		`t.example.com. IN TXT aaa ;`:           "t.example.com.\t3600\tIN\tTXT\t\"aaa\"",
+		`t.example.com. IN TXT aaa aaa;`:        "t.example.com.\t3600\tIN\tTXT\t\"aaa\" \"aaa\"",
+		`t.example.com. IN TXT aaa aaa`:         "t.example.com.\t3600\tIN\tTXT\t\"aaa\" \"aaa\"",
+		`t.example.com. IN TXT aaa`:             "t.example.com.\t3600\tIN\tTXT\t\"aaa\"",
 		"cid.urn.arpa. NAPTR 100 50 \"s\" \"z3950+I2L+I2C\"    \"\" _z3950._tcp.gatech.edu.": "cid.urn.arpa.\t3600\tIN\tNAPTR\t100 50 \"s\" \"z3950+I2L+I2C\" \"\" _z3950._tcp.gatech.edu.",
 		"cid.urn.arpa. NAPTR 100 50 \"s\" \"rcds+I2C\"         \"\" _rcds._udp.gatech.edu.":  "cid.urn.arpa.\t3600\tIN\tNAPTR\t100 50 \"s\" \"rcds+I2C\" \"\" _rcds._udp.gatech.edu.",
 		"cid.urn.arpa. NAPTR 100 50 \"s\" \"http+I2L+I2C+I2R\" \"\" _http._tcp.gatech.edu.":  "cid.urn.arpa.\t3600\tIN\tNAPTR\t100 50 \"s\" \"http+I2L+I2C+I2R\" \"\" _http._tcp.gatech.edu.",
@@ -543,6 +543,10 @@ example.com.   DNAME 10 ; TTL=314 after second $TTL
 			continue
 		}
 		expected := reCaseFromComment.FindStringSubmatch(record.Comment)
+		if len(expected) != 3 {
+			t.Errorf("regexp didn't match for record %d", i)
+			continue
+		}
 		expectedTTL, _ := strconv.ParseUint(expected[1], 10, 32)
 		ttl := record.RR.Header().Ttl
 		if ttl != uint32(expectedTTL) {
@@ -847,20 +851,25 @@ func TestPX(t *testing.T) {
 
 func TestComment(t *testing.T) {
 	// Comments we must see
-	comments := map[string]bool{"; this is comment 1": true,
-		"; this is comment 4": true, "; this is comment 6": true,
-		"; this is comment 7": true, "; this is comment 8": true}
+	comments := map[string]bool{
+		"; this is comment 1": true,
+		"; this is comment 2": true,
+		"; this is comment 4": true,
+		"; this is comment 6": true,
+		"; this is comment 7": true,
+		"; this is comment 8": true,
+	}
 	zone := `
 foo. IN A 10.0.0.1 ; this is comment 1
 foo. IN A (
-	10.0.0.2 ; this is comment2
+	10.0.0.2 ; this is comment 2
 )
-; this is comment3
+; this is comment 3
 foo. IN A 10.0.0.3
 foo. IN A ( 10.0.0.4 ); this is comment 4
 
 foo. IN A 10.0.0.5
-; this is comment5
+; this is comment 5
 
 foo. IN A 10.0.0.6
 
@@ -872,9 +881,108 @@ foo. IN TXT "THIS IS TEXT MAN"; this is comment 8
 		if x.Error == nil {
 			if x.Comment != "" {
 				if _, ok := comments[x.Comment]; !ok {
-					t.Errorf("wrong comment %s", x.Comment)
+					t.Errorf("wrong comment %q", x.Comment)
 				}
 			}
+		}
+	}
+}
+
+func TestParseZoneComments(t *testing.T) {
+	for i, test := range []struct {
+		zone     string
+		comments []string
+	}{
+		{
+			`name. IN SOA  a6.nstld.com. hostmaster.nic.name. (
+			203362132 ; serial
+			5m        ; refresh (5 minutes)
+			5m        ; retry (5 minutes)
+			2w        ; expire (2 weeks)
+			300       ; minimum (5 minutes)
+		) ; y
+. 3600000  IN  NS ONE.MY-ROOTS.NET. ; x`,
+			[]string{"; serial ; refresh (5 minutes) ; retry (5 minutes) ; expire (2 weeks) ; minimum (5 minutes) ; y", "; x"},
+		},
+		{
+			`name. IN SOA  a6.nstld.com. hostmaster.nic.name. (
+			203362132 ; serial
+			5m        ; refresh (5 minutes)
+			5m        ; retry (5 minutes)
+			2w        ; expire (2 weeks)
+			300       ; minimum (5 minutes)
+		) ; y
+. 3600000  IN  NS ONE.MY-ROOTS.NET.`,
+			[]string{"; serial ; refresh (5 minutes) ; retry (5 minutes) ; expire (2 weeks) ; minimum (5 minutes) ; y", ""},
+		},
+		{
+			`name. IN SOA  a6.nstld.com. hostmaster.nic.name. (
+			203362132 ; serial
+			5m        ; refresh (5 minutes)
+			5m        ; retry (5 minutes)
+			2w        ; expire (2 weeks)
+			300       ; minimum (5 minutes)
+		)
+. 3600000  IN  NS ONE.MY-ROOTS.NET.`,
+			[]string{"; serial ; refresh (5 minutes) ; retry (5 minutes) ; expire (2 weeks) ; minimum (5 minutes)", ""},
+		},
+		{
+			`name. IN SOA  a6.nstld.com. hostmaster.nic.name. (
+			203362132 ; serial
+			5m        ; refresh (5 minutes)
+			5m        ; retry (5 minutes)
+			2w        ; expire (2 weeks)
+			300       ; minimum (5 minutes)
+		)
+. 3600000  IN  NS ONE.MY-ROOTS.NET. ; x`,
+			[]string{"; serial ; refresh (5 minutes) ; retry (5 minutes) ; expire (2 weeks) ; minimum (5 minutes)", "; x"},
+		},
+		{
+			`name. IN SOA  a6.nstld.com. hostmaster.nic.name. (
+			203362132 ; serial
+			5m        ; refresh (5 minutes)
+			5m        ; retry (5 minutes)
+			2w        ; expire (2 weeks)
+			300       ; minimum (5 minutes)
+		)`,
+			[]string{"; serial ; refresh (5 minutes) ; retry (5 minutes) ; expire (2 weeks) ; minimum (5 minutes)"},
+		},
+		{
+			`. 3600000  IN  NS ONE.MY-ROOTS.NET. ; x`,
+			[]string{"; x"},
+		},
+		{
+			`. 3600000  IN  NS ONE.MY-ROOTS.NET.`,
+			[]string{""},
+		},
+		{
+			`. 3600000  IN  NS ONE.MY-ROOTS.NET. ;;x`,
+			[]string{";;x"},
+		},
+	} {
+		r := strings.NewReader(test.zone)
+
+		var j int
+		for r := range ParseZone(r, "", "") {
+			if r.Error != nil {
+				t.Fatal(r.Error)
+			}
+
+			if j >= len(test.comments) {
+				t.Fatalf("too many records for zone %d at %d record, expected %d", i, j+1, len(test.comments))
+			}
+
+			if r.Comment != test.comments[j] {
+				t.Errorf("invalid comment for record %d:%d %v / %v", i, j, r.RR, r.Error)
+				t.Logf("expected %q", test.comments[j])
+				t.Logf("got      %q", r.Comment)
+			}
+
+			j++
+		}
+
+		if j != len(test.comments) {
+			t.Errorf("too few records for zone %d, got %d, expected %d", i, j, len(test.comments))
 		}
 	}
 }
@@ -928,8 +1036,8 @@ func TestTXT(t *testing.T) {
 		if rr.String() != `_raop._tcp.local.	60	IN	TXT	"single value"` {
 			t.Error("bad representation of TXT record:", rr.String())
 		}
-		if rr.len() != 28+1+12 {
-			t.Error("bad size of serialized record:", rr.len())
+		if Len(rr) != 28+1+12 {
+			t.Error("bad size of serialized record:", Len(rr))
 		}
 	}
 
@@ -948,8 +1056,8 @@ func TestTXT(t *testing.T) {
 		if rr.String() != `_raop._tcp.local.	60	IN	TXT	"a=1" "b=2" "c=3" "d=4"` {
 			t.Error("bad representation of TXT multi value record:", rr.String())
 		}
-		if rr.len() != 28+1+3+1+3+1+3+1+3 {
-			t.Error("bad size of serialized multi value record:", rr.len())
+		if Len(rr) != 28+1+3+1+3+1+3+1+3 {
+			t.Error("bad size of serialized multi value record:", Len(rr))
 		}
 	}
 
@@ -968,8 +1076,8 @@ func TestTXT(t *testing.T) {
 		if rr.String() != `_raop._tcp.local.	60	IN	TXT	""` {
 			t.Error("bad representation of empty-string TXT record:", rr.String())
 		}
-		if rr.len() != 28+1 {
-			t.Error("bad size of serialized record:", rr.len())
+		if Len(rr) != 28+1 {
+			t.Error("bad size of serialized record:", Len(rr))
 		}
 	}
 
@@ -1461,5 +1569,19 @@ func TestBad(t *testing.T) {
 		if _, err = NewRR(s); err == nil {
 			t.Errorf("correctly parsed %q", s)
 		}
+	}
+}
+
+func TestNULLRecord(t *testing.T) {
+	// packet captured from iodine
+	packet := `8116840000010001000000000569627a6c700474657374046d69656b026e6c00000a0001c00c000a0001000000000005497f000001`
+	data, _ := hex.DecodeString(packet)
+	msg := new(Msg)
+	err := msg.Unpack(data)
+	if err != nil {
+		t.Fatalf("Failed to unpack NULL record")
+	}
+	if _, ok := msg.Answer[0].(*NULL); !ok {
+		t.Fatalf("Expected packet to contain NULL record")
 	}
 }

@@ -81,7 +81,7 @@ type (
 		ResultErrorFields
 	}
 
-	// ItemsMustBeUniqueError. ErrorDetails: type
+	// ItemsMustBeUniqueError. ErrorDetails: type, i, j
 	ItemsMustBeUniqueError struct {
 		ResultErrorFields
 	}
