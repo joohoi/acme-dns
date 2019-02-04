@@ -1,6 +1,6 @@
-FROM golang:1.11.4-alpine3.8 AS builder
+FROM golang:1.11.5-alpine3.8 AS builder
 
-ENV ACME_DNS_VERSION=v0.6
+ENV ACME_DNS_VERSION=v0.7
 
 WORKDIR /go/src/github.com/joohoi
 
@@ -16,7 +16,7 @@ RUN mkdir -p /build/etc/acme-dns && \
     cp /go/src/github.com/joohoi/acme-dns/acme-dns /build && \
     cp /go/src/github.com/joohoi/acme-dns/config.cfg /build/etc/acme-dns && \
     sed -Ei -e "s/(port ?= ?)\"80\"/\1\"8080\"/" \
-            -e "s/(listen ?= ?)\":53\"/\1\":5353\"/" /build/etc/acme-dns/config.cfg && \
+            -e "s/(listen ?= ?)\".*:53\"/\1\":5353\"/" /build/etc/acme-dns/config.cfg && \
     chown 1000:0 /build/etc/acme-dns /build/var/lib/acme-dns && \
     chmod ug+w /build/etc/acme-dns /build/var/lib/acme-dns && \
     chmod +x /build/acme-dns
