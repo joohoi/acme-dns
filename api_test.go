@@ -96,8 +96,9 @@ func TestApiRegister(t *testing.T) {
 
 	allowfrom := map[string][]interface{}{
 		"allowfrom": []interface{}{"123.123.123.123/32",
-			"1010.10.10.10/24",
-			"invalid"},
+			"2001:db8:a0b:12f0::1/32",
+			"[::1]/64",
+		},
 	}
 
 	response := e.POST("/register").
@@ -112,7 +113,37 @@ func TestApiRegister(t *testing.T) {
 		ContainsKey("allowfrom").
 		NotContainsKey("error")
 
-	response.Value("allowfrom").Array().Elements("123.123.123.123/32")
+	response.Value("allowfrom").Array().Elements("123.123.123.123/32", "2001:db8:a0b:12f0::1/32", "::1/64")
+}
+
+func TestApiRegisterBadAllowFrom(t *testing.T) {
+	router := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	invalidVals := []string{
+		"invalid",
+		"1.2.3.4/33",
+		"1.2/24",
+		"1.2.3.4",
+		"12345:db8:a0b:12f0::1/32",
+		"1234::123::123::1/32",
+	}
+
+	for _, v := range invalidVals {
+
+		allowfrom := map[string][]interface{}{
+			"allowfrom": []interface{}{v}}
+
+		response := e.POST("/register").
+			WithJSON(allowfrom).
+			Expect().
+			Status(http.StatusBadRequest).
+			JSON().Object().
+			ContainsKey("error")
+
+		response.Value("error").Equal("invalid_allowfrom_cidr")
+	}
 }
 
 func TestApiRegisterMalformedJSON(t *testing.T) {
