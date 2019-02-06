@@ -140,11 +140,11 @@ func TestAuthoritative(t *testing.T) {
 	if answer.Rcode != dns.RcodeNameError {
 		t.Errorf("Was expecing NXDOMAIN rcode, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
 	}
-	if len(answer.Answer) != 1 {
-		t.Errorf("Was expecting exactly one answer (SOA) for invalid subdomain, but got %d", len(answer.Answer))
+	if len(answer.Ns) != 1 {
+		t.Errorf("Was expecting exactly one answer (SOA) for invalid subdomain, but got %d", len(answer.Ns))
 	}
-	if answer.Answer[0].Header().Rrtype != dns.TypeSOA {
-		t.Errorf("Was expecting SOA record as answer for NXDOMAIN but got [%s]", dns.TypeToString[answer.Answer[0].Header().Rrtype])
+	if answer.Ns[0].Header().Rrtype != dns.TypeSOA {
+		t.Errorf("Was expecting SOA record as answer for NXDOMAIN but got [%s]", dns.TypeToString[answer.Ns[0].Header().Rrtype])
 	}
 	if !answer.MsgHdr.Authoritative {
 		t.Errorf("Was expecting authoritative bit to be set")
