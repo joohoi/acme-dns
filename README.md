@@ -325,6 +325,9 @@ logformat = "text"
 
 ## Changelog
 
+- v0.7.1
+   - Changed
+      - Fixed: SOA record correctly added to the TCP DNS server when using both, UDP and TCP servers.
 - v0.7
    - New
       - Added an endpoint to perform health checks
