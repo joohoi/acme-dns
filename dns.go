@@ -104,7 +104,7 @@ func (d *DNSServer) readQuery(m *dns.Msg) {
 	m.MsgHdr.Authoritative = authoritative
 	if authoritative {
 		if m.MsgHdr.Rcode == dns.RcodeNameError {
-			m.Answer = append(m.Answer, d.SOA)
+			m.Ns = append(m.Ns, d.SOA)
 		}
 	}
 
