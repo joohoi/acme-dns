@@ -218,3 +218,27 @@ func TestResolveTXT(t *testing.T) {
 		}
 	}
 }
+
+func TestCaseInsensitiveResolveA(t *testing.T) {
+  resolv := resolver{server: "127.0.0.1:15353"}
+  answer, err := resolv.lookup("aUtH.eXAmpLe.org", dns.TypeA)
+  if err != nil {
+    t.Errorf("%v", err)
+  }
+
+  if len(answer.Answer) == 0 {
+    t.Error("No answer for DNS query")
+  }
+}
+
+func TestCaseInsensitiveResolveSOA(t *testing.T) {
+  resolv := resolver{server: "127.0.0.1:15353"}
+  answer, _ := resolv.lookup("doesnotexist.aUtH.eXAmpLe.org", dns.TypeSOA)
+  if answer.Rcode != dns.RcodeNameError {
+    t.Errorf("Was expecing NXDOMAIN rcode, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
+  }
+
+  if len(answer.Ns) == 0 {
+    t.Error("No SOA answer for DNS query")
+  }
+}

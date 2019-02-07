@@ -113,7 +113,7 @@ func (d *DNSServer) readQuery(m *dns.Msg) {
 func (d *DNSServer) getRecord(q dns.Question) ([]dns.RR, error) {
 	var rr []dns.RR
 	var cnames []dns.RR
-	domain, ok := d.Domains[q.Name]
+	domain, ok := d.Domains[strings.ToLower(q.Name)]
 	if !ok {
 		return rr, fmt.Errorf("No records for domain %s", q.Name)
 	}
@@ -133,7 +133,7 @@ func (d *DNSServer) getRecord(q dns.Question) ([]dns.RR, error) {
 
 // answeringForDomain checks if we have any records for a domain
 func (d *DNSServer) answeringForDomain(name string) bool {
-	_, ok := d.Domains[name]
+	_, ok := d.Domains[strings.ToLower(name)]
 	return ok
 }
 
@@ -141,7 +141,7 @@ func (d *DNSServer) isAuthoritative(q dns.Question) bool {
 	if d.answeringForDomain(q.Name) {
 		return true
 	}
-	domainParts := strings.Split(q.Name, ".")
+	domainParts := strings.Split(strings.ToLower(q.Name), ".")
 	for i := range domainParts {
 		if d.answeringForDomain(strings.Join(domainParts[i:], ".")) {
 			return true
