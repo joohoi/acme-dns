@@ -325,6 +325,10 @@ logformat = "text"
 
 ## Changelog
 
+- v0.7.2
+   - Changed
+      - Fixed: Regression error of not being able to answer to incoming random-case requests.
+      - Fixed: SOA record added to a correct header field in NXDOMAIN responses.
 - v0.7.1
    - Changed
       - Fixed: SOA record correctly added to the TCP DNS server when using both, UDP and TCP servers.
