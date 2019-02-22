@@ -4,14 +4,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
-	"reflect"
 	"strings"
 	"testing"
 )
 
 func TestCompressLength(t *testing.T) {
 	m := new(Msg)
-	m.SetQuestion("miek.nl", TypeMX)
+	m.SetQuestion("miek.nl.", TypeMX)
 	ul := m.Len()
 	m.Compress = true
 	if ul != m.Len() {
@@ -82,89 +81,89 @@ func TestMsgLength(t *testing.T) {
 	}
 }
 
-func TestCompressionLenHelper(t *testing.T) {
-	c := make(map[string]int)
-	compressionLenHelper(c, "example.com", 12)
-	if c["example.com"] != 12 {
-		t.Errorf("bad %d", c["example.com"])
+func TestCompressionLenSearchInsert(t *testing.T) {
+	c := make(map[string]struct{})
+	compressionLenSearch(c, "example.com", 12)
+	if _, ok := c["example.com"]; !ok {
+		t.Errorf("bad example.com")
 	}
-	if c["com"] != 20 {
-		t.Errorf("bad %d", c["com"])
+	if _, ok := c["com"]; !ok {
+		t.Errorf("bad com")
 	}
 
 	// Test boundaries
-	c = make(map[string]int)
+	c = make(map[string]struct{})
 	// foo label starts at 16379
 	// com label starts at 16384
-	compressionLenHelper(c, "foo.com", 16379)
-	if c["foo.com"] != 16379 {
-		t.Errorf("bad %d", c["foo.com"])
+	compressionLenSearch(c, "foo.com", 16379)
+	if _, ok := c["foo.com"]; !ok {
+		t.Errorf("bad foo.com")
 	}
 	// com label is accessible
-	if c["com"] != 16383 {
-		t.Errorf("bad %d", c["com"])
+	if _, ok := c["com"]; !ok {
+		t.Errorf("bad com")
 	}
 
-	c = make(map[string]int)
+	c = make(map[string]struct{})
 	// foo label starts at 16379
 	// com label starts at 16385 => outside range
-	compressionLenHelper(c, "foo.com", 16380)
-	if c["foo.com"] != 16380 {
-		t.Errorf("bad %d", c["foo.com"])
+	compressionLenSearch(c, "foo.com", 16380)
+	if _, ok := c["foo.com"]; !ok {
+		t.Errorf("bad foo.com")
 	}
 	// com label is NOT accessible
-	if c["com"] != 0 {
-		t.Errorf("bad %d", c["com"])
+	if _, ok := c["com"]; ok {
+		t.Errorf("bad com")
 	}
 
-	c = make(map[string]int)
-	compressionLenHelper(c, "example.com", 16375)
-	if c["example.com"] != 16375 {
-		t.Errorf("bad %d", c["example.com"])
+	c = make(map[string]struct{})
+	compressionLenSearch(c, "example.com", 16375)
+	if _, ok := c["example.com"]; !ok {
+		t.Errorf("bad example.com")
 	}
 	// com starts AFTER 16384
-	if c["com"] != 16383 {
-		t.Errorf("bad %d", c["com"])
+	if _, ok := c["com"]; !ok {
+		t.Errorf("bad com")
 	}
 
-	c = make(map[string]int)
-	compressionLenHelper(c, "example.com", 16376)
-	if c["example.com"] != 16376 {
-		t.Errorf("bad %d", c["example.com"])
+	c = make(map[string]struct{})
+	compressionLenSearch(c, "example.com", 16376)
+	if _, ok := c["example.com"]; !ok {
+		t.Errorf("bad example.com")
 	}
 	// com starts AFTER 16384
-	if c["com"] != 0 {
-		t.Errorf("bad %d", c["com"])
+	if _, ok := c["com"]; ok {
+		t.Errorf("bad com")
 	}
 }
 
 func TestCompressionLenSearch(t *testing.T) {
-	c := make(map[string]int)
-	compressed, ok, fullSize := compressionLenSearch(c, "a.b.org.")
-	if compressed != 0 || ok || fullSize != 14 {
-		panic(fmt.Errorf("Failed: compressed:=%d, ok:=%v, fullSize:=%d", compressed, ok, fullSize))
+	c := make(map[string]struct{})
+	compressed, ok := compressionLenSearch(c, "a.b.org.", maxCompressionOffset)
+	if compressed != 0 || ok {
+		t.Errorf("Failed: compressed:=%d, ok:=%v", compressed, ok)
 	}
-	c["org."] = 3
-	compressed, ok, fullSize = compressionLenSearch(c, "a.b.org.")
-	if compressed != 4 || !ok || fullSize != 8 {
-		panic(fmt.Errorf("Failed: compressed:=%d, ok:=%v, fullSize:=%d", compressed, ok, fullSize))
+	c["org."] = struct{}{}
+	compressed, ok = compressionLenSearch(c, "a.b.org.", maxCompressionOffset)
+	if compressed != 4 || !ok {
+		t.Errorf("Failed: compressed:=%d, ok:=%v", compressed, ok)
 	}
-	c["b.org."] = 5
-	compressed, ok, fullSize = compressionLenSearch(c, "a.b.org.")
-	if compressed != 6 || !ok || fullSize != 4 {
-		panic(fmt.Errorf("Failed: compressed:=%d, ok:=%v, fullSize:=%d", compressed, ok, fullSize))
+	c["b.org."] = struct{}{}
+	compressed, ok = compressionLenSearch(c, "a.b.org.", maxCompressionOffset)
+	if compressed != 2 || !ok {
+		t.Errorf("Failed: compressed:=%d, ok:=%v", compressed, ok)
 	}
 	// Not found long compression
-	c["x.b.org."] = 5
-	compressed, ok, fullSize = compressionLenSearch(c, "a.b.org.")
-	if compressed != 6 || !ok || fullSize != 4 {
-		panic(fmt.Errorf("Failed: compressed:=%d, ok:=%v, fullSize:=%d", compressed, ok, fullSize))
+	c["x.b.org."] = struct{}{}
+	compressed, ok = compressionLenSearch(c, "a.b.org.", maxCompressionOffset)
+	if compressed != 2 || !ok {
+		t.Errorf("Failed: compressed:=%d, ok:=%v", compressed, ok)
 	}
 	// Found long compression
-	c["a.b.org."] = 5
-	compressed, ok, fullSize = compressionLenSearch(c, "a.b.org.")
-	if compressed != 8 || !ok || fullSize != 0 {
-		panic(fmt.Errorf("Failed: compressed:=%d, ok:=%v, fullSize:=%d", compressed, ok, fullSize))
+	c["a.b.org."] = struct{}{}
+	compressed, ok = compressionLenSearch(c, "a.b.org.", maxCompressionOffset)
+	if compressed != 0 || !ok {
+		t.Errorf("Failed: compressed:=%d, ok:=%v", compressed, ok)
 	}
 }
 
@@ -174,8 +173,7 @@ func TestMsgLength2(t *testing.T) {
 		// google.com. IN A?
 		"064e81800001000b0004000506676f6f676c6503636f6d0000010001c00c00010001000000050004adc22986c00c00010001000000050004adc22987c00c00010001000000050004adc22988c00c00010001000000050004adc22989c00c00010001000000050004adc2298ec00c00010001000000050004adc22980c00c00010001000000050004adc22981c00c00010001000000050004adc22982c00c00010001000000050004adc22983c00c00010001000000050004adc22984c00c00010001000000050004adc22985c00c00020001000000050006036e7331c00cc00c00020001000000050006036e7332c00cc00c00020001000000050006036e7333c00cc00c00020001000000050006036e7334c00cc0d800010001000000050004d8ef200ac0ea00010001000000050004d8ef220ac0fc00010001000000050004d8ef240ac10e00010001000000050004d8ef260a0000290500000000050000",
 		// amazon.com. IN A? (reply has no EDNS0 record)
-		// TODO(miek): this one is off-by-one, need to find out why
-		//"6de1818000010004000a000806616d617a6f6e03636f6d0000010001c00c000100010000000500044815c2d4c00c000100010000000500044815d7e8c00c00010001000000050004b02062a6c00c00010001000000050004cdfbf236c00c000200010000000500140570646e733408756c747261646e73036f726700c00c000200010000000500150570646e733508756c747261646e7304696e666f00c00c000200010000000500160570646e733608756c747261646e7302636f02756b00c00c00020001000000050014036e7331037033310664796e656374036e657400c00c00020001000000050006036e7332c0cfc00c00020001000000050006036e7333c0cfc00c00020001000000050006036e7334c0cfc00c000200010000000500110570646e733108756c747261646e73c0dac00c000200010000000500080570646e7332c127c00c000200010000000500080570646e7333c06ec0cb00010001000000050004d04e461fc0eb00010001000000050004cc0dfa1fc0fd00010001000000050004d04e471fc10f00010001000000050004cc0dfb1fc12100010001000000050004cc4a6c01c121001c000100000005001020010502f3ff00000000000000000001c13e00010001000000050004cc4a6d01c13e001c0001000000050010261000a1101400000000000000000001",
+		"6de1818000010004000a000806616d617a6f6e03636f6d0000010001c00c000100010000000500044815c2d4c00c000100010000000500044815d7e8c00c00010001000000050004b02062a6c00c00010001000000050004cdfbf236c00c000200010000000500140570646e733408756c747261646e73036f726700c00c000200010000000500150570646e733508756c747261646e7304696e666f00c00c000200010000000500160570646e733608756c747261646e7302636f02756b00c00c00020001000000050014036e7331037033310664796e656374036e657400c00c00020001000000050006036e7332c0cfc00c00020001000000050006036e7333c0cfc00c00020001000000050006036e7334c0cfc00c000200010000000500110570646e733108756c747261646e73c0dac00c000200010000000500080570646e7332c127c00c000200010000000500080570646e7333c06ec0cb00010001000000050004d04e461fc0eb00010001000000050004cc0dfa1fc0fd00010001000000050004d04e471fc10f00010001000000050004cc0dfb1fc12100010001000000050004cc4a6c01c121001c000100000005001020010502f3ff00000000000000000001c13e00010001000000050004cc4a6d01c13e001c0001000000050010261000a1101400000000000000000001",
 		// yahoo.com. IN A?
 		"fc2d81800001000300070008057961686f6f03636f6d0000010001c00c00010001000000050004628afd6dc00c00010001000000050004628bb718c00c00010001000000050004cebe242dc00c00020001000000050006036e7336c00cc00c00020001000000050006036e7338c00cc00c00020001000000050006036e7331c00cc00c00020001000000050006036e7332c00cc00c00020001000000050006036e7333c00cc00c00020001000000050006036e7334c00cc00c00020001000000050006036e7335c00cc07b0001000100000005000444b48310c08d00010001000000050004448eff10c09f00010001000000050004cb54dd35c0b100010001000000050004628a0b9dc0c30001000100000005000477a0f77cc05700010001000000050004ca2bdfaac06900010001000000050004caa568160000290500000000050000",
 		// microsoft.com. IN A?
@@ -200,10 +198,10 @@ func TestMsgLength2(t *testing.T) {
 		lenUnComp := m.Len()
 		b, _ = m.Pack()
 		pacUnComp := len(b)
-		if pacComp+1 != lenComp {
+		if pacComp != lenComp {
 			t.Errorf("msg.Len(compressed)=%d actual=%d for test %d", lenComp, pacComp, i)
 		}
-		if pacUnComp+1 != lenUnComp {
+		if pacUnComp != lenUnComp {
 			t.Errorf("msg.Len(uncompressed)=%d actual=%d for test %d", lenUnComp, pacUnComp, i)
 		}
 	}
@@ -262,6 +260,52 @@ func TestMsgCompressLengthLargeRecords(t *testing.T) {
 	}
 }
 
+func compressionMapsEqual(a map[string]struct{}, b map[string]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for k := range a {
+		if _, ok := b[k]; !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+func compressionMapsDifference(a map[string]struct{}, b map[string]int) string {
+	var s strings.Builder
+
+	var c int
+	fmt.Fprintf(&s, "length compression map (%d):", len(a))
+	for k := range b {
+		if _, ok := a[k]; !ok {
+			if c > 0 {
+				s.WriteString(",")
+			}
+
+			fmt.Fprintf(&s, " missing %q", k)
+			c++
+		}
+	}
+
+	c = 0
+	fmt.Fprintf(&s, "\npack compression map (%d):", len(b))
+	for k := range a {
+		if _, ok := b[k]; !ok {
+			if c > 0 {
+				s.WriteString(",")
+			}
+
+			fmt.Fprintf(&s, " missing %q", k)
+			c++
+		}
+	}
+
+	return s.String()
+}
+
 func TestCompareCompressionMapsForANY(t *testing.T) {
 	msg := new(Msg)
 	msg.Compress = true
@@ -278,19 +322,19 @@ func TestCompareCompressionMapsForANY(t *testing.T) {
 	for labelSize := 0; labelSize < 63; labelSize++ {
 		msg.SetQuestion(fmt.Sprintf("a%s.service.acme.", strings.Repeat("x", labelSize)), TypeANY)
 
-		compressionFake := make(map[string]int)
-		lenFake := compressedLenWithCompressionMap(msg, compressionFake)
+		compressionFake := make(map[string]struct{})
+		lenFake := msgLenWithCompressionMap(msg, compressionFake)
 
 		compressionReal := make(map[string]int)
-		buf, err := msg.packBufferWithCompressionMap(nil, compressionReal)
+		buf, err := msg.packBufferWithCompressionMap(nil, compressionMap{ext: compressionReal}, true)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if lenFake != len(buf) {
 			t.Fatalf("padding= %d ; Predicted len := %d != real:= %d", labelSize, lenFake, len(buf))
 		}
-		if !reflect.DeepEqual(compressionFake, compressionReal) {
-			t.Fatalf("padding= %d ; Fake Compression Map != Real Compression Map\n*** Real:= %v\n\n***Fake:= %v", labelSize, compressionReal, compressionFake)
+		if !compressionMapsEqual(compressionFake, compressionReal) {
+			t.Fatalf("padding= %d ; Fake Compression Map != Real Compression Map\n%s", labelSize, compressionMapsDifference(compressionFake, compressionReal))
 		}
 	}
 }
@@ -311,19 +355,19 @@ func TestCompareCompressionMapsForSRV(t *testing.T) {
 	for labelSize := 0; labelSize < 63; labelSize++ {
 		msg.SetQuestion(fmt.Sprintf("a%s.service.acme.", strings.Repeat("x", labelSize)), TypeAAAA)
 
-		compressionFake := make(map[string]int)
-		lenFake := compressedLenWithCompressionMap(msg, compressionFake)
+		compressionFake := make(map[string]struct{})
+		lenFake := msgLenWithCompressionMap(msg, compressionFake)
 
 		compressionReal := make(map[string]int)
-		buf, err := msg.packBufferWithCompressionMap(nil, compressionReal)
+		buf, err := msg.packBufferWithCompressionMap(nil, compressionMap{ext: compressionReal}, true)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if lenFake != len(buf) {
 			t.Fatalf("padding= %d ; Predicted len := %d != real:= %d", labelSize, lenFake, len(buf))
 		}
-		if !reflect.DeepEqual(compressionFake, compressionReal) {
-			t.Fatalf("padding= %d ; Fake Compression Map != Real Compression Map\n*** Real:= %v\n\n***Fake:= %v", labelSize, compressionReal, compressionFake)
+		if !compressionMapsEqual(compressionFake, compressionReal) {
+			t.Fatalf("padding= %d ; Fake Compression Map != Real Compression Map\n%s", labelSize, compressionMapsDifference(compressionFake, compressionReal))
 		}
 	}
 }
@@ -367,5 +411,98 @@ func TestMsgCompressLengthLargeRecordsAllValues(t *testing.T) {
 		if predicted != len(buf) {
 			t.Fatalf("predicted compressed length is wrong for %d records: predicted %s (len=%d) %d, actual %d", i, msg.Question[0].Name, len(msg.Answer), predicted, len(buf))
 		}
+	}
+}
+
+func TestMsgCompressionMultipleQuestions(t *testing.T) {
+	msg := new(Msg)
+	msg.Compress = true
+	msg.SetQuestion("www.example.org.", TypeA)
+	msg.Question = append(msg.Question, Question{"other.example.org.", TypeA, ClassINET})
+
+	predicted := msg.Len()
+	buf, err := msg.Pack()
+	if err != nil {
+		t.Error(err)
+	}
+	if predicted != len(buf) {
+		t.Fatalf("predicted compressed length is wrong: predicted %d, actual %d", predicted, len(buf))
+	}
+}
+
+func TestMsgCompressMultipleCompressedNames(t *testing.T) {
+	msg := new(Msg)
+	msg.Compress = true
+	msg.SetQuestion("www.example.com.", TypeSRV)
+	msg.Answer = append(msg.Answer, &MINFO{
+		Hdr:   RR_Header{Name: "www.example.com.", Class: 1, Rrtype: TypeSRV, Ttl: 0x3c},
+		Rmail: "mail.example.org.",
+		Email: "mail.example.org.",
+	})
+	msg.Answer = append(msg.Answer, &SOA{
+		Hdr:  RR_Header{Name: "www.example.com.", Class: 1, Rrtype: TypeSRV, Ttl: 0x3c},
+		Ns:   "ns.example.net.",
+		Mbox: "mail.example.net.",
+	})
+
+	predicted := msg.Len()
+	buf, err := msg.Pack()
+	if err != nil {
+		t.Error(err)
+	}
+	if predicted != len(buf) {
+		t.Fatalf("predicted compressed length is wrong: predicted %d, actual %d", predicted, len(buf))
+	}
+}
+
+func TestMsgCompressLengthEscapingMatch(t *testing.T) {
+	// Although slightly non-optimal, "example.org." and "ex\\097mple.org."
+	// are not considered equal in the compression map, even though \097 is
+	// a valid escaping of a. This test ensures that the Len code and the
+	// Pack code don't disagree on this.
+
+	msg := new(Msg)
+	msg.Compress = true
+	msg.SetQuestion("www.example.org.", TypeA)
+	msg.Answer = append(msg.Answer, &NS{Hdr: RR_Header{Name: "ex\\097mple.org.", Rrtype: TypeNS, Class: ClassINET}, Ns: "ns.example.org."})
+
+	predicted := msg.Len()
+	buf, err := msg.Pack()
+	if err != nil {
+		t.Error(err)
+	}
+	if predicted != len(buf) {
+		t.Fatalf("predicted compressed length is wrong: predicted %d, actual %d", predicted, len(buf))
+	}
+}
+
+func TestMsgLengthEscaped(t *testing.T) {
+	msg := new(Msg)
+	msg.SetQuestion(`\000\001\002.\003\004\005\006\007\008\009.\a\b\c.`, TypeA)
+
+	predicted := msg.Len()
+	buf, err := msg.Pack()
+	if err != nil {
+		t.Error(err)
+	}
+	if predicted != len(buf) {
+		t.Fatalf("predicted compressed length is wrong: predicted %d, actual %d", predicted, len(buf))
+	}
+}
+
+func TestMsgCompressLengthEscaped(t *testing.T) {
+	msg := new(Msg)
+	msg.Compress = true
+	msg.SetQuestion("www.example.org.", TypeA)
+	msg.Answer = append(msg.Answer, &NS{Hdr: RR_Header{Name: `\000\001\002.example.org.`, Rrtype: TypeNS, Class: ClassINET}, Ns: `ns.\e\x\a\m\p\l\e.org.`})
+	msg.Answer = append(msg.Answer, &NS{Hdr: RR_Header{Name: `www.\e\x\a\m\p\l\e.org.`, Rrtype: TypeNS, Class: ClassINET}, Ns: "ns.example.org."})
+
+	predicted := msg.Len()
+	buf, err := msg.Pack()
+	if err != nil {
+		t.Error(err)
+	}
+	if predicted != len(buf) {
+		t.Fatalf("predicted compressed length is wrong: predicted %d, actual %d", predicted, len(buf))
 	}
 }

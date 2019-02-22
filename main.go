@@ -12,7 +12,6 @@ import (
 	"syscall"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/miekg/dns"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/acme/autocert"
@@ -42,9 +41,6 @@ func main() {
 
 	setupLogging(Config.Logconfig.Format, Config.Logconfig.Level)
 
-	// Read the default records in
-	RR.Parse(Config.General)
-
 	// Open database
 	newDB := new(acmedb)
 	err = newDB.Init(Config.Database.Engine, Config.Database.Connection)
@@ -72,13 +68,18 @@ func main() {
 			udpProto += "6"
 			tcpProto += "6"
 		}
-		dnsServerUDP := setupDNSServer(udpProto)
-		dnsServerTCP := setupDNSServer(tcpProto)
-		go startDNS(dnsServerUDP, errChan)
-		go startDNS(dnsServerTCP, errChan)
+		dnsServerUDP := NewDNSServer(DB, Config.General.Listen, udpProto)
+		dnsServerUDP.ParseRecords(Config)
+		dnsServerTCP := NewDNSServer(DB, Config.General.Listen, tcpProto)
+		// No need to parse records from config again
+		dnsServerTCP.Domains = dnsServerUDP.Domains
+		dnsServerTCP.SOA = dnsServerUDP.SOA
+		go dnsServerUDP.Start(errChan)
+		go dnsServerTCP.Start(errChan)
 	} else {
-		dnsServer := setupDNSServer(Config.General.Proto)
-		go startDNS(dnsServer, errChan)
+		dnsServer := NewDNSServer(DB, Config.General.Listen, Config.General.Proto)
+		dnsServer.ParseRecords(Config)
+		go dnsServer.Start(errChan)
 	}
 
 	// HTTP API
@@ -92,20 +93,6 @@ func main() {
 		}
 	}
 	log.Debugf("Shutting down...")
-}
-
-func startDNS(server *dns.Server, errChan chan error) {
-	// DNS server part
-	dns.HandleFunc(".", handleRequest)
-	log.WithFields(log.Fields{"addr": Config.General.Listen, "proto": server.Net}).Info("Listening DNS")
-	err := server.ListenAndServe()
-	if err != nil {
-		errChan <- err
-	}
-}
-
-func setupDNSServer(proto string) *dns.Server {
-	return &dns.Server{Addr: Config.General.Listen, Net: proto}
 }
 
 func startHTTPAPI(errChan chan error) {
@@ -128,6 +115,7 @@ func startHTTPAPI(errChan chan error) {
 		api.POST("/register", webRegisterPost)
 	}
 	api.POST("/update", Auth(webUpdatePost))
+	api.GET("/health", healthCheck)
 
 	host := Config.API.IP + ":" + Config.API.Port
 

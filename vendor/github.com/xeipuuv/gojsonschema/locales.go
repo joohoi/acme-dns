@@ -147,7 +147,7 @@ func (l DefaultLocale) ArrayMaxItems() string {
 }
 
 func (l DefaultLocale) Unique() string {
-	return `{{.type}} items must be unique`
+	return `{{.type}} items[{{.i}},{{.j}}] must be unique`
 }
 
 func (l DefaultLocale) ArrayContains() string {

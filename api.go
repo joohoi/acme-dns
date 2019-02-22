@@ -93,3 +93,8 @@ func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	w.WriteHeader(updStatus)
 	w.Write(upd)
 }
+
+// Endpoint used to check the readiness and/or liveness (health) of the server.
+func healthCheck(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.WriteHeader(http.StatusOK)
+}

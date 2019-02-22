@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/valyala/bytebufferpool"
 )
 
 func TestResponseBodyStreamDeflate(t *testing.T) {
@@ -393,7 +395,7 @@ func TestRequestUpdateURI(t *testing.T) {
 	if !strings.HasPrefix(s, "GET /123/432.html?aaa=bcse") {
 		t.Fatalf("cannot find %q in %q", "GET /123/432.html?aaa=bcse", s)
 	}
-	if strings.Index(s, "\r\nHost: foobar.com\r\n") < 0 {
+	if !strings.Contains(s, "\r\nHost: foobar.com\r\n") {
 		t.Fatalf("cannot find %q in %q", "\r\nHost: foobar.com\r\n", s)
 	}
 }
@@ -490,7 +492,7 @@ type bodyWriterTo interface {
 }
 
 func testBodyWriteTo(t *testing.T, bw bodyWriterTo, expectedS string, isRetainedBody bool) {
-	var buf ByteBuffer
+	var buf bytebufferpool.ByteBuffer
 	if err := bw.BodyWriteTo(&buf); err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -564,7 +566,7 @@ func TestResponseWriteTo(t *testing.T) {
 	r.SetBodyString("foobar")
 
 	s := r.String()
-	var buf ByteBuffer
+	var buf bytebufferpool.ByteBuffer
 	n, err := r.WriteTo(&buf)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
@@ -583,7 +585,7 @@ func TestRequestWriteTo(t *testing.T) {
 	r.SetRequestURI("http://foobar.com/aaa/bbb")
 
 	s := r.String()
-	var buf ByteBuffer
+	var buf bytebufferpool.ByteBuffer
 	n, err := r.WriteTo(&buf)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
@@ -1100,7 +1102,7 @@ func TestRequestString(t *testing.T) {
 	var r Request
 	r.SetRequestURI("http://foobar.com/aaa")
 	s := r.String()
-	expectedS := "GET /aaa HTTP/1.1\r\nUser-Agent: fasthttp\r\nHost: foobar.com\r\n\r\n"
+	expectedS := "GET /aaa HTTP/1.1\r\nHost: foobar.com\r\n\r\n"
 	if s != expectedS {
 		t.Fatalf("unexpected request: %q. Expecting %q", s, expectedS)
 	}
@@ -1300,6 +1302,23 @@ func TestRequestReadChunked(t *testing.T) {
 	verifyTrailer(t, rb, "trail")
 }
 
+// See: https://github.com/erikdubbelboer/fasthttp/issues/34
+func TestRequestChunkedWhitespace(t *testing.T) {
+	var req Request
+
+	s := "POST /foo HTTP/1.1\r\nHost: google.com\r\nTransfer-Encoding: chunked\r\nContent-Type: aa/bb\r\n\r\n3  \r\nabc\r\n0\r\n\r\n"
+	r := bytes.NewBufferString(s)
+	rb := bufio.NewReader(r)
+	err := req.Read(rb)
+	if err != nil {
+		t.Fatalf("Unexpected error when reading chunked request: %s", err)
+	}
+	expectedBody := "abc"
+	if string(req.Body()) != expectedBody {
+		t.Fatalf("Unexpected body %q. Expected %q", req.Body(), expectedBody)
+	}
+}
+
 func TestResponseReadWithoutBody(t *testing.T) {
 	var resp Response
 
@@ -1372,7 +1391,7 @@ func TestResponseSuccess(t *testing.T) {
 
 	// response with missing server
 	testResponseSuccess(t, 500, "aaa", "", "aaadfsd",
-		500, "aaa", string(defaultServerName))
+		500, "aaa", "")
 
 	// empty body
 	testResponseSuccess(t, 200, "bbb", "qwer", "",
@@ -1440,7 +1459,7 @@ func testRequestWriteError(t *testing.T, method, requestURI, host, userAgent, bo
 	req.Header.Set("User-Agent", userAgent)
 	req.SetBody([]byte(body))
 
-	w := &ByteBuffer{}
+	w := &bytebufferpool.ByteBuffer{}
 	bw := bufio.NewWriter(w)
 	err := req.Write(bw)
 	if err == nil {
@@ -1488,9 +1507,6 @@ func testRequestSuccess(t *testing.T, method, requestURI, host, userAgent, body,
 	}
 	if string(req1.Header.Peek("Host")) != host {
 		t.Fatalf("Unexpected host: %q. Expected %q", req1.Header.Peek("Host"), host)
-	}
-	if len(userAgent) == 0 {
-		userAgent = string(defaultUserAgent)
 	}
 	if string(req1.Header.Peek("User-Agent")) != userAgent {
 		t.Fatalf("Unexpected user-agent: %q. Expected %q", req1.Header.Peek("User-Agent"), userAgent)
@@ -1791,4 +1807,33 @@ func createChunkedBody(body []byte) []byte {
 		chunkSize++
 	}
 	return append(b, []byte("0\r\n\r\n")...)
+}
+
+func TestWriteMultipartForm(t *testing.T) {
+	var w bytes.Buffer
+	s := strings.Replace(`--foo
+Content-Disposition: form-data; name="key"
+
+value
+--foo
+Content-Disposition: form-data; name="file"; filename="test.json"
+Content-Type: application/json
+
+{"foo": "bar"}
+--foo--
+`, "\n", "\r\n", -1)
+	mr := multipart.NewReader(strings.NewReader(s), "foo")
+	form, err := mr.ReadForm(1024)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	if err := WriteMultipartForm(&w, form, "foo"); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	if w.String() != s {
+		t.Fatalf("unexpected output %q", w.Bytes())
+	}
 }

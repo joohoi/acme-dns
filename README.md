@@ -102,6 +102,28 @@ The method allows you to update the TXT answer contents of your unique subdomain
 }
 ```
 
+### Health check endpoint
+
+The method can be used to check readiness and/or liveness of the server. It will return status code 200 on success or won't be reachable.
+
+```GET /health```
+
+#### Example using a Kubernetes deployment
+
+```
+# ...
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 80
+  periodSeconds: 2
+  initialDelaySeconds: 2
+  failureThreshold: 3
+  successThreshold: 1
+livenessProbe:
+  # same as for readinessProbe...
+```
+
 ## Self-hosted
 
 You are encouraged to run your own acme-dns instance, because you are effectively authorizing the acme-dns server to act on your behalf in providing the answer to the challenging CA, making the instance able to request (and get issued) a TLS certificate for the domain that has CNAME pointing to it.
@@ -111,7 +133,7 @@ See the INSTALL section for information on how to do this.
 
 ## Installation
 
-1) Install [Go 1.9 or newer](https://golang.org/doc/install).
+1) Install [Go 1.11 or newer](https://golang.org/doc/install).
 
 2) Install acme-dns: `go get github.com/joohoi/acme-dns/...`. This will install acme-dns to `~/go/bin/acme-dns`.
 
@@ -304,9 +326,20 @@ logformat = "text"
 
 ## Changelog
 
-- master
+- v0.7.2
+   - Changed
+      - Fixed: Regression error of not being able to answer to incoming random-case requests.
+      - Fixed: SOA record added to a correct header field in NXDOMAIN responses.
+- v0.7.1
+   - Changed
+      - Fixed: SOA record correctly added to the TCP DNS server when using both, UDP and TCP servers.
+- v0.7
+   - New
+      - Added an endpoint to perform health checks
    - Changed
       - A new protocol selection for DNS server "both", that binds both - UDP and TCP ports.
+      - Refactored DNS server internals.
+      - Handle some aspects of DNS spec better.
 - v0.6
    - New
       - Command line flag `-c` to specify location of config file.

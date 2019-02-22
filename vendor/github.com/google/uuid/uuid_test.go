@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -58,12 +59,22 @@ var tests = []test{
 	{"f47ac10b-58cc-4372-e567-0e02b2c3d479", 4, Future, true},
 	{"f47ac10b-58cc-4372-f567-0e02b2c3d479", 4, Future, true},
 
+
 	{"f47ac10b158cc-5372-a567-0e02b2c3d479", 0, Invalid, false},
 	{"f47ac10b-58cc25372-a567-0e02b2c3d479", 0, Invalid, false},
 	{"f47ac10b-58cc-53723a567-0e02b2c3d479", 0, Invalid, false},
 	{"f47ac10b-58cc-5372-a56740e02b2c3d479", 0, Invalid, false},
 	{"f47ac10b-58cc-5372-a567-0e02-2c3d479", 0, Invalid, false},
 	{"g47ac10b-58cc-4372-a567-0e02b2c3d479", 0, Invalid, false},
+
+
+	{"{f47ac10b-58cc-0372-8567-0e02b2c3d479}", 0, RFC4122, true},
+	{"{f47ac10b-58cc-0372-8567-0e02b2c3d479", 0, Invalid, false},
+	{"f47ac10b-58cc-0372-8567-0e02b2c3d479}", 0, Invalid, false},
+
+	{"f47ac10b58cc037285670e02b2c3d479", 0, RFC4122, true},
+	{"f47ac10b58cc037285670e02b2c3d4790", 0, Invalid, false},
+	{"f47ac10b58cc037285670e02b2c3d47", 0, Invalid, false},
 }
 
 var constants = []struct {
@@ -118,6 +129,25 @@ func TestUUID(t *testing.T) {
 		testTest(t, tt.in, tt)
 		testTest(t, strings.ToUpper(tt.in), tt)
 		testBytes(t, []byte(tt.in), tt)
+	}
+}
+
+func TestFromBytes(t *testing.T) {
+	b := []byte{
+		0x7d, 0x44, 0x48, 0x40,
+		0x9d, 0xc0,
+		0x11, 0xd1,
+		0xb2, 0x45,
+		0x5f, 0xfd, 0xce, 0x74, 0xfa, 0xd2,
+	}
+	uuid, err := FromBytes(b)
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	for i := 0; i < len(uuid); i++ {
+		if b[i] != uuid[i] {
+			t.Fatalf("FromBytes() got %v expected %v\b", uuid[:], b)
+		}
 	}
 }
 
@@ -246,7 +276,7 @@ func TestCoding(t *testing.T) {
 	if err != nil {
 		t.Errorf("Parse returned unexpected error %v", err)
 	}
-	if data != data {
+	if data != uuid {
 		t.Errorf("%s: decoded to %s, expected %s", text, uuid, data)
 	}
 }
@@ -286,7 +316,7 @@ func TestVersion1(t *testing.T) {
 	case t1 > t2 && q1 == q2:
 		t.Error("time reversed")
 	case t1 < t2 && q1 != q2:
-		t.Error("clock sequence chaned unexpectedly")
+		t.Error("clock sequence changed unexpectedly")
 	}
 }
 
@@ -302,8 +332,10 @@ func TestNode(t *testing.T) {
 	if !SetNodeInterface("") {
 		t.Error("SetNodeInterface failed")
 	}
-	if ni := NodeInterface(); ni == "" {
-		t.Error("NodeInterface returned an empty string")
+	if runtime.GOARCH != "js" {
+		if ni := NodeInterface(); ni == "" {
+			t.Error("NodeInterface returned an empty string")
+		}
 	}
 
 	ni := NodeID()
@@ -328,7 +360,7 @@ func TestNode(t *testing.T) {
 	}
 
 	if ni := NodeInterface(); ni != "user" {
-		t.Errorf("got inteface %q, want %q", ni, "user")
+		t.Errorf("got interface %q, want %q", ni, "user")
 	}
 }
 
@@ -372,8 +404,10 @@ func TestNodeID(t *testing.T) {
 	nid := []byte{1, 2, 3, 4, 5, 6}
 	SetNodeInterface("")
 	s := NodeInterface()
-	if s == "" || s == "user" {
-		t.Errorf("NodeInterface %q after SetInteface", s)
+	if runtime.GOARCH != "js" {
+		if s == "" || s == "user" {
+			t.Errorf("NodeInterface %q after SetInterface", s)
+		}
 	}
 	node1 := NodeID()
 	if node1 == nil {
@@ -424,7 +458,7 @@ func TestDCE(t *testing.T) {
 type badRand struct{}
 
 func (r badRand) Read(buf []byte) (int, error) {
-	for i, _ := range buf {
+	for i := range buf {
 		buf[i] = byte(i)
 	}
 	return len(buf), nil
@@ -435,13 +469,13 @@ func TestBadRand(t *testing.T) {
 	uuid1 := New()
 	uuid2 := New()
 	if uuid1 != uuid2 {
-		t.Errorf("execpted duplicates, got %q and %q", uuid1, uuid2)
+		t.Errorf("expected duplicates, got %q and %q", uuid1, uuid2)
 	}
 	SetRand(nil)
 	uuid1 = New()
 	uuid2 = New()
 	if uuid1 == uuid2 {
-		t.Errorf("unexecpted duplicates, got %q", uuid1)
+		t.Errorf("unexpected duplicates, got %q", uuid1)
 	}
 }
 
@@ -470,7 +504,6 @@ func BenchmarkParseBytes(b *testing.B) {
 func parseBytesUnsafe(b []byte) (UUID, error) {
 	return Parse(*(*string)(unsafe.Pointer(&b)))
 }
-
 
 func BenchmarkParseBytesUnsafe(b *testing.B) {
 	for i := 0; i < b.N; i++ {

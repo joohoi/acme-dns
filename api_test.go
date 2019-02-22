@@ -71,6 +71,7 @@ func setupRouter(debug bool, noauth bool) http.Handler {
 		Debug:              Config.General.Debug,
 	})
 	api.POST("/register", webRegisterPost)
+	api.GET("/health", healthCheck)
 	if noauth {
 		api.POST("/update", noAuth(webUpdatePost))
 	} else {
@@ -405,4 +406,12 @@ func TestApiManyUpdateWithIpCheckHeaders(t *testing.T) {
 			Status(test.status)
 	}
 	Config.API.UseHeader = false
+}
+
+func TestApiHealthCheck(t *testing.T) {
+	router := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	e.GET("/health").Expect().Status(http.StatusOK)
 }

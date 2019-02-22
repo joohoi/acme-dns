@@ -245,7 +245,7 @@ func TestFragmentLoader(t *testing.T) {
 
 	fileName := filepath.Join(wd, "testdata", "extra", "fragment_schema.json")
 
-	schemaLoader := NewReferenceLoader("file://" + fileName + "#/definitions/x")
+	schemaLoader := NewReferenceLoader("file://" + filepath.ToSlash(fileName) + "#/definitions/x")
 	schema, err := NewSchema(schemaLoader)
 
 	if err != nil {

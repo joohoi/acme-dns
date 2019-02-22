@@ -62,6 +62,16 @@ func isStringInSlice(s []string, what string) bool {
 	return false
 }
 
+// indexStringInSlice returns the index of the first instance of 'what' in s or -1 if it is not found in s.
+func indexStringInSlice(s []string, what string) int {
+	for i := range s {
+		if s[i] == what {
+			return i
+		}
+	}
+	return -1
+}
+
 func marshalToJsonString(value interface{}) (*string, error) {
 
 	mBytes, err := json.Marshal(value)
@@ -110,7 +120,7 @@ func checkJsonInteger(what interface{}) (isInt bool) {
 
 	jsonNumber := what.(json.Number)
 
-	bigFloat, isValidNumber := new(big.Float).SetString(string(jsonNumber))
+	bigFloat, isValidNumber := new(big.Rat).SetString(string(jsonNumber))
 
 	return isValidNumber && bigFloat.IsInt()
 
@@ -158,11 +168,11 @@ func mustBeInteger(what interface{}) *int {
 	return nil
 }
 
-func mustBeNumber(what interface{}) *big.Float {
+func mustBeNumber(what interface{}) *big.Rat {
 
 	if isJsonNumber(what) {
 		number := what.(json.Number)
-		float64Value, success := new(big.Float).SetString(string(number))
+		float64Value, success := new(big.Rat).SetString(string(number))
 		if success {
 			return float64Value
 		} else {
