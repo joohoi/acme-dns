@@ -30,6 +30,16 @@ func (c *cidrslice) JSON() string {
 	return string(ret)
 }
 
+func (c *cidrslice) isValid() error {
+	for _, v := range *c {
+		_, _, err := net.ParseCIDR(sanitizeIPv6addr(v))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *cidrslice) ValidEntries() []string {
 	valid := []string{}
 	for _, v := range *c {

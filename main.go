@@ -73,6 +73,7 @@ func main() {
 		dnsServerTCP := NewDNSServer(DB, Config.General.Listen, tcpProto)
 		// No need to parse records from config again
 		dnsServerTCP.Domains = dnsServerUDP.Domains
+		dnsServerTCP.SOA = dnsServerUDP.SOA
 		go dnsServerUDP.Start(errChan)
 		go dnsServerTCP.Start(errChan)
 	} else {

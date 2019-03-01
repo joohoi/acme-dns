@@ -315,6 +315,7 @@ logformat = "text"
 - Posh-ACME: [https://github.com/rmbolger/Posh-ACME](https://github.com/rmbolger/Posh-ACME)
 - Sewer: [https://github.com/komuw/sewer](https://github.com/komuw/sewer)
 - Traefik: [https://github.com/containous/traefik](https://github.com/containous/traefik)
+- Windows ACME Simple (WACS): [https://github.com/PKISharp/win-acme](https://github.com/PKISharp/win-acme)
 
 ### Authentication hooks
 
@@ -329,6 +330,13 @@ logformat = "text"
 
 ## Changelog
 
+- v0.7.2
+   - Changed
+      - Fixed: Regression error of not being able to answer to incoming random-case requests.
+      - Fixed: SOA record added to a correct header field in NXDOMAIN responses.
+- v0.7.1
+   - Changed
+      - Fixed: SOA record correctly added to the TCP DNS server when using both, UDP and TCP servers.
 - v0.7
    - New
       - Added an endpoint to perform health checks
