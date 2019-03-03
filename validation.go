@@ -33,7 +33,7 @@ func validKey(k string) bool {
 }
 
 func validSubdomain(s string) bool {
-	_, err := uuid.Parse(s)
+	_, err := getValidSubdomain(s)
 	if err == nil {
 		return true
 	}
