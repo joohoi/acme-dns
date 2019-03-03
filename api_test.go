@@ -383,6 +383,130 @@ func TestApiManyUpdateWithCredentials(t *testing.T) {
 	}
 }
 
+func TestApiManyUpdateWithCredentialsInBody(t *testing.T) {
+	validTxtData := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+	updateJSON := map[string]interface{}{
+		"username": "",
+		"password": "",
+		"subdomain": "",
+		"txt":       ""}
+
+	router := setupRouter(true, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	// User without defined CIDR masks
+	newUser, err := DB.Register(cidrslice{})
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+
+	// User with defined allow from - CIDR masks, all invalid
+	// (httpexpect doesn't provide a way to mock remote ip)
+	newUserWithCIDR, err := DB.Register(cidrslice{"192.168.1.1/32", "invalid"})
+	if err != nil {
+		t.Errorf("Could not create new user with CIDR, got error [%v]", err)
+	}
+
+	// Another user with valid CIDR mask to match the httpexpect default
+	newUserWithValidCIDR, err := DB.Register(cidrslice{"10.1.2.3/32", "invalid"})
+	if err != nil {
+		t.Errorf("Could not create new user with a valid CIDR, got error [%v]", err)
+	}
+
+	for _, test := range []struct {
+		user      string
+		pass      string
+		subdomain string
+		txt       interface{}
+		status    int
+	}{
+		{"non-uuid-user", "tooshortpass", "non-uuid-subdomain", validTxtData, 401},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", "tooshortpass", "bb97455b-52cc-4569-90c8-7a4b97c6eba8", validTxtData, 401},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", "LongEnoughPassButNoUserExists___________", "bb97455b-52cc-4569-90c8-7a4b97c6eba8", validTxtData, 401},
+		{newUser.Username.String(), newUser.Password, "a097455b-52cc-4569-90c8-7a4b97c6eba8", validTxtData, 401},
+		{newUser.Username.String(), newUser.Password, newUser.Subdomain, "tooshortfortxt", 400},
+		{newUser.Username.String(), newUser.Password, newUser.Subdomain, 1234567890, 401},
+		{newUser.Username.String(), newUser.Password, newUser.Subdomain, validTxtData, 200},
+		{newUserWithCIDR.Username.String(), newUserWithCIDR.Password, newUserWithCIDR.Subdomain, validTxtData, 401},
+		{newUserWithValidCIDR.Username.String(), newUserWithValidCIDR.Password, newUserWithValidCIDR.Subdomain, validTxtData, 200},
+		{newUser.Username.String(), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", newUser.Subdomain, validTxtData, 401},
+	} {
+		updateJSON = map[string]interface{}{
+			"username": test.user,
+			"password": test.pass,
+			"subdomain": test.subdomain,
+			"txt":       test.txt}
+		e.POST("/update").
+			WithJSON(updateJSON).
+			WithHeader("X-Forwarded-For", "10.1.2.3").
+			Expect().
+			Status(test.status)
+	}
+}
+
+func TestApiManyUpdateWithPasswordInBody(t *testing.T) {
+	validTxtData := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+	updateJSON := map[string]interface{}{
+		"password": "",
+		"subdomain": "",
+		"txt":       ""}
+
+	router := setupRouter(true, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	// User without defined CIDR masks
+	newUser, err := DB.Register(cidrslice{})
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+
+	// User with defined allow from - CIDR masks, all invalid
+	// (httpexpect doesn't provide a way to mock remote ip)
+	newUserWithCIDR, err := DB.Register(cidrslice{"192.168.1.1/32", "invalid"})
+	if err != nil {
+		t.Errorf("Could not create new user with CIDR, got error [%v]", err)
+	}
+
+	// Another user with valid CIDR mask to match the httpexpect default
+	newUserWithValidCIDR, err := DB.Register(cidrslice{"10.1.2.3/32", "invalid"})
+	if err != nil {
+		t.Errorf("Could not create new user with a valid CIDR, got error [%v]", err)
+	}
+
+	for _, test := range []struct {
+		user      string
+		pass      string
+		subdomain string
+		txt       interface{}
+		status    int
+	}{
+		{"non-uuid-user", "tooshortpass", "non-uuid-subdomain", validTxtData, 401},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", "tooshortpass", "bb97455b-52cc-4569-90c8-7a4b97c6eba8", validTxtData, 401},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", "LongEnoughPassButNoUserExists___________", "bb97455b-52cc-4569-90c8-7a4b97c6eba8", validTxtData, 401},
+		{newUser.Username.String(), newUser.Password, "a097455b-52cc-4569-90c8-7a4b97c6eba8", validTxtData, 401},
+		{newUser.Username.String(), newUser.Password, newUser.Subdomain, "tooshortfortxt", 400},
+		{newUser.Username.String(), newUser.Password, newUser.Subdomain, 1234567890, 401},
+		{newUser.Username.String(), newUser.Password, newUser.Subdomain, validTxtData, 200},
+		{newUserWithCIDR.Username.String(), newUserWithCIDR.Password, newUserWithCIDR.Subdomain, validTxtData, 401},
+		{newUserWithValidCIDR.Username.String(), newUserWithValidCIDR.Password, newUserWithValidCIDR.Subdomain, validTxtData, 200},
+		{newUser.Username.String(), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", newUser.Subdomain, validTxtData, 401},
+	} {
+		updateJSON = map[string]interface{}{
+			"password": test.pass,
+			"subdomain": test.subdomain,
+			"txt":       test.txt}
+		e.POST("/update").
+			WithJSON(updateJSON).
+			WithHeader("X-Forwarded-For", "10.1.2.3").
+			Expect().
+			Status(test.status)
+	}
+}
+
 func TestApiManyUpdateWithIpCheckHeaders(t *testing.T) {
 
 	updateJSON := map[string]interface{}{
@@ -437,6 +561,67 @@ func TestApiManyUpdateWithIpCheckHeaders(t *testing.T) {
 			Status(test.status)
 	}
 	Config.API.UseHeader = false
+}
+
+func TestApiManyUpdateWithoutAuth(t *testing.T) {
+	validTxtData := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+	updateJSON := map[string]interface{}{
+		"subdomain": "",
+		"txt":       ""}
+
+	router := setupRouter(true, true)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	// User without defined CIDR masks
+	newUser, err := DB.Register(cidrslice{})
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+
+	// User with defined allow from - CIDR masks, all invalid
+	// (httpexpect doesn't provide a way to mock remote ip)
+	newUserWithCIDR, err := DB.Register(cidrslice{"192.168.1.1/32", "invalid"})
+	if err != nil {
+		t.Errorf("Could not create new user with CIDR, got error [%v]", err)
+	}
+
+	// Another user with valid CIDR mask to match the httpexpect default
+	newUserWithValidCIDR, err := DB.Register(cidrslice{"10.1.2.3/32", "invalid"})
+	if err != nil {
+		t.Errorf("Could not create new user with a valid CIDR, got error [%v]", err)
+	}
+
+	for _, test := range []struct {
+		user      string
+		pass      string
+		subdomain string
+		txt       interface{}
+		status    int
+	}{
+		{"non-uuid-user", "tooshortpass", "non-uuid-subdomain", validTxtData, 400},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", "tooshortpass", "bb97455b-52cc-4569-90c8-7a4b97c6eba8", validTxtData, 200},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", "LongEnoughPassButNoUserExists___________", "bb97455b-52cc-4569-90c8-7a4b97c6eba8", validTxtData, 200},
+		{newUser.Username.String(), newUser.Password, "a097455b-52cc-4569-90c8-7a4b97c6eba8", validTxtData, 200},
+		{newUser.Username.String(), newUser.Password, newUser.Subdomain, "tooshortfortxt", 400},
+		{newUser.Username.String(), newUser.Password, newUser.Subdomain, 1234567890, 400},
+		{newUser.Username.String(), newUser.Password, newUser.Subdomain, validTxtData, 200},
+		{newUserWithCIDR.Username.String(), newUserWithCIDR.Password, newUserWithCIDR.Subdomain, validTxtData, 200},
+		{newUserWithValidCIDR.Username.String(), newUserWithValidCIDR.Password, newUserWithValidCIDR.Subdomain, validTxtData, 200},
+		{newUser.Username.String(), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", newUser.Subdomain, validTxtData, 200},
+	} {
+		updateJSON = map[string]interface{}{
+			"subdomain": test.subdomain,
+			"txt":       test.txt}
+		e.POST("/update").
+			WithJSON(updateJSON).
+			WithHeader("X-Api-User", test.user).
+			WithHeader("X-Api-Key", test.pass).
+			WithHeader("X-Forwarded-For", "10.1.2.3").
+			Expect().
+			Status(test.status)
+	}
 }
 
 func TestApiHealthCheck(t *testing.T) {
