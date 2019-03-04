@@ -79,7 +79,7 @@ The method allows you to update the TXT answer contents of your unique subdomain
 
 ```POST /update```
 
-#### Required headers
+#### Optional (deprecated) headers
 | Header name   | Description                                | Example                                               |
 | ------------- |--------------------------------------------|-------------------------------------------------------|
 | X-Api-User    | UUIDv4 username received from registration | `X-Api-User: c36f50e8-4632-44f0-83fe-e070fef28a10`    |
@@ -88,6 +88,7 @@ The method allows you to update the TXT answer contents of your unique subdomain
 #### Example input
 ```json
 {
+    "password": "htB9mR9DYgcu9bX_afHF62erXaH2TS7bg9KW3F7Z",
     "subdomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a",
     "txt": "___validation_token_received_from_the_ca___"
 }
@@ -98,6 +99,7 @@ The method allows you to update the TXT answer contents of your unique subdomain
 ```Status: 200 OK```
 ```json
 {
+    "fulldomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a.auth.acme-dns.io",
     "txt": "___validation_token_received_from_the_ca___"
 }
 ```
@@ -219,8 +221,7 @@ $ curl -X POST http://auth.example.org/register
 ```
 $ curl -X POST \
   -H "X-Api-User: eabcdb41-d89f-4580-826f-3e62e9755ef2" \
-  -H "X-Api-Key: pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0" \
-  -d '{"subdomain": "d420c923-bbd7-4056-ab64-c3ca54c9b3cf", "txt": "___validation_token_received_from_the_ca___"}' \
+  -d '{"password": "pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0", "subdomain": "d420c923-bbd7-4056-ab64-c3ca54c9b3cf", "txt": "___validation_token_received_from_the_ca___"}' \
   http://auth.example.org/update
 ```
 
