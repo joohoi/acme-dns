@@ -1,6 +1,6 @@
-FROM golang:1.11.5-alpine3.8 AS builder
+FROM golang:1.12.0-alpine3.9 AS builder
 
-ENV ACME_DNS_VERSION=v0.7
+ENV ACME_DNS_VERSION=v0.7.2
 
 WORKDIR /go/src/github.com/joohoi
 
