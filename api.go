@@ -99,7 +99,7 @@ func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		} else {
 			log.WithFields(log.Fields{"subdomain": a.Subdomain, "txt": a.Value}).Debug("TXT updated")
 			updStatus = http.StatusOK
-			upd = []byte("{\"txt\": \"" + a.Value + "\"}")
+			upd = []byte("{\"txt\": \"" + a.Value + "\", \"fulldomain\": \"" + a.Subdomain + "." + Config.General.Domain + "\"}")
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
