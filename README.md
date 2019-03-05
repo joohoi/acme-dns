@@ -192,6 +192,29 @@ docker run --rm --name acmedns                 \
 
 5) Edit the `config/config.cfg` and `docker-compose.yml` to suit your needs, and run `docker-compose up -d`.
 
+#### Migrating from the "old" host-based docker-compose approach to the new volume-based one
+
+1) Stop your old running docker-compose acme-dns instance
+
+2) Go into the acme-dns data directory and fix the permissions for the `acme-dns.db` file (`sudo chown 1000 acme-dns.db && sudo chmod u+rw acme-dns.db`)
+
+3) Start your acme-dns instance using the new docker-compose approach. (see above)
+
+4) Get the docker container name of the new acme-dns instance via `docker-compose ps`
+
+Example:
+```
+             Name                  Command    State                                               Ports                                             
+---------------------------------------------------------------------------------------------------------------------------------------------
+acme-dns_acmedns_1_8b8c3400d224   /acme-dns   Up      0.0.0.0:53->5353/tcp, 0.0.0.0:53->5353/udp, 0.0.0.0:80->8080/tcp, 0.0.0.0:443->8443/tcp
+```
+
+5) Copy your old acme-dns database into the new volume using `docker cp path-to-old-acme-dns-db/acme-dns.db acme-dns_acmedns_1_8b8c3400d224:/var/lib/acme-dns/`
+
+6) Restart your acme-dns instance using `docker-compose restart`.
+
+7) Now have fun with your migrated acme-dns instance.
+
 ## DNS Records
 
 Note: In this documentation:
