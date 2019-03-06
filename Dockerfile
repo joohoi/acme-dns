@@ -26,6 +26,6 @@ LABEL maintainer="joona@kuori.org"
 COPY --from=builder /build /
 USER 1000:0
 EXPOSE 5353/udp 5353 8080 8443
-HEALTHCHECK --interval=5s --timeout=1s CMD wget --quiet --tries=1 --spider http://127.0.0.1:8080/health || exit 1
+HEALTHCHECK --interval=10s --timeout=5s CMD wget --spider --quiet -S -T 1 http://127.0.0.1:8080/health || exit 1
 VOLUME ["/etc/acme-dns", "/var/lib/acme-dns"]
 ENTRYPOINT ["/usr/local/bin/acme-dns"]
