@@ -3,7 +3,8 @@ LABEL maintainer="joona@kuori.org"
 
 RUN apk add --update gcc musl-dev git
 
-RUN go get github.com/joohoi/acme-dns
+COPY . /go/src/github.com/joohoi/acme-dns
+# RUN go get github.com/joohoi/acme-dns
 WORKDIR /go/src/github.com/joohoi/acme-dns
 RUN CGO_ENABLED=1 go build
 
