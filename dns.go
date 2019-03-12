@@ -150,6 +150,18 @@ func (d *DNSServer) isAuthoritative(q dns.Question) bool {
 	return false
 }
 
+// Check all our domains, and see if this is a subdomain. If so, return
+// the subdomain part.
+func (d *DNSServer) extractSubdomain(name string) string {
+	domainParts := strings.Split(strings.ToLower(name), ".")
+	for i := range domainParts {
+		if d.answeringForDomain(strings.Join(domainParts[i:], ".")) {
+			return strings.Join(domainParts[0:i], ".")
+		}
+	}
+	return "*"  // invalid
+}
+
 func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 	var rcode int
 	var authoritative = d.isAuthoritative(q)
@@ -179,7 +191,7 @@ func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 
 func (d *DNSServer) answerTXT(q dns.Question) ([]dns.RR, error) {
 	var ra []dns.RR
-	subdomain := sanitizeDomainQuestion(q.Name)
+	subdomain := d.extractSubdomain(q.Name)
 	atxt, err := d.DB.GetTXTForDomain(subdomain)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error while trying to get record")

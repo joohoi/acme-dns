@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
@@ -25,6 +26,11 @@ func validKey(k string) bool {
 }
 
 func validSubdomain(s string) bool {
+	// validate sane domain name part, like "com" or "a-b-c.com"
+	if (regexp.MustCompile(`^([a-z0-9]([a-z0-9-]*[a-z0-9])?)([.][a-z0-9]([a-z0-9-]*[a-z0-9])?)*$`).MatchString(s)) {
+		return true
+	}
+	// validate uuid, like "d25989a6-c59a-4670-b294-a8cb0c5ad8d2"
 	_, err := uuid.Parse(s)
 	if err == nil {
 		return true

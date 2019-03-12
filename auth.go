@@ -29,7 +29,7 @@ func Auth(update httprouter.Handle) httprouter.Handle {
 				if err != nil {
 					log.WithFields(log.Fields{"error": "json_error", "string": err.Error()}).Error("Decode error")
 				}
-				if user.Subdomain == postData.Subdomain {
+				if user.Subdomain == "*" || user.Subdomain == postData.Subdomain {
 					userOK = true
 				} else {
 					log.WithFields(log.Fields{"error": "subdomain_mismatch", "name": postData.Subdomain, "expected": user.Subdomain}).Error("Subdomain mismatch")

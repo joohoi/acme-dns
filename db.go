@@ -250,7 +250,9 @@ func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 func (d *acmedb) GetTXTForDomain(domain string) ([]string, error) {
 	d.Lock()
 	defer d.Unlock()
-	domain = sanitizeString(domain)
+	// domain = sanitizeString(domain)
+	// ^- breaks readable-subdomains with periods, and it's not
+	//    necessary: the DB abstraction will correct illegal SQL
 	var txts []string
 	getSQL := `
 	SELECT Value FROM txt WHERE Subdomain=$1 LIMIT 2
@@ -279,6 +281,44 @@ func (d *acmedb) GetTXTForDomain(domain string) ([]string, error) {
 		txts = append(txts, rtxt)
 	}
 	return txts, nil
+}
+
+// When we're autocreating subdomains, we need the 2 records to exist.
+// So, check the COUNT and create the two initial records if needed.
+func (d *acmedb) UpdatePreCreate(a ACMETxt) error {
+	d.Lock()
+	defer d.Unlock()
+	var err error
+	tx, err := d.DB.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+	findSQL := `
+	SELECT COUNT(*) FROM txt WHERE Subdomain=$1
+	`
+	if Config.Database.Engine == "sqlite3" {
+		findSQL = getSQLiteStmt(findSQL)
+	}
+	sm, err := tx.Prepare(findSQL)
+	if err != nil {
+		return errors.New("SQL error")
+	}
+	defer sm.Close()
+
+	var count int
+	domain := a.Subdomain
+	err = sm.QueryRow(domain).Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count < 1 {  // or < 2 ?
+		err = d.NewTXTValuesInTransaction(tx, domain)
+	}
+	return err
 }
 
 func (d *acmedb) Update(a ACMETxt) error {
