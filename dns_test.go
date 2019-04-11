@@ -168,7 +168,7 @@ func TestResolveTXT(t *testing.T) {
 		return
 	}
 	atxt.Value = validTXT
-	err = DB.Update(atxt.ACMETxtPost)
+	err = DB.Update(atxt.Challenge)
 	if err != nil {
 		t.Errorf("Could not update db record: [%v]", err)
 		return
