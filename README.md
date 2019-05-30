@@ -302,6 +302,25 @@ logtype = "stdout"
 logformat = "text"
 ```
 
+## HTTPS API
+
+The RESTful acme-dns API can be exposed over HTTPS in two ways:
+
+1. Using `tls = "letsencrypt"` and letting acme-dns issue its own certificate
+   automatically with Let's Encrypt.
+1. Using `tls = "cert"` and providing your own HTTPS certificate chain and
+   private key with `tls_cert_fullchain` and `tls_cert_privkey`.
+
+Where possible the first option is recommended. This is the easiest and safest
+way to have acme-dns expose its API over HTTPS.
+
+**Warning**: If you choose to use `tls = "cert"` you must take care that the
+certificate *does not expire*! If it does and the ACME client you use to issue the
+certificate depends on the ACME DNS API to update TXT records you will be stuck
+in a position where the API certificate has expired but it can't be renewed
+because the ACME client will refuse to connect to the ACME DNS API it needs to
+use for the renewal.
+
 ## Clients
 
 - acme.sh: [https://github.com/Neilpang/acme.sh](https://github.com/Neilpang/acme.sh)
