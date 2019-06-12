@@ -74,7 +74,7 @@ type database interface {
 	Register(cidrslice) (ACMETxt, error)
 	GetByUsername(uuid.UUID) (ACMETxt, error)
 	GetTXTForDomain(string) ([]string, error)
-	Update(ACMETxt) error
+	Update(ACMETxtPost) error
 	GetBackend() *sql.DB
 	SetBackend(*sql.DB)
 	Close()
