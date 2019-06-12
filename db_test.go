@@ -161,7 +161,7 @@ func TestQueryExecErrors(t *testing.T) {
 		t.Errorf("Expected error from exec in Register, but got none")
 	}
 	reg.Value = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-	err = DB.Update(reg)
+	err = DB.Update(reg.ACMETxtPost)
 	if err == nil {
 		t.Errorf("Expected error from exec in Update, but got none")
 	}
@@ -238,10 +238,10 @@ func TestGetTXTForDomain(t *testing.T) {
 	txtval2 := "___validation_token_received_YEAH_the_ca___"
 
 	reg.Value = txtval1
-	_ = DB.Update(reg)
+	_ = DB.Update(reg.ACMETxtPost)
 
 	reg.Value = txtval2
-	_ = DB.Update(reg)
+	_ = DB.Update(reg.ACMETxtPost)
 
 	regDomainSlice, err := DB.GetTXTForDomain(reg.Subdomain)
 	if err != nil {
@@ -294,7 +294,7 @@ func TestUpdate(t *testing.T) {
 	regUser.Password = "nevergonnagiveyouup"
 	regUser.Value = validTXT
 
-	err = DB.Update(regUser)
+	err = DB.Update(regUser.ACMETxtPost)
 	if err != nil {
 		t.Errorf("DB Update failed, got error: [%v]", err)
 	}
