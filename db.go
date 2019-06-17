@@ -281,7 +281,7 @@ func (d *acmedb) GetTXTForDomain(domain string) ([]string, error) {
 	return txts, nil
 }
 
-func (d *acmedb) Update(a ACMETxt) error {
+func (d *acmedb) Update(a ACMETxtPost) error {
 	d.Lock()
 	defer d.Unlock()
 	var err error
