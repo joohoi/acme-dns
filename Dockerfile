@@ -23,6 +23,7 @@ RUN install -d -o 1000 -g 0 -m 0775 /build/etc/acme-dns /build/var/lib/acme-dns 
 FROM alpine:${ALPINE_VERSION}
 
 LABEL maintainer="joona@kuori.org"
+RUN apk add --no-cache ca-certificates
 COPY --from=builder /build /
 USER 1000:0
 EXPOSE 5353/udp 5353 8080 8443
