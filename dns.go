@@ -110,10 +110,24 @@ func (d *DNSServer) readQuery(m *dns.Msg) {
 
 }
 
+func (d *DNSServer) getRecordByDomainName(domainName string) (Records, bool) {
+	lowerName := strings.ToLower(domainName)
+	domain, ok := d.Domains[lowerName]
+	if ok {
+		return domain, ok
+	} else {
+		split := strings.SplitAfterN(lowerName, ".", 2)
+		split[0] = "*"
+		wildName := strings.Join(split, ".")
+		domain, ok := d.Domains[wildName]
+		return domain, ok
+	}
+}
+
 func (d *DNSServer) getRecord(q dns.Question) ([]dns.RR, error) {
 	var rr []dns.RR
 	var cnames []dns.RR
-	domain, ok := d.Domains[strings.ToLower(q.Name)]
+	domain, ok := d.getRecordByDomainName(q.Name)
 	if !ok {
 		return rr, fmt.Errorf("No records for domain %s", q.Name)
 	}
@@ -133,7 +147,7 @@ func (d *DNSServer) getRecord(q dns.Question) ([]dns.RR, error) {
 
 // answeringForDomain checks if we have any records for a domain
 func (d *DNSServer) answeringForDomain(name string) bool {
-	_, ok := d.Domains[strings.ToLower(name)]
+	_, ok := d.getRecordByDomainName(name)
 	return ok
 }
 
