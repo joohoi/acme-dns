@@ -120,6 +120,9 @@ func (d *DNSServer) getRecordByDomainName(domainName string) (Records, bool) {
 		split[0] = "*"
 		wildName := strings.Join(split, ".")
 		domain, ok := d.Domains[wildName]
+		for i := 0; i < len(domain.Records); i++ {
+			domain.Records[i].Header().Name = lowerName
+		}
 		return domain, ok
 	}
 }
