@@ -1,4 +1,4 @@
-FROM golang:1.11.4-alpine3.8 AS builder
+FROM golang:1.13-alpine AS builder
 LABEL maintainer="joona@kuori.org"
 
 RUN apk add --update gcc musl-dev git
