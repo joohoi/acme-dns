@@ -8,11 +8,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gavv/httpexpect"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 // noAuth function to write ACMETxt model to context while not preforming any validation
