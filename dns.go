@@ -89,8 +89,24 @@ func (d *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetReply(r)
 
-	if r.Opcode == dns.OpcodeQuery {
-		d.readQuery(m)
+	// handle edns0
+	opt := r.IsEdns0()
+	if opt != nil {
+		if opt.Version() != 0 {
+			// Only EDNS0 is standardized
+			m.MsgHdr.Rcode = dns.RcodeBadVers
+			m.SetEdns0(512, false)
+		} else {
+			// We can safely do this as we know that we're not setting other OPT RRs within acme-dns.
+			m.SetEdns0(512, false)
+			if r.Opcode == dns.OpcodeQuery {
+				d.readQuery(m)
+			}
+		}
+	} else {
+		if r.Opcode == dns.OpcodeQuery {
+			d.readQuery(m)
+		}
 	}
 	w.WriteMsg(m)
 }
@@ -113,9 +129,6 @@ func (d *DNSServer) readQuery(m *dns.Msg) {
 		if m.MsgHdr.Rcode == dns.RcodeNameError {
 			m.Ns = append(m.Ns, d.SOA)
 		}
-	}
-	for _, a := range m.Answer {
-		log.WithFields(log.Fields{"answer": a.String()}).Debug("Answered")
 	}
 }
 
@@ -197,10 +210,6 @@ func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 	if len(r) > 0 {
 		// Make sure that we return NOERROR if there were dynamic records for the domain
 		rcode = dns.RcodeSuccess
-	}
-	// Handle EDNS (no support at the moment)
-	if q.Qtype == dns.TypeOPT {
-		return []dns.RR{}, dns.RcodeFormatError, authoritative, nil
 	}
 	log.WithFields(log.Fields{"qtype": dns.TypeToString[q.Qtype], "domain": q.Name, "rcode": dns.RcodeToString[rcode]}).Debug("Answering question for domain")
 	return r, rcode, authoritative, nil
