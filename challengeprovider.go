@@ -1,23 +1,22 @@
 package main
 
 type ChallengeProvider struct {
-	Servers []*DNSServer
+	servers []*DNSServer
 }
 
 func NewChallengeProvider(servers []*DNSServer) ChallengeProvider {
-	c := &ChallengeProvider{Servers: servers}
-	return c
+	return ChallengeProvider{servers: servers}
 }
 
 func (c *ChallengeProvider) Present(_, _, keyAuth string) error {
-	for i, s := range c.Servers {
+	for _, s := range c.servers {
 		s.PersonalKeyAuth = keyAuth
 	}
 	return nil
 }
 
 func (c *ChallengeProvider) CleanUp(_, _, _ string) error {
-	for i, s := range c.Servers {
+	for _, s := range c.servers {
 		s.PersonalKeyAuth = ""
 	}
 	return nil

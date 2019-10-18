@@ -27,6 +27,9 @@ type DNSServer struct {
 func NewDNSServer(db database, addr string, proto string, domain string) *DNSServer {
 	var server DNSServer
 	server.Server = &dns.Server{Addr: addr, Net: proto}
+	if !strings.HasSuffix(domain, ".") {
+		domain = domain + "."
+	}
 	server.Domain = strings.ToLower(domain)
 	server.DB = db
 	server.PersonalKeyAuth = ""
@@ -111,7 +114,9 @@ func (d *DNSServer) readQuery(m *dns.Msg) {
 			m.Ns = append(m.Ns, d.SOA)
 		}
 	}
-
+	for _, a := range m.Answer {
+		log.WithFields(log.Fields{"answer": a.String()}).Debug("Answered")
+	}
 }
 
 func (d *DNSServer) getRecord(q dns.Question) ([]dns.RR, error) {
@@ -173,7 +178,7 @@ func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 	var err error
 	var txtRRs []dns.RR
 	var authoritative = d.isAuthoritative(q)
-	if !d.answeringForDomain(q.Name) {
+	if !d.isOwnChallenge(q) && !d.answeringForDomain(q.Name) {
 		rcode = dns.RcodeNameError
 	}
 	r, _ := d.getRecord(q)
