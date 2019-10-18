@@ -111,8 +111,48 @@ func TestResolveA(t *testing.T) {
 func TestEDNS(t *testing.T) {
 	resolv := resolver{server: "127.0.0.1:15353"}
 	answer, _ := resolv.lookup("auth.example.org", dns.TypeOPT)
-	if answer.Rcode != dns.RcodeFormatError {
-		t.Errorf("Was expecing FORMERR rcode for OPT query, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
+	if answer.Rcode != dns.RcodeSuccess {
+		t.Errorf("Was expecing NOERROR rcode for OPT query, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
+	}
+}
+
+func TestEDNSA(t *testing.T) {
+	msg := new(dns.Msg)
+	msg.Id = dns.Id()
+	msg.Question = make([]dns.Question, 1)
+	msg.Question[0] = dns.Question{Name: dns.Fqdn("auth.example.org"), Qtype: dns.TypeA, Qclass: dns.ClassINET}
+	// Set EDNS0 with DO=1
+	msg.SetEdns0(512, true)
+	in, err := dns.Exchange(msg, "127.0.0.1:15353")
+	if err != nil {
+		t.Errorf("Error querying the server [%v]", err)
+	}
+	if in != nil && in.Rcode != dns.RcodeSuccess {
+		t.Errorf("Received error from the server [%s]", dns.RcodeToString[in.Rcode])
+	}
+	opt := in.IsEdns0()
+	if opt == nil {
+		t.Errorf("Should have got OPT back")
+	}
+}
+
+func TestEDNSBADVERS(t *testing.T) {
+	msg := new(dns.Msg)
+	msg.Id = dns.Id()
+	msg.Question = make([]dns.Question, 1)
+	msg.Question[0] = dns.Question{Name: dns.Fqdn("auth.example.org"), Qtype: dns.TypeA, Qclass: dns.ClassINET}
+	// Set EDNS0 with version 1
+	o := new(dns.OPT)
+	o.SetVersion(1)
+	o.Hdr.Name = "."
+	o.Hdr.Rrtype = dns.TypeOPT
+	msg.Extra = append(msg.Extra, o)
+	in, err := dns.Exchange(msg, "127.0.0.1:15353")
+	if err != nil {
+		t.Errorf("Error querying the server [%v]", err)
+	}
+	if in != nil && in.Rcode != dns.RcodeBadVers {
+		t.Errorf("Received unexpected rcode from the server [%s]", dns.RcodeToString[in.Rcode])
 	}
 }
 
@@ -220,25 +260,25 @@ func TestResolveTXT(t *testing.T) {
 }
 
 func TestCaseInsensitiveResolveA(t *testing.T) {
-  resolv := resolver{server: "127.0.0.1:15353"}
-  answer, err := resolv.lookup("aUtH.eXAmpLe.org", dns.TypeA)
-  if err != nil {
-    t.Errorf("%v", err)
-  }
+	resolv := resolver{server: "127.0.0.1:15353"}
+	answer, err := resolv.lookup("aUtH.eXAmpLe.org", dns.TypeA)
+	if err != nil {
+		t.Errorf("%v", err)
+	}
 
-  if len(answer.Answer) == 0 {
-    t.Error("No answer for DNS query")
-  }
+	if len(answer.Answer) == 0 {
+		t.Error("No answer for DNS query")
+	}
 }
 
 func TestCaseInsensitiveResolveSOA(t *testing.T) {
-  resolv := resolver{server: "127.0.0.1:15353"}
-  answer, _ := resolv.lookup("doesnotexist.aUtH.eXAmpLe.org", dns.TypeSOA)
-  if answer.Rcode != dns.RcodeNameError {
-    t.Errorf("Was expecing NXDOMAIN rcode, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
-  }
+	resolv := resolver{server: "127.0.0.1:15353"}
+	answer, _ := resolv.lookup("doesnotexist.aUtH.eXAmpLe.org", dns.TypeSOA)
+	if answer.Rcode != dns.RcodeNameError {
+		t.Errorf("Was expecing NXDOMAIN rcode, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
+	}
 
-  if len(answer.Ns) == 0 {
-    t.Error("No SOA answer for DNS query")
-  }
+	if len(answer.Ns) == 0 {
+		t.Error("No SOA answer for DNS query")
+	}
 }

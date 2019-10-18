@@ -345,6 +345,9 @@ use for the renewal.
 
 ## Changelog
 
+- v0.8
+   - Changed
+      - Fixed: EDNS0 support
 - v0.7.2
    - Changed
       - Fixed: Regression error of not being able to answer to incoming random-case requests.
