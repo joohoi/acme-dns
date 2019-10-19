@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/go-acme/lego/v3/challenge/dns01"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mholt/certmagic"
 	"github.com/rs/cors"
@@ -129,13 +130,19 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 	}
 
 	provider := NewChallengeProvider(dnsservers)
+	// Override the validation options to mitigate issues with (lack of) 1:1 nat reflection
+	// for some network setups.
+	dnsopts := dns01.WrapPreCheck(func(_, _, _ string, _ dns01.PreCheckFunc) (bool, error) {
+		return true, nil
+	})
 	storage := certmagic.FileStorage{Path: Config.API.ACMECacheDir}
 	magicconf := certmagic.Config{
-		Agreed:            true,
-		CA:                certmagic.LetsEncryptStagingCA,
-		DNSProvider:       &provider,
-		DefaultServerName: Config.General.Domain,
-		Storage:           &storage,
+		Agreed:             true,
+		CA:                 certmagic.LetsEncryptStagingCA,
+		DNSProvider:        &provider,
+		DNSChallengeOption: dnsopts,
+		DefaultServerName:  Config.General.Domain,
+		Storage:            &storage,
 	}
 
 	cache := certmagic.NewCache(certmagic.CacheOptions{
