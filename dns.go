@@ -176,11 +176,17 @@ func (d *DNSServer) isAuthoritative(q dns.Question) bool {
 }
 
 // isOwnChallenge checks if the query is for the domain of this acme-dns instance. Used for answering its own ACME challenges
-func (d *DNSServer) isOwnChallenge(q dns.Question) bool {
-	domainParts := strings.Split(strings.ToLower(q.Name), ".")
-	for i := range domainParts {
-		if d.Domain == strings.ToLower(strings.Join(domainParts[i:], ".")) {
-			return true
+func (d *DNSServer) isOwnChallenge(name string) bool {
+	domainParts := strings.SplitN(name, ".", 2)
+	if len(domainParts) == 2 {
+		if strings.ToLower(domainParts[0]) == "_acme-challenge" {
+			domain := strings.ToLower(domainParts[1])
+			if !strings.HasSuffix(domain, ".") {
+				domain = domain + "."
+			}
+			if domain == d.Domain {
+				return true
+			}
 		}
 	}
 	return false
@@ -191,12 +197,12 @@ func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 	var err error
 	var txtRRs []dns.RR
 	var authoritative = d.isAuthoritative(q)
-	if !d.isOwnChallenge(q) && !d.answeringForDomain(q.Name) {
+	if !d.isOwnChallenge(q.Name) && !d.answeringForDomain(q.Name) {
 		rcode = dns.RcodeNameError
 	}
 	r, _ := d.getRecord(q)
 	if q.Qtype == dns.TypeTXT {
-		if d.isOwnChallenge(q) {
+		if d.isOwnChallenge(q.Name) {
 			txtRRs, err = d.answerOwnChallenge(q)
 		} else {
 			txtRRs, err = d.answerTXT(q)

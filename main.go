@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/go-acme/lego/v3/challenge/dns01"
+	legolog "github.com/go-acme/lego/v3/log"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mholt/certmagic"
 	"github.com/rs/cors"
@@ -105,6 +106,12 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 	logger := log.New()
 	logwriter := logger.Writer()
 	defer logwriter.Close()
+	// Setup logging for different dependencies to log with logrus
+	// Certmagic
+	stdlog.SetOutput(logwriter)
+	// Lego
+	legolog.Logger = logger
+
 	api := httprouter.New()
 	c := cors.New(cors.Options{
 		AllowedOrigins:     Config.API.CorsOrigins,
