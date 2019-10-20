@@ -15,17 +15,24 @@ type Records struct {
 
 // DNSServer is the main struct for acme-dns DNS server
 type DNSServer struct {
-	DB      database
-	Server  *dns.Server
-	SOA     dns.RR
-	Domains map[string]Records
+	DB              database
+	Domain          string
+	Server          *dns.Server
+	SOA             dns.RR
+	PersonalKeyAuth string
+	Domains         map[string]Records
 }
 
 // NewDNSServer parses the DNS records from config and returns a new DNSServer struct
-func NewDNSServer(db database, addr string, proto string) *DNSServer {
+func NewDNSServer(db database, addr string, proto string, domain string) *DNSServer {
 	var server DNSServer
 	server.Server = &dns.Server{Addr: addr, Net: proto}
+	if !strings.HasSuffix(domain, ".") {
+		domain = domain + "."
+	}
+	server.Domain = strings.ToLower(domain)
 	server.DB = db
+	server.PersonalKeyAuth = ""
 	server.Domains = make(map[string]Records)
 	return &server
 }
@@ -148,6 +155,9 @@ func (d *DNSServer) getRecord(q dns.Question) ([]dns.RR, error) {
 
 // answeringForDomain checks if we have any records for a domain
 func (d *DNSServer) answeringForDomain(name string) bool {
+	if d.Domain == strings.ToLower(name) {
+		return true
+	}
 	_, ok := d.Domains[strings.ToLower(name)]
 	return ok
 }
@@ -165,15 +175,38 @@ func (d *DNSServer) isAuthoritative(q dns.Question) bool {
 	return false
 }
 
+// isOwnChallenge checks if the query is for the domain of this acme-dns instance. Used for answering its own ACME challenges
+func (d *DNSServer) isOwnChallenge(name string) bool {
+	domainParts := strings.SplitN(name, ".", 2)
+	if len(domainParts) == 2 {
+		if strings.ToLower(domainParts[0]) == "_acme-challenge" {
+			domain := strings.ToLower(domainParts[1])
+			if !strings.HasSuffix(domain, ".") {
+				domain = domain + "."
+			}
+			if domain == d.Domain {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 	var rcode int
+	var err error
+	var txtRRs []dns.RR
 	var authoritative = d.isAuthoritative(q)
-	if !d.answeringForDomain(q.Name) {
+	if !d.isOwnChallenge(q.Name) && !d.answeringForDomain(q.Name) {
 		rcode = dns.RcodeNameError
 	}
 	r, _ := d.getRecord(q)
 	if q.Qtype == dns.TypeTXT {
-		txtRRs, err := d.answerTXT(q)
+		if d.isOwnChallenge(q.Name) {
+			txtRRs, err = d.answerOwnChallenge(q)
+		} else {
+			txtRRs, err = d.answerTXT(q)
+		}
 		if err == nil {
 			for _, txtRR := range txtRRs {
 				r = append(r, txtRR)
@@ -205,4 +238,12 @@ func (d *DNSServer) answerTXT(q dns.Question) ([]dns.RR, error) {
 		}
 	}
 	return ra, nil
+}
+
+// answerOwnChallenge answers to ACME challenge for acme-dns own certificate
+func (d *DNSServer) answerOwnChallenge(q dns.Question) ([]dns.RR, error) {
+	r := new(dns.TXT)
+	r.Hdr = dns.RR_Header{Name: q.Name, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 1}
+	r.Txt = append(r.Txt, d.PersonalKeyAuth)
+	return []dns.RR{r}, nil
 }
