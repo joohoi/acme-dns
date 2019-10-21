@@ -117,7 +117,7 @@ See the INSTALL section for information on how to do this.
 
 ## Installation
 
-1) Install [Go 1.11 or newer](https://golang.org/doc/install).
+1) Install [Go 1.13 or newer](https://golang.org/doc/install).
 
 2) Install acme-dns: `go get github.com/joohoi/acme-dns/...`. This will install acme-dns to `~/go/bin/acme-dns`.
 
@@ -222,7 +222,7 @@ $ dig -t txt @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example
 # DNS interface. Note that systemd-resolved may reserve port 53 on 127.0.0.53
 # In this case acme-dns will error out and you will need to define the listening interface
 # for example: listen = "127.0.0.1:53"
-listen = ":53"
+listen = "127.0.0.1:53"
 # protocol, "both", "both4", "both6", "udp", "udp4", "udp6" or "tcp", "tcp4", "tcp6"
 protocol = "both"
 # domain name to serve the requests off of
@@ -233,7 +233,7 @@ nsname = "auth.example.org"
 nsadmin = "admin.example.org"
 # predefined records served in addition to the TXT
 records = [
-    # domain pointing to the public IP of your acme-dns server
+    # domain pointing to the public IP of your acme-dns server 
     "auth.example.org. A 198.51.100.1",
     # specify that auth.example.org will resolve any *.auth.example.org records
     "auth.example.org. NS auth.example.org.",
@@ -245,22 +245,19 @@ debug = false
 # Database engine to use, sqlite3 or postgres
 engine = "sqlite3"
 # Connection string, filename for sqlite3 and postgres://$username:$password@$host/$db_name for postgres
+# Please note that the default Docker image uses path /var/lib/acme-dns/acme-dns.db for sqlite3
 connection = "/var/lib/acme-dns/acme-dns.db"
 # connection = "postgres://user:password@localhost/acmedns_db"
 
 [api]
-# domain name to listen requests for, mandatory if using tls = "letsencrypt"
-api_domain = ""
+# listen ip eg. 127.0.0.1
+ip = "0.0.0.0"
 # disable registration endpoint
 disable_registration = false
-# autocert HTTP port, eg. 80 for answering Let's Encrypt HTTP-01 challenges. Mandatory if using tls = "letsencrypt".
-autocert_port = "80"
-# listen ip, default "" listens on all interfaces/addresses
-ip = "127.0.0.1"
 # listen port, eg. 443 for default HTTPS
-port = "8080"
-# possible values: "letsencrypt", "cert", "none"
-tls = "none"
+port = "443"
+# possible values: "letsencrypt", "letsencryptstaging", "cert", "none"
+tls = "letsencryptstaging"
 # only used if tls = "cert"
 tls_cert_privkey = "/etc/tls/example.org/privkey.pem"
 tls_cert_fullchain = "/etc/tls/example.org/fullchain.pem"
@@ -329,6 +326,14 @@ use for the renewal.
 
 ## Changelog
 
+- v0.8
+   - NOTE: configuration option: "api_domain" deprecated!
+   - New
+      - Automatic HTTP API certificate provisioning using DNS challenges making acme-dns able to acquire certificates even with HTTP api not being accessible from public internet.
+      - Configuration value for "tls": "letsencryptstaging". Setting it will help you to debug possible issues with HTTP API certificate acquiring process. This is the new default value.
+   - Changed
+      - Fixed: EDNS0 support
+      - Migrated from autocert to [certmagic](https://github.com/mholt/certmagic) for HTTP API certificate handling
 - v0.7.2
    - Changed
       - Fixed: Regression error of not being able to answer to incoming random-case requests.
