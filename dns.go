@@ -135,25 +135,22 @@ func (d *DNSServer) readQuery(m *dns.Msg) {
 func (d *DNSServer) getRecordByDomainName(domainName string) (Records, bool) {
 	lowerName := strings.ToLower(domainName)
 	domain, ok := d.Domains[lowerName]
-	if ok {
-		return domain, ok
-	} else {
+	if !ok {
 		split := strings.Split(lowerName, ".")
-		for len(split) > 0 {
+		for len(split) > 0 && !ok {
 			split[0] = "*"
 			wildName := strings.Join(split, ".")
 			domain, ok = d.Domains[wildName]
-			if ok {
-				break
-			}
 			newsplit := append(split[:0], split[1:]...)
 			split = newsplit
 		}
-		for i := 0; i < len(domain.Records); i++ {
-			domain.Records[i].Header().Name = lowerName
+		if ok {
+			for i := 0; i < len(domain.Records); i++ {
+				domain.Records[i].Header().Name = lowerName
+			}
 		}
-		return domain, ok
 	}
+	return domain, ok
 }
 
 func (d *DNSServer) getRecord(q dns.Question) ([]dns.RR, error) {
