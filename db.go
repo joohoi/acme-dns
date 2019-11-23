@@ -62,29 +62,43 @@ func (d *acmedb) Init(engine string, connection string) error {
 		return err
 	}
 	d.DB = db
+
 	// Check version first to try to catch old versions without version string
 	var versionString string
 	_ = d.DB.QueryRow("SELECT Value FROM acmedns WHERE Name='db_version'").Scan(&versionString)
 	if versionString == "" {
 		versionString = "0"
 	}
+
 	_, err = d.DB.Exec(acmeTable)
+	if err != nil {
+		return err
+	}
+
 	_, err = d.DB.Exec(userTable)
+	if err != nil {
+		return err
+	}
+
 	if Config.Database.Engine == "sqlite3" {
 		_, err = d.DB.Exec(txtTable)
 	} else {
 		_, err = d.DB.Exec(txtTablePG)
 	}
-	// If everything is fine, handle db upgrade tasks
-	if err == nil {
-		err = d.checkDBUpgrades(versionString)
+	if err != nil {
+		return err
 	}
-	if err == nil {
-		if versionString == "0" {
-			// No errors so we should now be in version 1
-			insversion := fmt.Sprintf("INSERT INTO acmedns (Name, Value) values('db_version', '%d')", DBVersion)
-			_, err = db.Exec(insversion)
-		}
+
+	// Handle db upgrade tasks
+	err = d.checkDBUpgrades(versionString)
+	if err != nil {
+		return err
+	}
+
+	if versionString == "0" {
+		// No errors so we should now be in version 1
+		insversion := fmt.Sprintf("INSERT INTO acmedns (Name, Value) values('db_version', '%d')", DBVersion)
+		_, err = db.Exec(insversion)
 	}
 	return err
 }
