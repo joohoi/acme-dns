@@ -322,7 +322,7 @@ use for the renewal.
 - Posh-ACME: [https://github.com/rmbolger/Posh-ACME](https://github.com/rmbolger/Posh-ACME)
 - Sewer: [https://github.com/komuw/sewer](https://github.com/komuw/sewer)
 - Traefik: [https://github.com/containous/traefik](https://github.com/containous/traefik)
-- Windows ACME Simple (WACS): [https://github.com/PKISharp/win-acme](https://github.com/PKISharp/win-acme)
+- Windows ACME Simple (WACS): [https://www.win-acme.com](https://www.win-acme.com)
 
 ### Authentication hooks
 
