@@ -71,6 +71,12 @@ func webRegisterPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	w.Write(reg)
 }
 
+// UpdateResponse is a struct for update response JSON
+type UpdateResponse struct {
+	TextValue  string   `json:"txt"`
+	Fulldomain string   `json:"fulldomain"`
+}
+
 func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var updStatus int
 	var upd []byte
@@ -99,7 +105,13 @@ func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		} else {
 			log.WithFields(log.Fields{"subdomain": a.Subdomain, "txt": a.Value}).Debug("TXT updated")
 			updStatus = http.StatusOK
-			upd = []byte("{\"txt\": \"" + a.Value + "\"}")
+			updStruct := UpdateResponse{a.Value, a.Subdomain + "." + Config.General.Domain}
+			upd, err = json.Marshal(updStruct)
+			if err != nil {
+				updStatus = http.StatusInternalServerError
+				upd = jsonError("json_error")
+				log.WithFields(log.Fields{"error": "json"}).Debug("Could not marshal JSON")
+			}
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")

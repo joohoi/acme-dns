@@ -209,6 +209,49 @@ func (d *acmedb) Register(afrom cidrslice) (ACMETxt, error) {
 	return a, err
 }
 
+func (d *acmedb) GetBySubdomain(subdomain string) (ACMETxt, error) {
+	s, err := getValidSubdomain(subdomain)
+	if err != nil {
+		return ACMETxt{}, err
+	}
+
+	d.Lock()
+	defer d.Unlock()
+	var results []ACMETxt
+	getSQL := `
+	SELECT Username, Password, Subdomain, AllowFrom
+	FROM records
+	WHERE Subdomain=$1 LIMIT 1
+	`
+	if Config.Database.Engine == "sqlite3" {
+		getSQL = getSQLiteStmt(getSQL)
+	}
+
+	sm, err := d.DB.Prepare(getSQL)
+	if err != nil {
+		return ACMETxt{}, err
+	}
+	defer sm.Close()
+	rows, err := sm.Query(s.String())
+	if err != nil {
+		return ACMETxt{}, err
+	}
+	defer rows.Close()
+
+	// It will only be one row though
+	for rows.Next() {
+		txt, err := getModelFromRow(rows)
+		if err != nil {
+			return ACMETxt{}, err
+		}
+		results = append(results, txt)
+	}
+	if len(results) > 0 {
+		return results[0], nil
+	}
+	return ACMETxt{}, errors.New("no subdomain")
+}
+
 func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	d.Lock()
 	defer d.Unlock()

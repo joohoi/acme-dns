@@ -76,6 +76,32 @@ func TestRegisterMany(t *testing.T) {
 	}
 }
 
+func TestGetBySubdomain(t *testing.T) {
+	// Create  reg to refer to
+	reg, err := DB.Register(cidrslice{})
+	if err != nil {
+		t.Errorf("Registration failed, got error [%v]", err)
+	}
+
+	regUser, err := DB.GetBySubdomain(reg.Subdomain)
+	if err != nil {
+		t.Errorf("Could not get test user, got error [%v]", err)
+	}
+
+	if reg.Username != regUser.Username {
+		t.Errorf("GetBySubdomain username [%q] did not match the original [%q]", regUser.Username, reg.Username)
+	}
+
+	if reg.Subdomain != regUser.Subdomain {
+		t.Errorf("GetBySubdomain subdomain [%q] did not match the original [%q]", regUser.Subdomain, reg.Subdomain)
+	}
+
+	// regUser password already is a bcrypt hash
+	if !correctPassword(reg.Password, regUser.Password) {
+		t.Errorf("GetBySubdomain password [%s] does not match the hash [%s]", reg.Password, regUser.Password)
+	}
+}
+
 func TestGetByUsername(t *testing.T) {
 	// Create  reg to refer to
 	reg, err := DB.Register(cidrslice{})
@@ -98,7 +124,7 @@ func TestGetByUsername(t *testing.T) {
 
 	// regUser password already is a bcrypt hash
 	if !correctPassword(reg.Password, regUser.Password) {
-		t.Errorf("The password [%s] does not match the hash [%s]", reg.Password, regUser.Password)
+		t.Errorf("GetByUsername password [%s] does not match the hash [%s]", reg.Password, regUser.Password)
 	}
 }
 

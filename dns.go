@@ -62,7 +62,7 @@ func (d *DNSServer) ParseRecords(config DNSConfig) {
 	// Create serial
 	serial := time.Now().Format("2006010215")
 	// Add SOA
-	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 86400", strings.ToLower(config.General.Domain), strings.ToLower(config.General.Nsname), strings.ToLower(config.General.Nsadmin), serial)
+	SOAstring := fmt.Sprintf("%s. SOA %s. %s. %s 28800 7200 604800 3600", strings.ToLower(config.General.Domain), strings.ToLower(config.General.Nsname), strings.ToLower(config.General.Nsadmin), serial)
 	soarr, err := dns.NewRR(SOAstring)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error(), "soa": SOAstring}).Error("Error while adding SOA record")
@@ -232,7 +232,7 @@ func (d *DNSServer) answerTXT(q dns.Question) ([]dns.RR, error) {
 	for _, v := range atxt {
 		if len(v) > 0 {
 			r := new(dns.TXT)
-			r.Hdr = dns.RR_Header{Name: q.Name, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 1}
+			r.Hdr = dns.RR_Header{Name: q.Name, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 10}
 			r.Txt = append(r.Txt, v)
 			ra = append(ra, r)
 		}

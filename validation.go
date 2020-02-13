@@ -7,6 +7,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func getValidSubdomain(s string) (uuid.UUID, error) {
+	subdomain, err := uuid.Parse(s)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	return subdomain, nil
+}
+
 func getValidUsername(u string) (uuid.UUID, error) {
 	uname, err := uuid.Parse(u)
 	if err != nil {
@@ -25,7 +33,7 @@ func validKey(k string) bool {
 }
 
 func validSubdomain(s string) bool {
-	_, err := uuid.Parse(s)
+	_, err := getValidSubdomain(s)
 	if err == nil {
 		return true
 	}
