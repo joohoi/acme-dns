@@ -16,8 +16,8 @@ type key int
 // ACMETxtKey is a context key for ACMETxt struct
 const ACMETxtKey key = 0
 
-// Auth middleware for update request
-func Auth(update httprouter.Handle) httprouter.Handle {
+// AuthUpdate middleware for update request
+func AuthUpdate(update httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		postData := ACMETxt{}
 		userOK := false
@@ -47,6 +47,40 @@ func Auth(update httprouter.Handle) httprouter.Handle {
 			// Set the ACMETxt struct to context to pull in from update function
 			ctx := context.WithValue(r.Context(), ACMETxtKey, postData)
 			update(w, r.WithContext(ctx), p)
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write(jsonError("forbidden"))
+		}
+	}
+}
+
+// AuthUnregister middleware for unregister request
+func AuthUnregister(unregister httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		postData := UnregRequest{}
+		userOK := false
+		user, err := getUserFromRequest(r)
+		if err == nil {
+			dec := json.NewDecoder(r.Body)
+			err = dec.Decode(&postData)
+			if err != nil {
+				log.WithFields(log.Fields{"error": "json_error", "string": err.Error()}).Error("Decode error")
+			}
+			if user.Subdomain == postData.Subdomain {
+				userOK = true
+			} else {
+				log.WithFields(log.Fields{"error": "subdomain_mismatch", "name": postData.Subdomain, "expected": user.Subdomain}).Error("Subdomain mismatch")
+			}
+		} else {
+			log.WithFields(log.Fields{"error": err.Error()}).Error("Error while trying to get user")
+		}
+		if userOK {
+			// Set username info to the decoded UnregRequest object
+			postData.Username = user.Username
+			// Set the UnregRequest struct to context to pull in from unregister function
+			ctx := context.WithValue(r.Context(), ACMETxtKey, postData)
+			unregister(w, r.WithContext(ctx), p)
 		} else {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)

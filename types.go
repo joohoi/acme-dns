@@ -72,6 +72,7 @@ type acmedb struct {
 type database interface {
 	Init(string, string) error
 	Register(cidrslice) (ACMETxt, error)
+	Unregister(uuid.UUID) error
 	GetByUsername(uuid.UUID) (ACMETxt, error)
 	GetTXTForDomain(string) ([]string, error)
 	Update(ACMETxtPost) error
