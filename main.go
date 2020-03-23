@@ -14,7 +14,7 @@ import (
 	"github.com/go-acme/lego/v3/challenge/dns01"
 	legolog "github.com/go-acme/lego/v3/log"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mholt/certmagic"
+	"github.com/caddyserver/certmagic"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 )
