@@ -109,7 +109,7 @@ func TestEDNS(t *testing.T) {
 	resolv := resolver{server: "127.0.0.1:15353"}
 	answer, _ := resolv.lookup("auth.example.org", dns.TypeOPT)
 	if answer.Rcode != dns.RcodeSuccess {
-		t.Errorf("Was expecing NOERROR rcode for OPT query, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
+		t.Errorf("Was expecting NOERROR rcode for OPT query, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
 	}
 }
 
@@ -175,7 +175,7 @@ func TestAuthoritative(t *testing.T) {
 	resolv := resolver{server: "127.0.0.1:15353"}
 	answer, _ := resolv.lookup("nonexistent.auth.example.org", dns.TypeA)
 	if answer.Rcode != dns.RcodeNameError {
-		t.Errorf("Was expecing NXDOMAIN rcode, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
+		t.Errorf("Was expecting NXDOMAIN rcode, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
 	}
 	if len(answer.Ns) != 1 {
 		t.Errorf("Was expecting exactly one answer (SOA) for invalid subdomain, but got %d", len(answer.Ns))
@@ -272,7 +272,7 @@ func TestCaseInsensitiveResolveSOA(t *testing.T) {
 	resolv := resolver{server: "127.0.0.1:15353"}
 	answer, _ := resolv.lookup("doesnotexist.aUtH.eXAmpLe.org", dns.TypeSOA)
 	if answer.Rcode != dns.RcodeNameError {
-		t.Errorf("Was expecing NXDOMAIN rcode, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
+		t.Errorf("Was expecting NXDOMAIN rcode, but got [%s] instead.", dns.RcodeToString[answer.Rcode])
 	}
 
 	if len(answer.Ns) == 0 {
