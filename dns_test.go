@@ -186,7 +186,7 @@ func TestAuthoritative(t *testing.T) {
 	if !answer.MsgHdr.Authoritative {
 		t.Errorf("Was expecting authoritative bit to be set")
 	}
-	nanswer, _ := resolv.lookup("nonexsitent.nonauth.tld", dns.TypeA)
+	nanswer, _ := resolv.lookup("nonexistent.nonauth.tld", dns.TypeA)
 	if len(nanswer.Answer) > 0 {
 		t.Errorf("Didn't expect answers for non authoritative domain query")
 	}
