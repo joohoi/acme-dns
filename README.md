@@ -274,6 +274,8 @@ tls_cert_privkey = "/etc/tls/example.org/privkey.pem"
 tls_cert_fullchain = "/etc/tls/example.org/fullchain.pem"
 # only used if tls = "letsencrypt"
 acme_cache_dir = "api-certs"
+# optional e-mail address to which Let's Encrypt will send expiration notices for the API's cert
+notification_email = ""
 # CORS AllowOrigins, wildcards can be used
 corsorigins = [
     "*"
