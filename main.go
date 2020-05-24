@@ -71,10 +71,10 @@ func main() {
 			udpProto += "6"
 			tcpProto += "6"
 		}
-		dnsServerUDP := NewDNSServer(DB, Config.General.Listen, udpProto, Config.General.Domain)
+		dnsServerUDP := NewDNSServer(DB, Config.General.Listen, udpProto, Config.General.Domain, Config.API.Domain)
 		dnsservers = append(dnsservers, dnsServerUDP)
 		dnsServerUDP.ParseRecords(Config)
-		dnsServerTCP := NewDNSServer(DB, Config.General.Listen, tcpProto, Config.General.Domain)
+		dnsServerTCP := NewDNSServer(DB, Config.General.Listen, tcpProto, Config.General.Domain, Config.API.Domain)
 		dnsservers = append(dnsservers, dnsServerTCP)
 		// No need to parse records from config again
 		dnsServerTCP.Domains = dnsServerUDP.Domains
@@ -82,7 +82,7 @@ func main() {
 		go dnsServerUDP.Start(errChan)
 		go dnsServerTCP.Start(errChan)
 	} else {
-		dnsServer := NewDNSServer(DB, Config.General.Listen, Config.General.Proto, Config.General.Domain)
+		dnsServer := NewDNSServer(DB, Config.General.Listen, Config.General.Proto, Config.General.Domain, Config.API.Domain)
 		dnsservers = append(dnsservers, dnsServer)
 		dnsServer.ParseRecords(Config)
 		go dnsServer.Start(errChan)
@@ -148,7 +148,7 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 		CA:                 certmagic.LetsEncryptStagingCA,
 		DNSProvider:        &provider,
 		DNSChallengeOption: dnsopts,
-		DefaultServerName:  Config.General.Domain,
+		DefaultServerName:  Config.API.Domain,
 		Storage:            &storage,
 	}
 
@@ -163,7 +163,7 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 	case "letsencryptstaging":
 		magicconf.CA = certmagic.LetsEncryptStagingCA
 		certcfg := certmagic.New(cache, magicconf)
-		err = certcfg.ManageSync([]string{Config.General.Domain})
+		err = certcfg.ManageSync([]string{Config.API.Domain})
 		if err != nil {
 			errChan <- err
 			return
@@ -175,12 +175,12 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 			TLSConfig: cfg,
 			ErrorLog:  stdlog.New(logwriter, "", 0),
 		}
-		log.WithFields(log.Fields{"host": host, "domain": Config.General.Domain}).Info("Listening HTTPS")
+		log.WithFields(log.Fields{"host": host, "domain": Config.API.Domain}).Info("Listening HTTPS")
 		err = srv.ListenAndServeTLS("", "")
 	case "letsencrypt":
 		magicconf.CA = certmagic.LetsEncryptProductionCA
 		certcfg := certmagic.New(cache, magicconf)
-		err = certcfg.ManageSync([]string{Config.General.Domain})
+		err = certcfg.ManageSync([]string{Config.API.Domain})
 		if err != nil {
 			errChan <- err
 			return
@@ -192,7 +192,7 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 			TLSConfig: cfg,
 			ErrorLog:  stdlog.New(logwriter, "", 0),
 		}
-		log.WithFields(log.Fields{"host": host, "domain": Config.General.Domain}).Info("Listening HTTPS")
+		log.WithFields(log.Fields{"host": host, "domain": Config.API.Domain}).Info("Listening HTTPS")
 		err = srv.ListenAndServeTLS("", "")
 	case "cert":
 		srv := &http.Server{
