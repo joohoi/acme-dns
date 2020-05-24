@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 		_ = newDb.Init("sqlite3", ":memory:")
 	}
 	DB = newDb
-	dnsserver = NewDNSServer(DB, Config.General.Listen, Config.General.Proto, Config.General.Domain)
+	dnsserver = NewDNSServer(DB, Config.General.Listen, Config.General.Proto, Config.General.Domain, Config.API.Domain)
 	dnsserver.ParseRecords(Config)
 
 	// Make sure that we're not creating a race condition in tests
@@ -78,7 +78,7 @@ func setupConfig() {
 	}
 
 	var httpapicfg = httpapi{
-		Domain:      "",
+		Domain:      "auth.example.org",
 		Port:        "8080",
 		TLS:         "none",
 		CorsOrigins: []string{"*"},

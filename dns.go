@@ -17,6 +17,7 @@ type Records struct {
 type DNSServer struct {
 	DB              database
 	Domain          string
+	APIDomain	string
 	Server          *dns.Server
 	SOA             dns.RR
 	PersonalKeyAuth string
@@ -24,13 +25,17 @@ type DNSServer struct {
 }
 
 // NewDNSServer parses the DNS records from config and returns a new DNSServer struct
-func NewDNSServer(db database, addr string, proto string, domain string) *DNSServer {
+func NewDNSServer(db database, addr string, proto string, domain string, apidomain string) *DNSServer {
 	var server DNSServer
 	server.Server = &dns.Server{Addr: addr, Net: proto}
 	if !strings.HasSuffix(domain, ".") {
 		domain = domain + "."
 	}
 	server.Domain = strings.ToLower(domain)
+	if !strings.HasSuffix(apidomain, ".") {
+		apidomain = apidomain + "."
+	}
+	server.APIDomain = strings.ToLower(apidomain)
 	server.DB = db
 	server.PersonalKeyAuth = ""
 	server.Domains = make(map[string]Records)
@@ -184,7 +189,7 @@ func (d *DNSServer) isOwnChallenge(name string) bool {
 			if !strings.HasSuffix(domain, ".") {
 				domain = domain + "."
 			}
-			if domain == d.Domain {
+			if domain == d.APIDomain {
 				return true
 			}
 		}
