@@ -55,7 +55,9 @@ func TestGetValidSubdomain(t *testing.T) {
 		output    bool
 	}{
 		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", true},
-		{"a-97455b-52cc-4569-90c8-7a4b97c6eba8", false},
+		{"a-97455b-52cc-4569-90c8-7a4b97c6eba8", true},
+		{"foo.example.com", false},
+		{"foo-example-com", true},
 		{"", false},
 		{"&!#!25123!%!'%", false},
 	} {
