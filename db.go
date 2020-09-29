@@ -253,7 +253,7 @@ func (d *acmedb) GetTXTForDomain(domain string) ([]string, error) {
 	domain = sanitizeString(domain)
 	var txts []string
 	getSQL := `
-	SELECT Value FROM txt WHERE Subdomain=$1 LIMIT 2
+	SELECT Value FROM txt WHERE Subdomain=$1 AND LastUpdate > 0 LIMIT 2
 	`
 	if Config.Database.Engine == "sqlite3" {
 		getSQL = getSQLiteStmt(getSQL)
@@ -303,6 +303,33 @@ func (d *acmedb) Update(a ACMETxtPost) error {
 	}
 	defer sm.Close()
 	_, err = sm.Exec(a.Value, timenow, a.Subdomain)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *acmedb) Delete(a ACMETxtPost) error {
+	d.Lock()
+	defer d.Unlock()
+	var err error
+	// Data in a is already sanitized
+
+	delSQL := `
+	UPDATE txt SET LastUpdate=0
+	WHERE rowid=(
+		SELECT rowid FROM txt WHERE Subdomain=$1 AND Value=$2)
+	`
+	if Config.Database.Engine == "sqlite3" {
+		delSQL = getSQLiteStmt(delSQL)
+	}
+
+	sm, err := d.DB.Prepare(delSQL)
+	if err != nil {
+		return err
+	}
+	defer sm.Close()
+	_, err = sm.Exec(a.Subdomain, a.Value)
 	if err != nil {
 		return err
 	}
