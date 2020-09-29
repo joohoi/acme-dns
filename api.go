@@ -127,7 +127,7 @@ func webDeletePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		delStatus = http.StatusBadRequest
 		del = jsonError("bad_txt")
 	} else if validSubdomain(a.Subdomain) && validTXT(a.Value) {
-		err := DB.Update(a.ACMETxtPost)
+		err := DB.Delete(a.ACMETxtPost)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err.Error()}).Debug("Error while trying to delete record")
 			delStatus = http.StatusInternalServerError
