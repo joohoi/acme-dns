@@ -9,21 +9,51 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func TestSetupLogging(t *testing.T) {
-	for i, test := range []struct {
-		format   string
-		level    string
-		expected string
-	}{
-		{"text", "warning", "warning"},
-		{"json", "debug", "debug"},
-		{"text", "info", "info"},
-		{"json", "error", "error"},
-		{"text", "something", "warning"},
-	} {
-		setupLogging(test.format, test.level)
-		if log.GetLevel().String() != test.expected {
-			t.Errorf("Test %d: Expected loglevel %s but got %s", i, test.expected, log.GetLevel().String())
+func TestLevelSetupLogging(t *testing.T) {
+	var configs = []map[logconfig]string{
+		{{Format: "text", Level: "warning", Logtype: "stdout"}: "warning"},
+		{{Format: "text", Level: "info", Logtype: "stdout"}: "info"},
+		{{Format: "text", Level: "something", Logtype: "stdout"}: "warning"},
+		{{Format: "json", Level: "debug", Logtype: "stdout"}: "debug"},
+		{{Format: "json", Level: "error", Logtype: "stdout"}: "error"},
+		{{Format: "text", Level: "warning", Logtype: "file"}: "warning"},
+		{{Format: "text", Level: "info", Logtype: "file"}: "info"},
+		{{Format: "text", Level: "something", Logtype: "file"}: "warning"},
+		{{Format: "json", Level: "debug", Logtype: "file"}: "debug"},
+		{{Format: "json", Level: "error", Logtype: "file"}: "error"},
+	}
+	for i, config := range configs {
+		for logconfig, expected := range config {
+			setupLogging(logconfig, "using config")
+			if log.GetLevel().String() != expected {
+				t.Error(logconfig)
+				t.Errorf("Test %d: Expected loglevel %s but got %s", i, expected, log.GetLevel().String())
+			}
+		}
+	}
+}
+
+func TestLevelHTTPSetupLogging(t *testing.T) {
+	var configs = []map[logconfig]string{
+		{{Format: "text", Level: "warning", Logtype: "stdout"}: "warning"},
+		{{Format: "text", Level: "info", Logtype: "stdout"}: "info"},
+		{{Format: "text", Level: "something", Logtype: "stdout"}: "warning"},
+		{{Format: "json", Level: "debug", Logtype: "stdout"}: "debug"},
+		{{Format: "json", Level: "error", Logtype: "stdout"}: "error"},
+		{{Format: "text", Level: "warning", Logtype: "file"}: "warning"},
+		{{Format: "text", Level: "info", Logtype: "file"}: "info"},
+		{{Format: "text", Level: "something", Logtype: "file"}: "warning"},
+		{{Format: "json", Level: "debug", Logtype: "file"}: "debug"},
+		{{Format: "json", Level: "error", Logtype: "file"}: "error"},
+	}
+	for i, config := range configs {
+		for logconfig, expected := range config {
+			logger := log.New()
+			setupHTTPLogging(logger, logconfig)
+			if logger.GetLevel().String() != expected {
+				t.Error(logconfig)
+				t.Errorf("Test %d: Expected loglevel %s but got %s", i, expected, logger.GetLevel().String())
+			}
 		}
 	}
 }

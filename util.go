@@ -90,13 +90,23 @@ func sanitizeDomainQuestion(d string) string {
 	return dom
 }
 
-func setupLogging(format string, level string) {
-	if format == "json" {
-		log.SetFormatter(&log.JSONFormatter{})
+func setupLogging(logconfig logconfig, readConfigLog string) {
+	switch logconfig.Logtype {
+	default:
+		log.SetOutput(os.Stdout)
+		logconfig.Logtype = "stdout"
+	case "file":
+		file, err := os.OpenFile(logconfig.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err == nil {
+			log.SetOutput(file)
+		} else {
+			log.SetOutput(os.Stdout)
+		}
 	}
-	switch level {
+	switch logconfig.Level {
 	default:
 		log.SetLevel(log.WarnLevel)
+		logconfig.Level = "warning"
 	case "debug":
 		log.SetLevel(log.DebugLevel)
 	case "info":
@@ -104,7 +114,51 @@ func setupLogging(format string, level string) {
 	case "error":
 		log.SetLevel(log.ErrorLevel)
 	}
-	// TODO: file logging
+	if logconfig.Format == "json" {
+		log.SetFormatter(&log.JSONFormatter{})
+	} else {
+		logconfig.Format = "text"
+	}
+	log.WithFields(log.Fields{"file": readConfigLog}).Info("Using config file")
+	log.WithFields(log.Fields{"type": logconfig.Logtype}).Info("Set log type")
+	log.WithFields(log.Fields{"level": logconfig.Level}).Info("Set log level")
+	log.WithFields(log.Fields{"format": logconfig.Format}).Info("Set log format")
+	if logconfig.Logtype == "file" {
+		log.WithFields(log.Fields{"file": logconfig.File}).Info("Set log file")
+	}
+}
+
+func setupHTTPLogging(logger *log.Logger, logconfig logconfig) {
+	switch logconfig.Logtype {
+	default:
+		logger.SetOutput(os.Stdout)
+	case "file":
+		file, err := os.OpenFile(logconfig.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err == nil {
+			logger.SetOutput(file)
+		} else {
+			logger.SetOutput(os.Stdout)
+		}
+	}
+	switch logconfig.Level {
+	default:
+		logger.SetLevel(log.WarnLevel)
+	case "debug":
+		logger.SetLevel(log.DebugLevel)
+	case "info":
+		logger.SetLevel(log.InfoLevel)
+	case "error":
+		logger.SetLevel(log.ErrorLevel)
+	}
+	if logconfig.Format == "json" {
+		logger.SetFormatter(&log.JSONFormatter{})
+	}
+	logger.WithFields(log.Fields{"type": logconfig.Logtype}).Info("HTTP logger set log type")
+	logger.WithFields(log.Fields{"level": logconfig.Level}).Info("HTTP logger Set log level")
+	logger.WithFields(log.Fields{"format": logconfig.Format}).Info("HTTP logger Set log format")
+	if logconfig.Logtype == "file" {
+		logger.WithFields(log.Fields{"file": logconfig.File}).Info("HTTP logger Set log file")
+	}
 }
 
 func getIPListFromHeader(header string) []string {
