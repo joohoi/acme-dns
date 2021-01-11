@@ -25,7 +25,7 @@ For longer explanation of the underlying issue and other proposed solutions, see
 
 ## Usage
 
-A Certbot authentication hook for acme-dns is available at: [https://github.com/joohoi/acme-dns-certbot](https://github.com/joohoi/acme-dns-certbot).
+A client application for acme-dns with support for Certbot authentication hooks is available at: [https://github.com/acme-dns/acme-dns-client](https://github.com/acme-dns/acme-dns-client).
 
 [![asciicast](https://asciinema.org/a/94903.png)](https://asciinema.org/a/94903)
 
@@ -328,6 +328,7 @@ use for the renewal.
 
 ### Authentication hooks
 
+- acme-dns-client with Certbot authentication hook: [https://github.com/acme-dns/acme-dns-client](https://github.com/acme-dns/acme-dns-client)
 - Certbot authentication hook in Python:  [https://github.com/joohoi/acme-dns-certbot-joohoi](https://github.com/joohoi/acme-dns-certbot-joohoi)
 - Certbot authentication hook in Go: [https://github.com/koesie10/acme-dns-certbot-hook](https://github.com/koesie10/acme-dns-certbot-hook)
 
