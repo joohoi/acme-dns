@@ -149,6 +149,7 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 		DNSProvider:        &provider,
 		DNSChallengeOption: dnsopts,
 		DefaultServerName:  Config.General.Domain,
+		Email:              Config.API.NotificationEmail,
 		Storage:            &storage,
 	}
 
