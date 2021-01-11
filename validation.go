@@ -2,11 +2,10 @@ package main
 
 import (
 	"unicode/utf8"
+	"regexp"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-
-	"regexp"
 )
 
 func getValidUsername(u string) (uuid.UUID, error) {
@@ -31,7 +30,6 @@ func validSubdomain(s string) bool {
 	RegExp := regexp.MustCompile("^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
 	return RegExp.MatchString(s)
 }
-
 
 func validTXT(s string) bool {
 	sn := sanitizeString(s)

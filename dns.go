@@ -108,7 +108,7 @@ func (d *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 			d.readQuery(m)
 		}
 	}
-	w.WriteMsg(m)
+	_ = w.WriteMsg(m)
 }
 
 func (d *DNSServer) readQuery(m *dns.Msg) {
@@ -119,9 +119,7 @@ func (d *DNSServer) readQuery(m *dns.Msg) {
 				authoritative = auth
 			}
 			m.MsgHdr.Rcode = rc
-			for _, r := range rr {
-				m.Answer = append(m.Answer, r)
-			}
+			m.Answer = append(m.Answer, rr...)
 		}
 	}
 	m.MsgHdr.Authoritative = authoritative
@@ -208,9 +206,7 @@ func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 			txtRRs, err = d.answerTXT(q)
 		}
 		if err == nil {
-			for _, txtRR := range txtRRs {
-				r = append(r, txtRR)
-			}
+			r = append(r, txtRRs...)
 		}
 	}
 	if len(r) > 0 {
