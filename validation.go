@@ -26,10 +26,7 @@ func validKey(k string) bool {
 
 func validSubdomain(s string) bool {
 	_, err := uuid.Parse(s)
-	if err == nil {
-		return true
-	}
-	return false
+	return err == nil
 }
 
 func validTXT(s string) bool {

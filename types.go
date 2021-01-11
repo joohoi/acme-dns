@@ -21,9 +21,6 @@ type DNSConfig struct {
 	Logconfig logconfig
 }
 
-// Auth middleware
-type authMiddleware struct{}
-
 // Config file general section
 type general struct {
 	Listen        string

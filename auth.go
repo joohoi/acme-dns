@@ -50,7 +50,7 @@ func Auth(update httprouter.Handle) httprouter.Handle {
 		} else {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(jsonError("forbidden"))
+			_, _ = w.Write(jsonError("forbidden"))
 		}
 	}
 }
