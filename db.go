@@ -209,6 +209,58 @@ func (d *acmedb) Register(afrom cidrslice) (ACMETxt, error) {
 	return a, err
 }
 
+func (d *acmedb) Unregister(username uuid.UUID) error {
+	var err error
+
+	// Check if user exists
+	user, err := DB.GetByUsername(username)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("User doesn't exist")
+		return errors.New("User doesn't exist")
+	}
+
+	tx, err := d.DB.Begin()
+
+	// Delete user's TXT records
+	err = d.DeleteTXTForDomain(user.Subdomain)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Could not delete TXT records")
+		return err
+	}
+
+	// Rollback if errored, commit if not
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+
+	// Delete user record
+	d.Lock()
+	defer d.Unlock()
+	unregSQL := `
+	DELETE FROM records
+        WHERE Username = $1`
+	if Config.Database.Engine == "sqlite3" {
+		unregSQL = getSQLiteStmt(unregSQL)
+	}
+	sm, err := tx.Prepare(unregSQL)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Database error in prepare")
+		return errors.New("SQL error")
+	}
+	defer sm.Close()
+	_, err = sm.Exec(username.String())
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Database error in execute")
+		return errors.New("SQL error")
+	}
+
+	return nil
+}
+
 func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 	d.Lock()
 	defer d.Unlock()
@@ -303,6 +355,27 @@ func (d *acmedb) Update(a ACMETxtPost) error {
 	}
 	defer sm.Close()
 	_, err = sm.Exec(a.Value, timenow, a.Subdomain)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *acmedb) DeleteTXTForDomain(domain string) error {
+	d.Lock()
+	defer d.Unlock()
+	domain = sanitizeString(domain)
+	getSQL := `DELETE FROM txt WHERE Subdomain=$1`
+	if Config.Database.Engine == "sqlite3" {
+		getSQL = getSQLiteStmt(getSQL)
+	}
+
+	sm, err := d.DB.Prepare(getSQL)
+	if err != nil {
+		return err
+	}
+	defer sm.Close()
+	_, err = sm.Exec(domain)
 	if err != nil {
 		return err
 	}
