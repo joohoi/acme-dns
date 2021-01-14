@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 		_ = newDb.Init("sqlite3", ":memory:")
 	}
 	DB = newDb
-	dnsserver = NewDNSServer(DB, Config.General.Listen, Config.General.Proto, Config.General.Domain)
+	dnsserver = NewDNSServer(DB, Config.General.Listen, Config.General.Proto, Config.General.Domain, Config.General.Nsname)
 	dnsserver.ParseRecords(Config)
 
 	// Make sure that we're not creating a race condition in tests
