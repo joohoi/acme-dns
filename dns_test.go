@@ -11,9 +11,6 @@ import (
 	"github.com/miekg/dns"
 )
 
-var resolv resolver
-var server *dns.Server
-
 type resolver struct {
 	server string
 }

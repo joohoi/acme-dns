@@ -56,7 +56,7 @@ func TestMain(m *testing.M) {
 	go dnsserver.Start(make(chan error, 1))
 	wg.Wait()
 	exitval := m.Run()
-	dnsserver.Server.Shutdown()
+	_ = dnsserver.Server.Shutdown()
 	DB.Close()
 	os.Exit(exitval)
 }

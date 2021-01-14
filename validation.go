@@ -2,6 +2,7 @@ package main
 
 import (
 	"unicode/utf8"
+	"regexp"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -25,11 +26,9 @@ func validKey(k string) bool {
 }
 
 func validSubdomain(s string) bool {
-	_, err := uuid.Parse(s)
-	if err == nil {
-		return true
-	}
-	return false
+	// URL safe base64 alphabet without padding as defined in ACME
+	RegExp := regexp.MustCompile("^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
+	return RegExp.MatchString(s)
 }
 
 func validTXT(s string) bool {

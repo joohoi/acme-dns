@@ -59,13 +59,13 @@ func prepareConfig(conf DNSConfig) (DNSConfig, error) {
 
 func sanitizeString(s string) string {
 	// URL safe base64 alphabet without padding as defined in ACME
-	re, _ := regexp.Compile("[^A-Za-z\\-\\_0-9]+")
+	re, _ := regexp.Compile(`[^A-Za-z\-\_0-9]+`)
 	return re.ReplaceAllString(s, "")
 }
 
 func sanitizeIPv6addr(s string) string {
 	// Remove brackets from IPv6 addresses, net.ParseCIDR needs this
-	re, _ := regexp.Compile("[\\[\\]]+")
+	re, _ := regexp.Compile(`[\[\]]+`)
 	return re.ReplaceAllString(s, "")
 }
 

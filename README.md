@@ -25,7 +25,7 @@ For longer explanation of the underlying issue and other proposed solutions, see
 
 ## Usage
 
-A Certbot authentication hook for acme-dns is available at: [https://github.com/joohoi/acme-dns-certbot](https://github.com/joohoi/acme-dns-certbot).
+A client application for acme-dns with support for Certbot authentication hooks is available at: [https://github.com/acme-dns/acme-dns-client](https://github.com/acme-dns/acme-dns-client).
 
 [![asciicast](https://asciinema.org/a/94903.png)](https://asciinema.org/a/94903)
 
@@ -206,7 +206,7 @@ You may want to test that acme-dns is working before using it for real queries.
 
 2) Call the `/register` API endpoint to register a test domain:
 ```
-$ curl -X POST http://auth.example.org/register
+$ curl -X POST https://auth.example.org/register
 {"username":"eabcdb41-d89f-4580-826f-3e62e9755ef2","password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0","fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org","subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf","allowfrom":[]}
 ```
 
@@ -216,7 +216,7 @@ $ curl -X POST \
   -H "X-Api-User: eabcdb41-d89f-4580-826f-3e62e9755ef2" \
   -H "X-Api-Key: pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0" \
   -d '{"subdomain": "d420c923-bbd7-4056-ab64-c3ca54c9b3cf", "txt": "___validation_token_received_from_the_ca___"}' \
-  http://auth.example.org/update
+  https://auth.example.org/update
 ```
 
 Note: The `txt` field must be exactly 43 characters long, otherwise acme-dns will reject it
@@ -274,6 +274,8 @@ tls_cert_privkey = "/etc/tls/example.org/privkey.pem"
 tls_cert_fullchain = "/etc/tls/example.org/fullchain.pem"
 # only used if tls = "letsencrypt"
 acme_cache_dir = "api-certs"
+# optional e-mail address to which Let's Encrypt will send expiration notices for the API's cert
+notification_email = ""
 # CORS AllowOrigins, wildcards can be used
 corsorigins = [
     "*"
@@ -326,6 +328,7 @@ use for the renewal.
 
 ### Authentication hooks
 
+- acme-dns-client with Certbot authentication hook: [https://github.com/acme-dns/acme-dns-client](https://github.com/acme-dns/acme-dns-client)
 - Certbot authentication hook in Python:  [https://github.com/joohoi/acme-dns-certbot-joohoi](https://github.com/joohoi/acme-dns-certbot-joohoi)
 - Certbot authentication hook in Go: [https://github.com/koesie10/acme-dns-certbot-hook](https://github.com/koesie10/acme-dns-certbot-hook)
 

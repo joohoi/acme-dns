@@ -92,13 +92,12 @@ func main() {
 	go startHTTPAPI(errChan, Config, dnsservers)
 
 	// block waiting for error
-	select {
-	case err = <-errChan:
+	for {
+		err = <-errChan
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	log.Debugf("Shutting down...")
 }
 
 func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer) {
@@ -149,6 +148,7 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 		DNSProvider:        &provider,
 		DNSChallengeOption: dnsopts,
 		DefaultServerName:  Config.General.Nsname,
+		Email:              Config.API.NotificationEmail,
 		Storage:            &storage,
 	}
 

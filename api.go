@@ -25,14 +25,14 @@ func webRegisterPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	var err error
 	aTXT := ACMETxt{}
 	bdata, _ := ioutil.ReadAll(r.Body)
-	if bdata != nil && len(bdata) > 0 {
+	if len(bdata) > 0 {
 		err = json.Unmarshal(bdata, &aTXT)
 		if err != nil {
 			regStatus = http.StatusBadRequest
 			reg = jsonError("malformed_json_payload")
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(regStatus)
-			w.Write(reg)
+			_, _ = w.Write(reg)
 			return
 		}
 	}
@@ -44,7 +44,7 @@ func webRegisterPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 		reg = jsonError("invalid_allowfrom_cidr")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(regStatus)
-		w.Write(reg)
+		_, _ = w.Write(reg)
 		return
 	}
 
@@ -68,7 +68,7 @@ func webRegisterPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(regStatus)
-	w.Write(reg)
+	_, _ = w.Write(reg)
 }
 
 func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -104,7 +104,7 @@ func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(updStatus)
-	w.Write(upd)
+	_, _ = w.Write(upd)
 }
 
 // Endpoint used to check the readiness and/or liveness (health) of the server.
