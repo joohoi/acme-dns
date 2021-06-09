@@ -159,6 +159,17 @@ func (d *DNSServer) answeringForDomain(name string) bool {
 	_, ok := d.Domains[strings.ToLower(name)]
 	return ok
 }
+// hasTxtForDomain checks if we have txt records for a domain
+func (d *DNSServer) hasTxtForDomain(q dns.Question) bool {
+	subdomain := sanitizeDomainQuestion(q.Name)
+	txts, err := d.DB.GetTXTForDomain(subdomain)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Debug("Error while trying to get record")
+		return false
+	}
+	return len(txts) > 0
+}
+
 
 func (d *DNSServer) isAuthoritative(q dns.Question) bool {
 	if d.answeringForDomain(q.Name) {
@@ -195,7 +206,7 @@ func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 	var err error
 	var txtRRs []dns.RR
 	var authoritative = d.isAuthoritative(q)
-	if !d.isOwnChallenge(q.Name) && !d.answeringForDomain(q.Name) {
+	if !d.isOwnChallenge(q.Name) && !d.answeringForDomain(q.Name) && !d.hasTxtForDomain(q) {
 		rcode = dns.RcodeNameError
 	}
 	r, _ := d.getRecord(q)
