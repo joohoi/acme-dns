@@ -20,7 +20,7 @@
 version=$1
 platforms="linux/arm64,linux/amd64"
 
-echo "Building $version of acme-dns for platfroms: $platforms!"
+echo "Building $version of acme-dns for platforms: $platforms!"
 
 docker buildx build \
     --platform $platforms \
