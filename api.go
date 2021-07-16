@@ -140,7 +140,7 @@ func webDeletePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(delStatus)
-	w.Write(del)
+	_, _ = w.Write(del)
 }
 
 // Endpoint used to check the readiness and/or liveness (health) of the server.

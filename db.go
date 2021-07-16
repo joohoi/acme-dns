@@ -114,28 +114,7 @@ func (d *acmedb) handleDBUpgrades(version int) error {
 
 func (d *acmedb) handleDBUpgradeTo1() error {
 	var err error
-	var subdomains []string
 	log.Info("Upgrading db to version 1")
-	rows, err := d.DB.Query("SELECT Subdomain FROM records")
-	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade")
-		return err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var subdomain string
-		err = rows.Scan(&subdomain)
-		if err != nil {
-			log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade while reading values")
-			return err
-		}
-		subdomains = append(subdomains, subdomain)
-	}
-	err = rows.Err()
-	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error()}).Error("Error in DB upgrade while inserting values")
-		return err
-	}
 	tx, err := d.DB.Begin()
 	// Rollback if errored, commit if not
 	defer func() {
@@ -312,10 +291,10 @@ func (d *acmedb) Update(a ACMETxtPost) error {
 
 	lastUsedSQL := `UPDATE records SET LastUsed = $1 WHERE Subdomain = $2`
 	lastUsedStmt, err := d.DB.Prepare(lastUsedSQL)
-	defer lastUsedStmt.Close()
 	if err != nil {
 		return err
 	}
+	defer lastUsedStmt.Close()
 	if err != nil {
 		return err
 	}

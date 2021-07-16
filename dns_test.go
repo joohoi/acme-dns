@@ -356,7 +356,6 @@ func TestResolveTXT(t *testing.T) {
 		t.Fatalf("Test %d: %s", seq, err)
 		return
 	}
-	seq++
 }
 
 func TestCaseInsensitiveResolveA(t *testing.T) {
