@@ -156,6 +156,25 @@ func (d *acmedb) handleDBUpgradeTo1() error {
 	if Config.Database.Engine != "sqlite3" {
 		_, _ = tx.Exec("ALTER TABLE records DROP COLUMN IF EXISTS Value")
 		_, _ = tx.Exec("ALTER TABLE records DROP COLUMN IF EXISTS LastActive")
+	} else {
+		_, err = tx.Exec("ALTER TABLE records RENAME TO records_old")
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(userTable)
+		if err != nil {
+			return err
+		}
+		insertSQL := `INSERT INTO records (Username, Password, Subdomain, AllowFrom)
+				SELECT Username, Password, Subdomain, AllowFrom FROM records_old`
+		_, err = tx.Exec(insertSQL)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec("DROP TABLE records_old")
+		if err != nil {
+			return err
+		}
 	}
 	_, err = tx.Exec("UPDATE acmedns SET Value='1' WHERE Name='db_version'")
 	return err
