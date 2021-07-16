@@ -416,7 +416,7 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 	DB.SetBackend(db)
 	defer db.Close()
 	mock.ExpectBegin()
-	mock.ExpectPrepare("UPDATE records").WillReturnError(errors.New("error"))
+	mock.ExpectPrepare("INSERT INTO txt").WillReturnError(errors.New("error"))
 	e.POST("/update").
 		WithJSON(updateJSON).
 		Expect().
@@ -445,7 +445,7 @@ func TestApiDeleteWithCredentialsMockDB(t *testing.T) {
 	DB.SetBackend(db)
 	defer db.Close()
 	mock.ExpectBegin()
-	mock.ExpectPrepare("UPDATE records").WillReturnError(errors.New("error"))
+	mock.ExpectPrepare("DELETE FROM txt").WillReturnError(errors.New("error"))
 	e.POST("/delete").
 		WithJSON(updateJSON).
 		Expect().
