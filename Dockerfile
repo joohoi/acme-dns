@@ -1,4 +1,4 @@
-FROM --platform=amd64 golang:1-alpine AS builder
+FROM golang:1-alpine AS builder
 LABEL maintainer="joona@kuori.org"
 
 RUN apk add --update gcc musl-dev git
