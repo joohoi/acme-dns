@@ -45,6 +45,7 @@ type httpapi struct {
 	AutocertPort        string `toml:"autocert_port"`
 	Port                string `toml:"port"`
 	TLS                 string
+	TLSCustomURL        string `toml:"tls_custom_url"`
 	TLSCertPrivkey      string `toml:"tls_cert_privkey"`
 	TLSCertFullchain    string `toml:"tls_cert_fullchain"`
 	ACMECacheDir        string `toml:"acme_cache_dir"`
