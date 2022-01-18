@@ -1,23 +1,18 @@
-FROM golang:alpine AS builder
-LABEL maintainer="joona@kuori.org"
+FROM golang:1.17-alpine AS builder
 
-RUN apk add --update gcc musl-dev git
+RUN apk add -U --no-cache ca-certificates gcc musl-dev
 
-ENV GOPATH /tmp/buildcache
-RUN git clone https://github.com/joohoi/acme-dns /tmp/acme-dns
-WORKDIR /tmp/acme-dns
-RUN CGO_ENABLED=1 go build
+WORKDIR /build
+COPY . .
 
-FROM alpine:latest
+RUN CGO_ENABLED=1 go build -ldflags="-extldflags=-static" -tags sqlite_omit_load_extension
 
-WORKDIR /root/
-COPY --from=builder /tmp/acme-dns .
-RUN mkdir -p /etc/acme-dns
-RUN mkdir -p /var/lib/acme-dns
-RUN rm -rf ./config.cfg
-RUN apk --no-cache add ca-certificates && update-ca-certificates
 
+FROM scratch
+
+COPY --from=builder /build/acme-dns /
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+EXPOSE 53/udp 53 80 443
+ENTRYPOINT ["/acme-dns"]
 VOLUME ["/etc/acme-dns", "/var/lib/acme-dns"]
-ENTRYPOINT ["./acme-dns"]
-EXPOSE 53 80 443
-EXPOSE 53/udp
