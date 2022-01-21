@@ -5,3 +5,4 @@ acme-dns.log
 coverage.out
 .idea/
 config/config.cfg
+docker-compose.yml

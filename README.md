@@ -179,7 +179,7 @@ docker run --rm --name acmedns                 \
 
 2) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`.
 
-3) Copy [docker-compose.yml from the project](https://raw.githubusercontent.com/joohoi/acme-dns/master/docker-compose.yml), or create your own.
+3) Copy [docker-compose.yml.example](https://raw.githubusercontent.com/joohoi/acme-dns/master/docker-compose.yml.example) to docker-compose.yml and edit as needed.
 
 4) Edit the `config/config.cfg` and `docker-compose.yml` to suit your needs, and run `docker-compose up -d`.
 
