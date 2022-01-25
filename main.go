@@ -1,8 +1,10 @@
-//+build !test
+//go:build !test
+// +build !test
 
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	stdlog "log"
@@ -11,10 +13,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/go-acme/lego/v3/challenge/dns01"
+	"github.com/caddyserver/certmagic"
 	legolog "github.com/go-acme/lego/v3/log"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mholt/certmagic"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 )
@@ -134,41 +135,39 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 	cfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 	}
-
 	provider := NewChallengeProvider(dnsservers)
-	// Override the validation options to mitigate issues with (lack of) 1:1 nat reflection
-	// for some network setups.
-	dnsopts := dns01.WrapPreCheck(func(_, _, _ string, _ dns01.PreCheckFunc) (bool, error) {
-		return true, nil
-	})
 	storage := certmagic.FileStorage{Path: Config.API.ACMECacheDir}
-	magicconf := certmagic.Config{
-		Agreed:             true,
-		CA:                 certmagic.LetsEncryptStagingCA,
-		DNSProvider:        &provider,
-		DNSChallengeOption: dnsopts,
-		DefaultServerName:  Config.General.Domain,
-		Email:              Config.API.NotificationEmail,
-		Storage:            &storage,
-	}
 
-	cache := certmagic.NewCache(certmagic.CacheOptions{
-		GetConfigForCert: func(cert certmagic.Certificate) (certmagic.Config, error) {
-			return magicconf, nil
+	// Set up certmagic for getting certificate for acme-dns api
+	certmagic.DefaultACME.DNS01Solver = &provider
+	certmagic.DefaultACME.Agreed = true
+	if Config.API.TLS == "letsencrypt" {
+		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
+	} else {
+		certmagic.DefaultACME.CA = certmagic.LetsEncryptStagingCA
+	}
+	certmagic.DefaultACME.Email = Config.API.NotificationEmail
+	magicConf := certmagic.NewDefault()
+	magicConf.Storage = &storage
+	magicConf.DefaultServerName = Config.General.Domain
+
+	magicCache := certmagic.NewCache(certmagic.CacheOptions{
+		GetConfigForCert: func(cert certmagic.Certificate) (*certmagic.Config, error) {
+			return magicConf, nil
 		},
 	})
 
+	magic := certmagic.New(magicCache, *magicConf)
 	var err error
 	switch Config.API.TLS {
 	case "letsencryptstaging":
-		magicconf.CA = certmagic.LetsEncryptStagingCA
-		certcfg := certmagic.New(cache, magicconf)
-		err = certcfg.ManageSync([]string{Config.General.Domain})
+		err = magic.ManageAsync(context.Background(), []string{Config.General.Domain})
 		if err != nil {
 			errChan <- err
 			return
 		}
-		cfg.GetCertificate = certcfg.GetCertificate
+		cfg.GetCertificate = magic.GetCertificate
+
 		srv := &http.Server{
 			Addr:      host,
 			Handler:   c.Handler(api),
@@ -178,14 +177,12 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 		log.WithFields(log.Fields{"host": host, "domain": Config.General.Domain}).Info("Listening HTTPS")
 		err = srv.ListenAndServeTLS("", "")
 	case "letsencrypt":
-		magicconf.CA = certmagic.LetsEncryptProductionCA
-		certcfg := certmagic.New(cache, magicconf)
-		err = certcfg.ManageSync([]string{Config.General.Domain})
+		err = magic.ManageAsync(context.Background(), []string{Config.General.Domain})
 		if err != nil {
 			errChan <- err
 			return
 		}
-		cfg.GetCertificate = certcfg.GetCertificate
+		cfg.GetCertificate = magic.GetCertificate
 		srv := &http.Server{
 			Addr:      host,
 			Handler:   c.Handler(api),
