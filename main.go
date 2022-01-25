@@ -1,4 +1,5 @@
-//+build !test
+//go:build !test
+// +build !test
 
 package main
 
@@ -147,7 +148,7 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 	magicConf.DefaultServerName = Config.General.Domain
 
 	magicCache := certmagic.NewCache(certmagic.CacheOptions{
-		GetConfigForCert: func(cert certmagic.Certificate) (*certmagic.Config, error){
+		GetConfigForCert: func(cert certmagic.Certificate) (*certmagic.Config, error) {
 			return magicConf, nil
 		},
 	})
@@ -157,7 +158,7 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 	switch Config.API.TLS {
 	case "letsencryptstaging":
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptStagingCA
-		err = magic.ManageSync(context.Background(), []string{Config.General.Domain})
+		err = magic.ManageAsync(context.Background(), []string{Config.General.Domain})
 		if err != nil {
 			errChan <- err
 			return
@@ -174,7 +175,7 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 		err = srv.ListenAndServeTLS("", "")
 	case "letsencrypt":
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
-		err = magic.ManageSync(context.Background(), []string{Config.General.Domain})
+		err = magic.ManageAsync(context.Background(), []string{Config.General.Domain})
 		if err != nil {
 			errChan <- err
 			return
