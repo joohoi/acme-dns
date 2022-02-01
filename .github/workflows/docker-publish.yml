@@ -9,7 +9,7 @@ on:
   schedule:
     - cron: '25 1 * * *'
   push:
-    branches: [ master, docker_publish ]
+    branches: [ master ]
     # Publish tags starting with 'v' as releases.
     tags: [ 'v*' ]
   pull_request:
