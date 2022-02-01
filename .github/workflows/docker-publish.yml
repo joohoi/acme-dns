@@ -10,8 +10,8 @@ on:
     - cron: '25 1 * * *'
   push:
     branches: [ master, docker_publish ]
-    # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    # Publish tags starting with 'v' as releases.
+    tags: [ 'v*' ]
   pull_request:
     branches: [ master ]
 
