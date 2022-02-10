@@ -12,12 +12,12 @@ import (
 type ACMETxt struct {
 	Username uuid.UUID
 	Password string
-	ACMETxtPost
+	Challenge
 	AllowFrom cidrslice
 }
 
-// ACMETxtPost holds the DNS part of the ACMETxt struct
-type ACMETxtPost struct {
+// Challenge holds the DNS part of the ACMETxt struct
+type Challenge struct {
 	Subdomain string `json:"subdomain"`
 	Value     string `json:"txt"`
 }
