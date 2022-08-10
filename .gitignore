@@ -4,3 +4,4 @@ acme-dns.log
 .vagrant
 coverage.out
 .idea/
+dist/
