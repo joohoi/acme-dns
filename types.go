@@ -63,7 +63,7 @@ type logconfig struct {
 }
 
 type acmedb struct {
-	sync.Mutex
+	Mutex sync.Mutex
 	DB *sql.DB
 }
 
@@ -76,6 +76,4 @@ type database interface {
 	GetBackend() *sql.DB
 	SetBackend(*sql.DB)
 	Close()
-	Lock()
-	Unlock()
 }
