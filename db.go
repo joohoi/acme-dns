@@ -55,8 +55,8 @@ func getSQLiteStmt(s string) string {
 }
 
 func (d *acmedb) Init(engine string, connection string) error {
-	d.Lock()
-	defer d.Unlock()
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
 	db, err := sql.Open(engine, connection)
 	if err != nil {
 		return err
@@ -171,8 +171,8 @@ func (d *acmedb) NewTXTValuesInTransaction(tx *sql.Tx, subdomain string) error {
 }
 
 func (d *acmedb) Register(afrom cidrslice) (ACMETxt, error) {
-	d.Lock()
-	defer d.Unlock()
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
 	var err error
 	tx, err := d.DB.Begin()
 	// Rollback if errored, commit if not
@@ -210,8 +210,8 @@ func (d *acmedb) Register(afrom cidrslice) (ACMETxt, error) {
 }
 
 func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
-	d.Lock()
-	defer d.Unlock()
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
 	var results []ACMETxt
 	getSQL := `
 	SELECT Username, Password, Subdomain, AllowFrom
@@ -248,8 +248,8 @@ func (d *acmedb) GetByUsername(u uuid.UUID) (ACMETxt, error) {
 }
 
 func (d *acmedb) GetTXTForDomain(domain string) ([]string, error) {
-	d.Lock()
-	defer d.Unlock()
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
 	domain = sanitizeString(domain)
 	var txts []string
 	getSQL := `
@@ -282,8 +282,8 @@ func (d *acmedb) GetTXTForDomain(domain string) ([]string, error) {
 }
 
 func (d *acmedb) Update(a ACMETxtPost) error {
-	d.Lock()
-	defer d.Unlock()
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
 	var err error
 	// Data in a is already sanitized
 	timenow := time.Now().Unix()
