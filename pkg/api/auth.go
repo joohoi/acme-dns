@@ -1,14 +1,14 @@
-package main
+package api
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/acme-dns/acme-dns/pkg/acmedns"
 	"net"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	log "github.com/sirupsen/logrus"
 )
 
 type key int
@@ -17,28 +17,34 @@ type key int
 const ACMETxtKey key = 0
 
 // Auth middleware for update request
-func Auth(update httprouter.Handle) httprouter.Handle {
+func (a *AcmednsAPI) Auth(update httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		postData := ACMETxt{}
+		postData := acmedns.ACMETxt{}
 		userOK := false
-		user, err := getUserFromRequest(r)
+		user, err := a.getUserFromRequest(r)
 		if err == nil {
-			if updateAllowedFromIP(r, user) {
+			if a.updateAllowedFromIP(r, user) {
 				dec := json.NewDecoder(r.Body)
 				err = dec.Decode(&postData)
 				if err != nil {
-					log.WithFields(log.Fields{"error": "json_error", "string": err.Error()}).Error("Decode error")
+					a.Logger.Errorw("Decoding error",
+						"error", "json_error")
 				}
 				if user.Subdomain == postData.Subdomain {
 					userOK = true
 				} else {
-					log.WithFields(log.Fields{"error": "subdomain_mismatch", "name": postData.Subdomain, "expected": user.Subdomain}).Error("Subdomain mismatch")
+					a.Logger.Errorw("Subdomain mismatch",
+						"error", "subdomain_mismatch",
+						"name", postData.Subdomain,
+						"expected", user.Subdomain)
 				}
 			} else {
-				log.WithFields(log.Fields{"error": "ip_unauthorized"}).Error("Update not allowed from IP")
+				a.Logger.Errorw("Update not allowed from IP",
+					"error", "ip_unauthorized")
 			}
 		} else {
-			log.WithFields(log.Fields{"error": err.Error()}).Error("Error while trying to get user")
+			a.Logger.Errorw("Error while trying to get user",
+				"error", err.Error())
 		}
 		if userOK {
 			// Set user info to the decoded ACMETxt object
@@ -55,39 +61,42 @@ func Auth(update httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func getUserFromRequest(r *http.Request) (ACMETxt, error) {
+func (a *AcmednsAPI) getUserFromRequest(r *http.Request) (acmedns.ACMETxt, error) {
 	uname := r.Header.Get("X-Api-User")
 	passwd := r.Header.Get("X-Api-Key")
 	username, err := getValidUsername(uname)
 	if err != nil {
-		return ACMETxt{}, fmt.Errorf("Invalid username: %s: %s", uname, err.Error())
+		return acmedns.ACMETxt{}, fmt.Errorf("invalid username: %s: %s", uname, err.Error())
 	}
 	if validKey(passwd) {
-		dbuser, err := DB.GetByUsername(username)
+		dbuser, err := a.DB.GetByUsername(username)
 		if err != nil {
-			log.WithFields(log.Fields{"error": err.Error()}).Error("Error while trying to get user")
+			a.Logger.Errorw("Error while trying to get user",
+				"error", err.Error())
 			// To protect against timed side channel (never gonna give you up)
 			correctPassword(passwd, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
 
-			return ACMETxt{}, fmt.Errorf("Invalid username: %s", uname)
+			return acmedns.ACMETxt{}, fmt.Errorf("invalid username: %s", uname)
 		}
 		if correctPassword(passwd, dbuser.Password) {
 			return dbuser, nil
 		}
-		return ACMETxt{}, fmt.Errorf("Invalid password for user %s", uname)
+		return acmedns.ACMETxt{}, fmt.Errorf("invalid password for user %s", uname)
 	}
-	return ACMETxt{}, fmt.Errorf("Invalid key for user %s", uname)
+	return acmedns.ACMETxt{}, fmt.Errorf("invalid key for user %s", uname)
 }
 
-func updateAllowedFromIP(r *http.Request, user ACMETxt) bool {
-	if Config.API.UseHeader {
-		ips := getIPListFromHeader(r.Header.Get(Config.API.HeaderName))
-		return user.allowedFromList(ips)
+func (a *AcmednsAPI) updateAllowedFromIP(r *http.Request, user acmedns.ACMETxt) bool {
+	if a.Config.API.UseHeader {
+		ips := getIPListFromHeader(r.Header.Get(a.Config.API.HeaderName))
+		return user.AllowedFromList(ips)
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error(), "remoteaddr": r.RemoteAddr}).Error("Error while parsing remote address")
+		a.Logger.Errorw("Error while parsing remote address",
+			"error", err.Error(),
+			"remoteaddr", r.RemoteAddr)
 		host = ""
 	}
-	return user.allowedFrom(host)
+	return user.AllowedFrom(host)
 }
