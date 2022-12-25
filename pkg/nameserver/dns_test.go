@@ -28,10 +28,7 @@ var records = []string{
 }
 
 func loggerHasEntryWithMessage(message string, logObserver *observer.ObservedLogs) bool {
-	if len(logObserver.FilterMessage(message).All()) > 0 {
-		return true
-	}
-	return false
+	return len(logObserver.FilterMessage(message).All()) > 0
 }
 
 func fakeConfigAndLogger() (acmedns.AcmeDnsConfig, *zap.SugaredLogger, *observer.ObservedLogs) {
@@ -74,23 +71,6 @@ func (r *resolver) lookup(host string, qtype uint16) (*dns.Msg, error) {
 		return in, fmt.Errorf("Received error from the server [%s]", dns.RcodeToString[in.Rcode])
 	}
 	return in, nil
-}
-
-func hasExpectedTXTAnswer(answer []dns.RR, cmpTXT string) error {
-	for _, record := range answer {
-		// We expect only one answer, so no need to loop through the answer slice
-		if rec, ok := record.(*dns.TXT); ok {
-			for _, txtValue := range rec.Txt {
-				if txtValue == cmpTXT {
-					return nil
-				}
-			}
-		} else {
-			errmsg := fmt.Sprintf("Got answer of unexpected type [%q]", answer[0])
-			return errors.New(errmsg)
-		}
-	}
-	return errors.New("Expected answer not found")
 }
 
 func TestQuestionDBError(t *testing.T) {
@@ -327,7 +307,26 @@ func TestResolveTXT(t *testing.T) {
 			}
 		}
 	}
-}*/
+}
+
+func hasExpectedTXTAnswer(answer []dns.RR, cmpTXT string) error {
+	for _, record := range answer {
+		// We expect only one answer, so no need to loop through the answer slice
+		if rec, ok := record.(*dns.TXT); ok {
+			for _, txtValue := range rec.Txt {
+				if txtValue == cmpTXT {
+					return nil
+				}
+			}
+		} else {
+			errmsg := fmt.Sprintf("Got answer of unexpected type [%q]", answer[0])
+			return errors.New(errmsg)
+		}
+	}
+	return errors.New("Expected answer not found")
+}
+
+*/
 
 func TestCaseInsensitiveResolveA(t *testing.T) {
 	resolv := resolver{server: "127.0.0.1:15353"}

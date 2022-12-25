@@ -3,7 +3,6 @@ package acmedns
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"io/ioutil"
 	"os"
 	"syscall"
 	"testing"
@@ -111,7 +110,7 @@ func TestReadConfig(t *testing.T) {
 }
 
 func TestFileCheckPermissionDenied(t *testing.T) {
-	tmpfile, err := ioutil.TempFile("", "acmedns")
+	tmpfile, err := os.CreateTemp("", "acmedns")
 	if err != nil {
 		t.Error("Could not create temporary file")
 	}
@@ -130,7 +129,7 @@ func TestFileCheckNotExists(t *testing.T) {
 }
 
 func TestFileCheckOK(t *testing.T) {
-	tmpfile, err := ioutil.TempFile("", "acmedns")
+	tmpfile, err := os.CreateTemp("", "acmedns")
 	if err != nil {
 		t.Error("Could not create temporary file")
 	}

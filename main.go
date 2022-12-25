@@ -31,7 +31,8 @@ func main() {
 		fmt.Printf("Could not set up logging: %s\n", err)
 		os.Exit(1)
 	}
-	defer logger.Sync()
+	// Make sure to flush the zap logger buffer before exiting
+	defer logger.Sync() //nolint:all
 	sugar := logger.Sugar()
 
 	sugar.Infow("Using config file",
