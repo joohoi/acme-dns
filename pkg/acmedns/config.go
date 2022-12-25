@@ -2,6 +2,7 @@ package acmedns
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/BurntSushi/toml"
@@ -20,7 +21,7 @@ func FileIsAccessible(fname string) bool {
 	return true
 }
 
-func ReadConfig(fname string) (AcmeDnsConfig, error) {
+func readTomlConfig(fname string) (AcmeDnsConfig, error) {
 	var conf AcmeDnsConfig
 	_, err := toml.DecodeFile(fname, &conf)
 	if err != nil {
@@ -45,4 +46,23 @@ func prepareConfig(conf AcmeDnsConfig) (AcmeDnsConfig, error) {
 	}
 
 	return conf, nil
+}
+
+func ReadConfig(configFile string) (AcmeDnsConfig, string, error) {
+	var usedConfigFile string
+	var config AcmeDnsConfig
+	var err error
+	if FileIsAccessible(configFile) {
+		usedConfigFile = configFile
+		config, err = readTomlConfig(configFile)
+	} else if FileIsAccessible("./config.cfg") {
+		usedConfigFile = "./config.cfg"
+		config, err = readTomlConfig("./config.cfg")
+	} else {
+		err = fmt.Errorf("configuration file not found")
+	}
+	if err != nil {
+		err = fmt.Errorf("encountered an error while trying to read configuration file:  %s\n", err)
+	}
+	return config, usedConfigFile, err
 }

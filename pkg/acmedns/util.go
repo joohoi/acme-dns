@@ -2,6 +2,7 @@ package acmedns
 
 import (
 	"crypto/rand"
+	"golang.org/x/crypto/bcrypt"
 	"math/big"
 	"regexp"
 )
@@ -28,4 +29,11 @@ func generatePassword(length int) string {
 		ret[i] = alphabet[r]
 	}
 	return string(ret)
+}
+
+func CorrectPassword(pw string, hash string) bool {
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pw)); err == nil {
+		return true
+	}
+	return false
 }

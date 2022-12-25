@@ -74,11 +74,11 @@ func (a *AcmednsAPI) getUserFromRequest(r *http.Request) (acmedns.ACMETxt, error
 			a.Logger.Errorw("Error while trying to get user",
 				"error", err.Error())
 			// To protect against timed side channel (never gonna give you up)
-			correctPassword(passwd, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
+			acmedns.CorrectPassword(passwd, "$2a$10$8JEFVNYYhLoBysjAxe2yBuXrkDojBQBkVpXEQgyQyjn43SvJ4vL36")
 
 			return acmedns.ACMETxt{}, fmt.Errorf("invalid username: %s", uname)
 		}
-		if correctPassword(passwd, dbuser.Password) {
+		if acmedns.CorrectPassword(passwd, dbuser.Password) {
 			return dbuser, nil
 		}
 		return acmedns.ACMETxt{}, fmt.Errorf("invalid password for user %s", uname)

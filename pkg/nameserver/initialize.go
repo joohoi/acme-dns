@@ -1,12 +1,11 @@
 package nameserver
 
 import (
-	"strings"
-
 	"github.com/acme-dns/acme-dns/pkg/acmedns"
-
 	"github.com/miekg/dns"
 	"go.uber.org/zap"
+	"strings"
+	"sync"
 )
 
 // Records is a slice of ResourceRecords
@@ -15,21 +14,23 @@ type Records struct {
 }
 
 type Nameserver struct {
-	Config          *acmedns.AcmeDnsConfig
-	DB              acmedns.AcmednsDB
-	Logger          *zap.SugaredLogger
-	Server          *dns.Server
-	OwnDomain       string
-	SOA             dns.RR
-	personalAuthKey string
-	Domains         map[string]Records
-	errChan         chan error
+	Config            *acmedns.AcmeDnsConfig
+	DB                acmedns.AcmednsDB
+	Logger            *zap.SugaredLogger
+	Server            *dns.Server
+	OwnDomain         string
+	NotifyStartedFunc func()
+	SOA               dns.RR
+	personalAuthKey   string
+	Domains           map[string]Records
+	errChan           chan error
 }
 
 func InitAndStart(config *acmedns.AcmeDnsConfig, db acmedns.AcmednsDB, logger *zap.SugaredLogger, errChan chan error) []acmedns.AcmednsNS {
 	dnsservers := make([]acmedns.AcmednsNS, 0)
-
+	waitLock := sync.Mutex{}
 	if strings.HasPrefix(config.General.Proto, "both") {
+
 		// Handle the case where DNS server should be started for both udp and tcp
 		udpProto := "udp"
 		tcpProto := "tcp"
@@ -46,13 +47,22 @@ func InitAndStart(config *acmedns.AcmeDnsConfig, db acmedns.AcmednsDB, logger *z
 		dnsServerTCP := NewDNSServer(config, db, logger, tcpProto)
 		dnsservers = append(dnsservers, dnsServerTCP)
 		dnsServerTCP.ParseRecords()
+		// wait for the server to get started to proceed
+		waitLock.Lock()
+		dnsServerUDP.SetNotifyStartedFunc(waitLock.Unlock)
 		go dnsServerUDP.Start(errChan)
+		waitLock.Lock()
+		dnsServerTCP.SetNotifyStartedFunc(waitLock.Unlock)
 		go dnsServerTCP.Start(errChan)
+		waitLock.Lock()
 	} else {
 		dnsServer := NewDNSServer(config, db, logger, config.General.Proto)
 		dnsservers = append(dnsservers, dnsServer)
 		dnsServer.ParseRecords()
+		waitLock.Lock()
+		dnsServer.SetNotifyStartedFunc(waitLock.Unlock)
 		go dnsServer.Start(errChan)
+		waitLock.Lock()
 	}
 	return dnsservers
 }
@@ -67,7 +77,6 @@ func NewDNSServer(config *acmedns.AcmeDnsConfig, db acmedns.AcmednsDB, logger *z
 		domain = domain + "."
 	}
 	server.OwnDomain = strings.ToLower(domain)
-	server.DB = db
 	server.personalAuthKey = ""
 	server.Domains = make(map[string]Records)
 	return &server
@@ -79,8 +88,15 @@ func (n *Nameserver) Start(errorChannel chan error) {
 	n.Logger.Infow("Starting DNS listener",
 		"addr", n.Server.Addr,
 		"proto", n.Server.Net)
+	if n.NotifyStartedFunc != nil {
+		n.Server.NotifyStartedFunc = n.NotifyStartedFunc
+	}
 	err := n.Server.ListenAndServe()
 	if err != nil {
 		errorChannel <- err
 	}
+}
+
+func (n *Nameserver) SetNotifyStartedFunc(fun func()) {
+	n.Server.NotifyStartedFunc = fun
 }

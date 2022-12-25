@@ -9,7 +9,6 @@ import (
 func (n *Nameserver) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetReply(r)
-
 	// handle edns0
 	opt := r.IsEdns0()
 	if opt != nil {

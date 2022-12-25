@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/acme-dns/acme-dns/pkg/acmedns"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -26,13 +25,6 @@ func validKey(k string) bool {
 	kn := acmedns.SanitizeString(k)
 	if utf8.RuneCountInString(k) == 40 && utf8.RuneCountInString(kn) == 40 {
 		// Correct length and all chars valid
-		return true
-	}
-	return false
-}
-
-func correctPassword(pw string, hash string) bool {
-	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pw)); err == nil {
 		return true
 	}
 	return false

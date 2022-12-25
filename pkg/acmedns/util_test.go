@@ -1,6 +1,8 @@
-package main
+package acmedns
 
 import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"io/ioutil"
 	"os"
 	"syscall"
@@ -9,21 +11,55 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func fakeConfig() AcmeDnsConfig {
+	conf := AcmeDnsConfig{}
+	conf.Logconfig.Logtype = "stdout"
+	return conf
+}
+
 func TestSetupLogging(t *testing.T) {
+	conf := fakeConfig()
 	for i, test := range []struct {
 		format   string
 		level    string
-		expected string
+		expected zapcore.Level
 	}{
-		{"text", "warning", "warning"},
-		{"json", "debug", "debug"},
-		{"text", "info", "info"},
-		{"json", "error", "error"},
-		{"text", "something", "warning"},
+		{"text", "warn", zap.WarnLevel},
+		{"json", "debug", zap.DebugLevel},
+		{"text", "info", zap.InfoLevel},
+		{"json", "error", zap.ErrorLevel},
 	} {
-		setupLogging(test.format, test.level)
-		if log.GetLevel().String() != test.expected {
-			t.Errorf("Test %d: Expected loglevel %s but got %s", i, test.expected, log.GetLevel().String())
+		conf.Logconfig.Format = test.format
+		conf.Logconfig.Level = test.level
+		logger, err := SetupLogging(conf)
+		if err != nil {
+			t.Errorf("Got unexpected error: %s", err)
+		} else {
+			if logger.Sugar().Level() != test.expected {
+				t.Errorf("Test %d: Expected loglevel %s but got %s", i, test.expected, log.GetLevel().String())
+			}
+		}
+	}
+}
+
+func TestSetupLoggingError(t *testing.T) {
+	conf := fakeConfig()
+	for _, test := range []struct {
+		format      string
+		level       string
+		errexpected bool
+	}{
+		{"text", "warn", false},
+		{"json", "debug", false},
+		{"text", "info", false},
+		{"json", "error", false},
+		{"text", "something", true},
+	} {
+		conf.Logconfig.Format = test.format
+		conf.Logconfig.Level = test.level
+		_, err := SetupLogging(conf)
+		if test.errexpected && err == nil {
+			t.Errorf("Expected error but did not get one for loglevel: %s", err)
 		}
 	}
 }
@@ -31,11 +67,11 @@ func TestSetupLogging(t *testing.T) {
 func TestReadConfig(t *testing.T) {
 	for i, test := range []struct {
 		inFile []byte
-		output DNSConfig
+		output AcmeDnsConfig
 	}{
 		{
 			[]byte("[general]\nlisten = \":53\"\ndebug = true\n[api]\napi_domain = \"something.strange\""),
-			DNSConfig{
+			AcmeDnsConfig{
 				General: general{
 					Listen: ":53",
 					Debug:  true,
@@ -48,10 +84,10 @@ func TestReadConfig(t *testing.T) {
 
 		{
 			[]byte("[\x00[[[[[[[[[de\nlisten =]"),
-			DNSConfig{},
+			AcmeDnsConfig{},
 		},
 	} {
-		tmpfile, err := ioutil.TempFile("", "acmedns")
+		tmpfile, err := os.CreateTemp("", "acmedns")
 		if err != nil {
 			t.Error("Could not create temporary file")
 		}
@@ -64,36 +100,12 @@ func TestReadConfig(t *testing.T) {
 		if err := tmpfile.Close(); err != nil {
 			t.Error("Could not close temporary file")
 		}
-		ret, _ := readConfig(tmpfile.Name())
+		ret, _, _ := ReadConfig(tmpfile.Name())
 		if ret.General.Listen != test.output.General.Listen {
 			t.Errorf("Test %d: Expected listen value %s, but got %s", i, test.output.General.Listen, ret.General.Listen)
 		}
 		if ret.API.Domain != test.output.API.Domain {
 			t.Errorf("Test %d: Expected HTTP API domain %s, but got %s", i, test.output.API.Domain, ret.API.Domain)
-		}
-	}
-}
-
-func TestGetIPListFromHeader(t *testing.T) {
-	for i, test := range []struct {
-		input  string
-		output []string
-	}{
-		{"1.1.1.1, 2.2.2.2", []string{"1.1.1.1", "2.2.2.2"}},
-		{" 1.1.1.1 , 2.2.2.2", []string{"1.1.1.1", "2.2.2.2"}},
-		{",1.1.1.1 ,2.2.2.2", []string{"1.1.1.1", "2.2.2.2"}},
-	} {
-		res := getIPListFromHeader(test.input)
-		if len(res) != len(test.output) {
-			t.Errorf("Test %d: Expected [%d] items in return list, but got [%d]", i, len(test.output), len(res))
-		} else {
-
-			for j, vv := range test.output {
-				if res[j] != vv {
-					t.Errorf("Test %d: Expected return value [%v] but got [%v]", j, test.output, res)
-				}
-
-			}
 		}
 	}
 }
@@ -105,14 +117,14 @@ func TestFileCheckPermissionDenied(t *testing.T) {
 	}
 	defer os.Remove(tmpfile.Name())
 	_ = syscall.Chmod(tmpfile.Name(), 0000)
-	if fileIsAccessible(tmpfile.Name()) {
+	if FileIsAccessible(tmpfile.Name()) {
 		t.Errorf("File should not be accessible")
 	}
 	_ = syscall.Chmod(tmpfile.Name(), 0644)
 }
 
 func TestFileCheckNotExists(t *testing.T) {
-	if fileIsAccessible("/path/that/does/not/exist") {
+	if FileIsAccessible("/path/that/does/not/exist") {
 		t.Errorf("File should not be accessible")
 	}
 }
@@ -123,19 +135,19 @@ func TestFileCheckOK(t *testing.T) {
 		t.Error("Could not create temporary file")
 	}
 	defer os.Remove(tmpfile.Name())
-	if !fileIsAccessible(tmpfile.Name()) {
+	if !FileIsAccessible(tmpfile.Name()) {
 		t.Errorf("File should be accessible")
 	}
 }
 
 func TestPrepareConfig(t *testing.T) {
 	for i, test := range []struct {
-		input       DNSConfig
+		input       AcmeDnsConfig
 		shoulderror bool
 	}{
-		{DNSConfig{Database: dbsettings{Engine: "whatever", Connection: "whatever_too"}}, false},
-		{DNSConfig{Database: dbsettings{Engine: "", Connection: "whatever_too"}}, true},
-		{DNSConfig{Database: dbsettings{Engine: "whatever", Connection: ""}}, true},
+		{AcmeDnsConfig{Database: dbsettings{Engine: "whatever", Connection: "whatever_too"}}, false},
+		{AcmeDnsConfig{Database: dbsettings{Engine: "", Connection: "whatever_too"}}, true},
+		{AcmeDnsConfig{Database: dbsettings{Engine: "whatever", Connection: ""}}, true},
 	} {
 		_, err := prepareConfig(test.input)
 		if test.shoulderror {
