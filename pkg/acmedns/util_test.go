@@ -3,6 +3,7 @@ package acmedns
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/crypto/bcrypt"
 	"os"
 	"syscall"
 	"testing"
@@ -157,6 +158,40 @@ func TestPrepareConfig(t *testing.T) {
 			if err != nil {
 				t.Errorf("Test %d: Expected no error with prepareConfig input data [%v]", i, test.input)
 			}
+		}
+	}
+}
+
+func TestSanitizeString(t *testing.T) {
+	for i, test := range []struct {
+		input    string
+		expected string
+	}{
+		{"abcd!abcd", "abcdabcd"},
+		{"ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz0123456789", "ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz0123456789"},
+		{"ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopq=@rstuvwxyz0123456789", "ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz0123456789"},
+	} {
+		if SanitizeString(test.input) != test.expected {
+			t.Errorf("Expected SanitizeString to return %s for test %d, but got %s instead", test.expected, i, SanitizeString(test.input))
+		}
+	}
+}
+
+func TestCorrectPassword(t *testing.T) {
+	testPass, _ := bcrypt.GenerateFromPassword([]byte("nevergonnagiveyouup"), 10)
+	for i, test := range []struct {
+		input    string
+		expected bool
+	}{
+		{"abcd", false},
+		{"nevergonnagiveyouup", true},
+		{"@rstuvwxyz0123456789", false},
+	} {
+		if test.expected && !CorrectPassword(test.input, string(testPass)) {
+			t.Errorf("Expected CorrectPassword to return %t for test %d", test.expected, i)
+		}
+		if !test.expected && CorrectPassword(test.input, string(testPass)) {
+			t.Errorf("Expected CorrectPassword to return %t for test %d", test.expected, i)
 		}
 	}
 }
