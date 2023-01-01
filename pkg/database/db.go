@@ -10,12 +10,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
 	_ "github.com/glebarez/go-sqlite"
-	"github.com/google/uuid"
 	_ "github.com/lib/pq"
+
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/acme-dns/acme-dns/pkg/acmedns"
 )
 
 type acmednsdb struct {

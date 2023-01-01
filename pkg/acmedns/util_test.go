@@ -1,12 +1,13 @@
 package acmedns
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"golang.org/x/crypto/bcrypt"
 	"os"
 	"syscall"
 	"testing"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func fakeConfig() AcmeDnsConfig {

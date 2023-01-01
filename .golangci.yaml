@@ -1,0 +1,15 @@
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+linters:
+  # Enable specific linter
+  # https://golangci-lint.run/usage/linters/#enabled-by-default
+  enable:
+    - gofmt
+    - goimports
+linters-settings:
+  goimports:
+    # A comma-separated list of prefixes, which, if set, checks import paths
+    # with the given prefixes are grouped after 3rd-party packages.
+    # Default: ""
+    local-prefixes: github.com/acme-dns/acme-dns

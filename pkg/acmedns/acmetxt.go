@@ -1,8 +1,9 @@
 package acmedns
 
 import (
-	"github.com/google/uuid"
 	"net"
+
+	"github.com/google/uuid"
 )
 
 // Check if IP belongs to an allowed net
