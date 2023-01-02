@@ -7,8 +7,6 @@ import (
 	"os"
 	"syscall"
 	"testing"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func fakeConfig() AcmeDnsConfig {
@@ -36,7 +34,7 @@ func TestSetupLogging(t *testing.T) {
 			t.Errorf("Got unexpected error: %s", err)
 		} else {
 			if logger.Sugar().Level() != test.expected {
-				t.Errorf("Test %d: Expected loglevel %s but got %s", i, test.expected, log.GetLevel().String())
+				t.Errorf("Test %d: Expected loglevel %s but got %s", i, test.expected, logger.Sugar().Level())
 			}
 		}
 	}

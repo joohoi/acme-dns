@@ -15,7 +15,6 @@ require (
 	github.com/mholt/acmez v1.0.4
 	github.com/miekg/dns v1.1.50
 	github.com/rs/cors v1.8.2
-	github.com/sirupsen/logrus v1.4.2
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 )
@@ -31,7 +30,6 @@ require (
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.1.1 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/libdns/libdns v0.2.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
