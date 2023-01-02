@@ -1,24 +1,26 @@
-package main
+package api
 
 import (
 	"context"
+	"github.com/acme-dns/acme-dns/pkg/acmedns"
+
 	"github.com/mholt/acmez/acme"
 )
 
 // ChallengeProvider implements go-acme/lego Provider interface which is used for ACME DNS challenge handling
 type ChallengeProvider struct {
-	servers []*DNSServer
+	servers []acmedns.AcmednsNS
 }
 
 // NewChallengeProvider creates a new instance of ChallengeProvider
-func NewChallengeProvider(servers []*DNSServer) ChallengeProvider {
+func NewChallengeProvider(servers []acmedns.AcmednsNS) ChallengeProvider {
 	return ChallengeProvider{servers: servers}
 }
 
 // Present is used for making the ACME DNS challenge token available for DNS
 func (c *ChallengeProvider) Present(ctx context.Context, challenge acme.Challenge) error {
 	for _, s := range c.servers {
-		s.PersonalKeyAuth = challenge.DNS01KeyAuthorization()
+		s.SetOwnAuthKey(challenge.DNS01KeyAuthorization())
 	}
 	return nil
 }
@@ -26,7 +28,7 @@ func (c *ChallengeProvider) Present(ctx context.Context, challenge acme.Challeng
 // CleanUp is called after the run to remove the ACME DNS challenge tokens from DNS records
 func (c *ChallengeProvider) CleanUp(ctx context.Context, _ acme.Challenge) error {
 	for _, s := range c.servers {
-		s.PersonalKeyAuth = ""
+		s.SetOwnAuthKey("")
 	}
 	return nil
 }
