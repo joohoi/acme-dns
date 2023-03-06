@@ -1,0 +1,5 @@
+{
+    "gopls": {
+        "formatting.local": "github.com/acme-dns/acme-dns"
+    }
+}

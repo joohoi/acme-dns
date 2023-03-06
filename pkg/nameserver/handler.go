@@ -2,8 +2,9 @@ package nameserver
 
 import (
 	"fmt"
-	"github.com/miekg/dns"
 	"strings"
+
+	"github.com/miekg/dns"
 )
 
 func (n *Nameserver) handleRequest(w dns.ResponseWriter, r *dns.Msg) {

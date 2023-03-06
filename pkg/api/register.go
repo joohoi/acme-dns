@@ -6,8 +6,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
 	"github.com/julienschmidt/httprouter"
+
+	"github.com/acme-dns/acme-dns/pkg/acmedns"
 )
 
 // RegResponse is a struct for registration response JSON

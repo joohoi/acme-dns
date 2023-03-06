@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
+	"testing"
+
 	"github.com/erikstmartin/go-testdb"
 	"go.uber.org/zap"
-	"testing"
+
+	"github.com/acme-dns/acme-dns/pkg/acmedns"
 )
 
 type testResult struct {

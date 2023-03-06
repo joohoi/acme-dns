@@ -2,11 +2,13 @@ package api
 
 import (
 	"fmt"
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
-	"github.com/google/uuid"
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/google/uuid"
+
+	"github.com/acme-dns/acme-dns/pkg/acmedns"
 )
 
 func jsonError(message string) []byte {

@@ -5,14 +5,16 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
-	"github.com/acme-dns/acme-dns/pkg/database"
+	"sync"
+	"testing"
+
 	"github.com/erikstmartin/go-testdb"
 	"github.com/miekg/dns"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	"sync"
-	"testing"
+
+	"github.com/acme-dns/acme-dns/pkg/acmedns"
+	"github.com/acme-dns/acme-dns/pkg/database"
 )
 
 type resolver struct {

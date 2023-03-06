@@ -2,6 +2,7 @@ package acmedns
 
 import (
 	"database/sql"
+
 	"github.com/google/uuid"
 )
 

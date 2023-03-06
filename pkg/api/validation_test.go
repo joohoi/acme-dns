@@ -1,8 +1,9 @@
 package api
 
 import (
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
 	"testing"
+
+	"github.com/acme-dns/acme-dns/pkg/acmedns"
 
 	"github.com/google/uuid"
 )

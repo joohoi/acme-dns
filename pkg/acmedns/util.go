@@ -2,9 +2,10 @@ package acmedns
 
 import (
 	"crypto/rand"
-	"golang.org/x/crypto/bcrypt"
 	"math/big"
 	"regexp"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func sanitizeIPv6addr(s string) string {

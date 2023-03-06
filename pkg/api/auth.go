@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
 	"net"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+
+	"github.com/acme-dns/acme-dns/pkg/acmedns"
 )
 
 type key int

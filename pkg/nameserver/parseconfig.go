@@ -2,9 +2,10 @@ package nameserver
 
 import (
 	"fmt"
-	"github.com/miekg/dns"
 	"strings"
 	"time"
+
+	"github.com/miekg/dns"
 )
 
 // ParseRecords parses a slice of DNS record string
