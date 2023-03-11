@@ -73,9 +73,11 @@ func setupRouter(debug bool, noauth bool) http.Handler {
 	api.POST("/register", webRegisterPost)
 	api.GET("/health", healthCheck)
 	if noauth {
+		api.POST("/unregister", noAuth(webUnregisterPost))
 		api.POST("/update", noAuth(webUpdatePost))
 	} else {
-		api.POST("/update", Auth(webUpdatePost))
+		api.POST("/unregister", AuthUnregister(webUnregisterPost))
+		api.POST("/update", AuthUpdate(webUpdatePost))
 	}
 	return c.Handler(api)
 }
@@ -189,6 +191,43 @@ func TestApiRegisterWithMockDB(t *testing.T) {
 		JSON().Object().
 		ContainsKey("error")
 	DB.SetBackend(oldDb)
+}
+
+func TestApiUnregisterWithoutCredentials(t *testing.T) {
+	router := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	e.POST("/unregister").Expect().
+		Status(http.StatusUnauthorized).
+		JSON().Object().
+		ContainsKey("error")
+}
+
+func TestApiUnregisterInvalidSubdomain(t *testing.T) {
+	unregisterJSON := map[string]interface{}{
+		"subdomain": ""}
+
+	// Invalid username
+	unregisterJSON["subdomain"] = "example.com"
+
+	router := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	newUser, err := DB.Register(cidrslice{})
+
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+	e.POST("/unregister").
+		WithJSON(unregisterJSON).
+		WithHeader("X-Api-User", newUser.Username.String()).
+		WithHeader("X-Api-Key", newUser.Password).
+		Expect().
+		Status(http.StatusUnauthorized).
+		JSON().Object().
+		ContainsKey("error")
 }
 
 func TestApiUpdateWithInvalidSubdomain(t *testing.T) {
