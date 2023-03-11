@@ -15,6 +15,13 @@ type resolver struct {
 	server string
 }
 
+type testRecord struct {
+	subDomain   string
+	expTXT      []string
+	getAnswer   bool
+	validAnswer bool
+}
+
 func (r *resolver) lookup(host string, qtype uint16) (*dns.Msg, error) {
 	msg := new(dns.Msg)
 	msg.Id = dns.Id()
@@ -31,13 +38,21 @@ func (r *resolver) lookup(host string, qtype uint16) (*dns.Msg, error) {
 	return in, nil
 }
 
-func hasExpectedTXTAnswer(answer []dns.RR, cmpTXT string) error {
+func hasExpectedTXTAnswer(answer []dns.RR, cmpTXT []string) error {
+	matches := 0
+	txts := 0
+
+OUTER:
 	for _, record := range answer {
-		// We expect only one answer, so no need to loop through the answer slice
+		// Verify all expected answers are returned
 		if rec, ok := record.(*dns.TXT); ok {
 			for _, txtValue := range rec.Txt {
-				if txtValue == cmpTXT {
-					return nil
+				txts++
+				for _, cmpValue := range cmpTXT {
+					if txtValue == cmpValue {
+						matches++
+						continue OUTER
+					}
 				}
 			}
 		} else {
@@ -45,7 +60,70 @@ func hasExpectedTXTAnswer(answer []dns.RR, cmpTXT string) error {
 			return errors.New(errmsg)
 		}
 	}
-	return errors.New("Expected answer not found")
+
+	//Got too many results
+	if txts > len(cmpTXT) {
+		errmsg := fmt.Sprintf("Got too many answers [%d > %d]", txts, len(cmpTXT))
+		return errors.New(errmsg)
+	} else if txts < len(cmpTXT) {
+		//Got too few results
+		errmsg := fmt.Sprintf("Got too few answers [%d < %d]", txts, len(cmpTXT))
+		return errors.New(errmsg)
+	} else if matches > len(cmpTXT) {
+		//Got too many matches
+		errmsg := fmt.Sprintf("Got too many matches [%d > %d]", matches, len(cmpTXT))
+		return errors.New(errmsg)
+	} else if matches < len(cmpTXT) {
+		//Got not enough matches
+		errmsg := fmt.Sprintf("Got too few matches [%d < %d]", matches, len(cmpTXT))
+		return errors.New(errmsg)
+	} else if matches == len(cmpTXT) {
+		//If they all matched we are ok
+		return nil
+	}
+
+	return errors.New("Expected answer(s) not found")
+}
+
+func hasExpectedResolveTXTs(tests []testRecord) error {
+	resolv := resolver{server: "127.0.0.1:15353"}
+
+	for i, test := range tests {
+		answer, err := resolv.lookup(test.subDomain+".auth.example.org", dns.TypeTXT)
+		if err != nil {
+			if test.getAnswer {
+				return fmt.Errorf("%d: Expected answer but got: %v", i, err)
+			}
+		} else {
+			if !test.getAnswer {
+				return fmt.Errorf("%d: Expected no answer, but got one", i)
+			}
+		}
+
+		if len(answer.Answer) > 0 {
+			if !test.getAnswer && answer.Answer[0].Header().Rrtype != dns.TypeSOA {
+				return fmt.Errorf("%d: Expected no answer, but got: [%q]", i, answer)
+			}
+			if test.getAnswer {
+				err = hasExpectedTXTAnswer(answer.Answer, test.expTXT)
+				if err != nil {
+					if test.validAnswer {
+						return fmt.Errorf("%d: %v", i, err)
+					}
+				} else {
+					if !test.validAnswer {
+						return fmt.Errorf("%d: Answer was not expected to be valid, answer [%q], compared to [%s]", i, answer, test.expTXT)
+					}
+				}
+			}
+		} else {
+			if test.getAnswer {
+				return fmt.Errorf("%d: Expected answer, but didn't get one", i)
+			}
+		}
+	}
+
+	return nil
 }
 
 func TestQuestionDBError(t *testing.T) {
@@ -196,8 +274,8 @@ func TestAuthoritative(t *testing.T) {
 }
 
 func TestResolveTXT(t *testing.T) {
-	resolv := resolver{server: "127.0.0.1:15353"}
 	validTXT := "______________valid_response_______________"
+	validTXT2 := "_____________valid_response_2______________"
 
 	atxt, err := DB.Register(cidrslice{})
 	if err != nil {
@@ -211,48 +289,72 @@ func TestResolveTXT(t *testing.T) {
 		return
 	}
 
-	for i, test := range []struct {
-		subDomain   string
-		expTXT      string
-		getAnswer   bool
-		validAnswer bool
-	}{
-		{atxt.Subdomain, validTXT, true, true},
-		{atxt.Subdomain, "invalid", true, false},
-		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", validTXT, false, false},
-	} {
-		answer, err := resolv.lookup(test.subDomain+".auth.example.org", dns.TypeTXT)
-		if err != nil {
-			if test.getAnswer {
-				t.Fatalf("Test %d: Expected answer but got: %v", i, err)
-			}
-		} else {
-			if !test.getAnswer {
-				t.Errorf("Test %d: Expected no answer, but got one.", i)
-			}
-		}
+	seq := 0
+	err = hasExpectedResolveTXTs([]testRecord{
+		{atxt.Subdomain, []string{validTXT}, true, true},
+		{atxt.Subdomain, []string{"invalid"}, true, false},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", []string{validTXT}, false, false},
+	})
+	if err != nil {
+		t.Fatalf("Test %d: %s", seq, err)
+		return
+	}
+	seq++
 
-		if len(answer.Answer) > 0 {
-			if !test.getAnswer && answer.Answer[0].Header().Rrtype != dns.TypeSOA {
-				t.Errorf("Test %d: Expected no answer, but got: [%q]", i, answer)
-			}
-			if test.getAnswer {
-				err = hasExpectedTXTAnswer(answer.Answer, test.expTXT)
-				if err != nil {
-					if test.validAnswer {
-						t.Errorf("Test %d: %v", i, err)
-					}
-				} else {
-					if !test.validAnswer {
-						t.Errorf("Test %d: Answer was not expected to be valid, answer [%q], compared to [%s]", i, answer, test.expTXT)
-					}
-				}
-			}
-		} else {
-			if test.getAnswer {
-				t.Errorf("Test %d: Expected answer, but didn't get one", i)
-			}
-		}
+	//Add 2nd record and verify it works as expected (both results)
+	atxt.Value = validTXT2
+	err = DB.Update(atxt.ACMETxtPost)
+	if err != nil {
+		t.Errorf("Could not update db record: [%v]", err)
+		return
+	}
+
+	err = hasExpectedResolveTXTs([]testRecord{
+		{atxt.Subdomain, []string{validTXT, validTXT2}, true, true},
+		{atxt.Subdomain, []string{"invalid"}, true, false},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", []string{validTXT}, false, false},
+	})
+	if err != nil {
+		t.Fatalf("Test %d: %s", seq, err)
+		return
+	}
+	seq++
+
+	//Delete the record and rerun the test, should see only first result again
+	atxt.Value = validTXT2
+	err = DB.Delete(atxt.ACMETxtPost)
+	if err != nil {
+		t.Errorf("Could not delete db record: [%v]", err)
+		return
+	}
+
+	err = hasExpectedResolveTXTs([]testRecord{
+		{atxt.Subdomain, []string{validTXT}, true, true},
+		{atxt.Subdomain, []string{"invalid"}, true, false},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", []string{validTXT}, false, false},
+	})
+	if err != nil {
+		t.Fatalf("Test %d: %s", seq, err)
+		return
+	}
+	seq++
+
+	//Delete the record and rerun the test, should see nothing
+	atxt.Value = validTXT
+	err = DB.Delete(atxt.ACMETxtPost)
+	if err != nil {
+		t.Errorf("Could not delete db record: [%v]", err)
+		return
+	}
+
+	err = hasExpectedResolveTXTs([]testRecord{
+		{atxt.Subdomain, []string{"empty"}, false, false},
+		{atxt.Subdomain, []string{"invalid"}, false, false},
+		{"a097455b-52cc-4569-90c8-7a4b97c6eba8", []string{validTXT}, false, false},
+	})
+	if err != nil {
+		t.Fatalf("Test %d: %s", seq, err)
+		return
 	}
 }
 
