@@ -27,12 +27,13 @@ func main() {
 	flag.Parse()
 	// Read global config
 	var err error
+	var readConfigLog string
 	if fileIsAccessible(*configPtr) {
-		log.WithFields(log.Fields{"file": *configPtr}).Info("Using config file")
 		Config, err = readConfig(*configPtr)
+		readConfigLog = *configPtr
 	} else if fileIsAccessible("./config.cfg") {
-		log.WithFields(log.Fields{"file": "./config.cfg"}).Info("Using config file")
 		Config, err = readConfig("./config.cfg")
+		readConfigLog = "./config.cfg"
 	} else {
 		log.Errorf("Configuration file not found.")
 		os.Exit(1)
@@ -42,7 +43,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLogging(Config.Logconfig.Format, Config.Logconfig.Level)
+	setupLogging(Config.Logconfig, readConfigLog)
 
 	// Open database
 	newDB := new(acmedb)
@@ -104,6 +105,7 @@ func main() {
 func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer) {
 	// Setup http logger
 	logger := log.New()
+	setupHTTPLogging(logger, config.Logconfig)
 	logwriter := logger.Writer()
 	defer logwriter.Close()
 	// Setup logging for different dependencies to log with logrus
