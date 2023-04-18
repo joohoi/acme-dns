@@ -4,4 +4,6 @@ acme-dns.log
 .vagrant
 coverage.out
 .idea/
+config/config.cfg
+docker-compose.yml
 dist/

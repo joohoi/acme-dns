@@ -132,7 +132,7 @@ go build
 3) Move the built acme-dns binary to a directory in your $PATH, for example:
 `sudo mv acme-dns /usr/local/bin`
 
-4) Edit config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`, or a location specified with the `-c` flag.
+4) Copy config/config.cfg.example to config/config.cfg. Edit config/config.cfg to suit your needs (see [configuration](#configuration)). `acme-dns` will read the configuration file from `/etc/acme-dns/config.cfg` or `./config.cfg`, or a location specified with the `-c` flag.
 
 5) If your system has systemd, you can optionally install acme-dns as a service so that it will start on boot and be tracked by systemd. This also allows us to add the `CAP_NET_BIND_SERVICE` capability so that acme-dns can be run by a user other than root.
 
@@ -179,7 +179,7 @@ docker run --rm --name acmedns                 \
 
 2) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`.
 
-3) Copy [docker-compose.yml from the project](https://raw.githubusercontent.com/joohoi/acme-dns/master/docker-compose.yml), or create your own.
+3) Copy [docker-compose.yml.example](https://raw.githubusercontent.com/joohoi/acme-dns/master/docker-compose.yml.example) to docker-compose.yml and edit as needed.
 
 4) Edit the `config/config.cfg` and `docker-compose.yml` to suit your needs, and run `docker-compose up -d`.
 
