@@ -160,14 +160,14 @@ go build
 
 3) Copy [configuration template](https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg) to `config/config.cfg`.
 
-4) Modify the `config.cfg` to suit your needs.
+4) Modify the `config.cfg` to suit your needs. Note that since acme-dns does not run as root inside the container, you may have to use ports >1024 in your config.
 
 5) Run Docker, this example expects that you have `port = "80"` in your `config.cfg`:
 ```
 docker run --rm --name acmedns                 \
- -p 53:53                                      \
- -p 53:53/udp                                  \
- -p 80:80                                      \
+ -p 53:8053                                    \
+ -p 53:8053/udp                                \
+ -p 80:8080                                    \
  -v /path/to/your/config:/etc/acme-dns:ro      \
  -v /path/to/your/data:/var/lib/acme-dns       \
  -d joohoi/acme-dns
