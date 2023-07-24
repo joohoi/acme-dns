@@ -228,7 +228,7 @@ $ dig -t txt @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example
 
 ## Configuration
 
-```bash
+```toml
 [general]
 # DNS interface. Note that systemd-resolved may reserve port 53 on 127.0.0.53
 # In this case acme-dns will error out and you will need to define the listening interface
@@ -267,13 +267,15 @@ ip = "0.0.0.0"
 disable_registration = false
 # listen port, eg. 443 for default HTTPS
 port = "443"
-# possible values: "letsencrypt", "letsencryptstaging", "cert", "none"
+# possible values: "letsencrypt", "letsencryptstaging", "custom", "cert", "none"
 tls = "letsencryptstaging"
 # only used if tls = "cert"
 tls_cert_privkey = "/etc/tls/example.org/privkey.pem"
 tls_cert_fullchain = "/etc/tls/example.org/fullchain.pem"
-# only used if tls = "letsencrypt"
+# only used if tls = "letsencrypt", "letsencryptstaging", or "custom"
 acme_cache_dir = "api-certs"
+# only used if tls = "custom"
+acme_dir = "https://acme-v02.example.com/directory"
 # optional e-mail address to which Let's Encrypt will send expiration notices for the API's cert
 notification_email = ""
 # CORS AllowOrigins, wildcards can be used

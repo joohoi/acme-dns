@@ -37,21 +37,30 @@ type dbsettings struct {
 	Connection string
 }
 
+const (
+	TlsTypeLetsEncrypt        = "letsencrypt"
+	TlsTypeLetsEncryptStaging = "letsencryptstaging"
+	TlsTypeAcmeCustom         = "custom"
+	TlsTypeCert               = "cert"
+	TlsTypeNone               = "none"
+)
+
 // API config
 type httpapi struct {
-	Domain              string `toml:"api_domain"`
-	IP                  string
-	DisableRegistration bool   `toml:"disable_registration"`
-	AutocertPort        string `toml:"autocert_port"`
-	Port                string `toml:"port"`
-	TLS                 string
-	TLSCertPrivkey      string `toml:"tls_cert_privkey"`
-	TLSCertFullchain    string `toml:"tls_cert_fullchain"`
-	ACMECacheDir        string `toml:"acme_cache_dir"`
-	NotificationEmail   string `toml:"notification_email"`
-	CorsOrigins         []string
-	UseHeader           bool   `toml:"use_header"`
-	HeaderName          string `toml:"header_name"`
+	Domain                string `toml:"api_domain"`
+	IP                    string
+	DisableRegistration   bool   `toml:"disable_registration"`
+	AutocertPort          string `toml:"autocert_port"`
+	Port                  string `toml:"port"`
+	TLS                   string
+	TLSCertPrivkey        string `toml:"tls_cert_privkey"`
+	TLSCertFullchain      string `toml:"tls_cert_fullchain"`
+	ACMECacheDir          string `toml:"acme_cache_dir"`
+	ACMEDir               string `toml:"acme_dir"`
+	ACMENotificationEmail string `toml:"notification_email"`
+	CorsOrigins           []string
+	UseHeader             bool   `toml:"use_header"`
+	HeaderName            string `toml:"header_name"`
 }
 
 // Logging config

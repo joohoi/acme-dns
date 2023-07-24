@@ -114,42 +114,46 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 
 	api := httprouter.New()
 	c := cors.New(cors.Options{
-		AllowedOrigins:     Config.API.CorsOrigins,
+		AllowedOrigins:     config.API.CorsOrigins,
 		AllowedMethods:     []string{"GET", "POST"},
 		OptionsPassthrough: false,
-		Debug:              Config.General.Debug,
+		Debug:              config.General.Debug,
 	})
-	if Config.General.Debug {
+	if config.General.Debug {
 		// Logwriter for saner log output
 		c.Log = stdlog.New(logwriter, "", 0)
 	}
-	if !Config.API.DisableRegistration {
+	if !config.API.DisableRegistration {
 		api.POST("/register", webRegisterPost)
 	}
 	api.POST("/update", Auth(webUpdatePost))
 	api.GET("/health", healthCheck)
 
-	host := Config.API.IP + ":" + Config.API.Port
+	host := config.API.IP + ":" + config.API.Port
 
 	// TLS specific general settings
 	cfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 	}
 	provider := NewChallengeProvider(dnsservers)
-	storage := certmagic.FileStorage{Path: Config.API.ACMECacheDir}
+	storage := certmagic.FileStorage{Path: config.API.ACMECacheDir}
 
 	// Set up certmagic for getting certificate for acme-dns api
 	certmagic.DefaultACME.DNS01Solver = &provider
 	certmagic.DefaultACME.Agreed = true
-	if Config.API.TLS == "letsencrypt" {
+	switch config.API.TLS {
+	case TlsTypeLetsEncrypt:
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
-	} else {
+	case TlsTypeAcmeCustom:
+		certmagic.DefaultACME.CA = config.API.ACMEDir
+	case TlsTypeLetsEncryptStaging:
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptStagingCA
+	default:
 	}
-	certmagic.DefaultACME.Email = Config.API.NotificationEmail
+	certmagic.DefaultACME.Email = config.API.ACMENotificationEmail
 	magicConf := certmagic.NewDefault()
 	magicConf.Storage = &storage
-	magicConf.DefaultServerName = Config.General.Domain
+	magicConf.DefaultServerName = config.General.Domain
 
 	magicCache := certmagic.NewCache(certmagic.CacheOptions{
 		GetConfigForCert: func(cert certmagic.Certificate) (*certmagic.Config, error) {
@@ -159,25 +163,13 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 
 	magic := certmagic.New(magicCache, *magicConf)
 	var err error
-	switch Config.API.TLS {
-	case "letsencryptstaging":
-		err = magic.ManageAsync(context.Background(), []string{Config.General.Domain})
-		if err != nil {
-			errChan <- err
-			return
-		}
-		cfg.GetCertificate = magic.GetCertificate
-
-		srv := &http.Server{
-			Addr:      host,
-			Handler:   c.Handler(api),
-			TLSConfig: cfg,
-			ErrorLog:  stdlog.New(logwriter, "", 0),
-		}
-		log.WithFields(log.Fields{"host": host, "domain": Config.General.Domain}).Info("Listening HTTPS")
-		err = srv.ListenAndServeTLS("", "")
-	case "letsencrypt":
-		err = magic.ManageAsync(context.Background(), []string{Config.General.Domain})
+	switch config.API.TLS {
+	case TlsTypeLetsEncrypt:
+		fallthrough
+	case TlsTypeLetsEncryptStaging:
+		fallthrough
+	case TlsTypeAcmeCustom:
+		err = magic.ManageAsync(context.Background(), []string{config.General.Domain})
 		if err != nil {
 			errChan <- err
 			return
@@ -189,9 +181,9 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 			TLSConfig: cfg,
 			ErrorLog:  stdlog.New(logwriter, "", 0),
 		}
-		log.WithFields(log.Fields{"host": host, "domain": Config.General.Domain}).Info("Listening HTTPS")
+		log.WithFields(log.Fields{"host": host, "domain": config.General.Domain}).Info("Listening HTTPS")
 		err = srv.ListenAndServeTLS("", "")
-	case "cert":
+	case TlsTypeCert:
 		srv := &http.Server{
 			Addr:      host,
 			Handler:   c.Handler(api),
@@ -199,7 +191,9 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 			ErrorLog:  stdlog.New(logwriter, "", 0),
 		}
 		log.WithFields(log.Fields{"host": host}).Info("Listening HTTPS")
-		err = srv.ListenAndServeTLS(Config.API.TLSCertFullchain, Config.API.TLSCertPrivkey)
+		err = srv.ListenAndServeTLS(config.API.TLSCertFullchain, config.API.TLSCertPrivkey)
+	case TlsTypeNone:
+		fallthrough
 	default:
 		log.WithFields(log.Fields{"host": host}).Info("Listening HTTP")
 		err = http.ListenAndServe(host, c.Handler(api))
