@@ -51,7 +51,7 @@ func (d *DNSServer) Start(errorChannel chan error) {
 // ParseRecords parses a slice of DNS record string
 func (d *DNSServer) ParseRecords(config DNSConfig) {
 	for _, v := range config.General.StaticRecords {
-		rr, err := dns.NewRR(strings.ToLower(v))
+		rr, err := dns.NewRR(v)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err.Error(), "rr": v}).Warning("Could not parse RR from config")
 			continue
