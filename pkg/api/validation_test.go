@@ -1,7 +1,9 @@
-package main
+package api
 
 import (
 	"testing"
+
+	"github.com/joohoi/acme-dns/pkg/acmedns"
 
 	"github.com/google/uuid"
 )
@@ -103,7 +105,7 @@ func TestCorrectPassword(t *testing.T) {
 			false},
 		{"", "", false},
 	} {
-		ret := correctPassword(test.pw, test.hash)
+		ret := acmedns.CorrectPassword(test.pw, test.hash)
 		if ret != test.output {
 			t.Errorf("Test %d: Expected return value %t, but got %t", i, test.output, ret)
 		}
@@ -112,12 +114,12 @@ func TestCorrectPassword(t *testing.T) {
 
 func TestGetValidCIDRMasks(t *testing.T) {
 	for i, test := range []struct {
-		input  cidrslice
-		output cidrslice
+		input  acmedns.Cidrslice
+		output acmedns.Cidrslice
 	}{
-		{cidrslice{"10.0.0.1/24"}, cidrslice{"10.0.0.1/24"}},
-		{cidrslice{"invalid", "127.0.0.1/32"}, cidrslice{"127.0.0.1/32"}},
-		{cidrslice{"2002:c0a8::0/32", "8.8.8.8/32"}, cidrslice{"2002:c0a8::0/32", "8.8.8.8/32"}},
+		{acmedns.Cidrslice{"10.0.0.1/24"}, acmedns.Cidrslice{"10.0.0.1/24"}},
+		{acmedns.Cidrslice{"invalid", "127.0.0.1/32"}, acmedns.Cidrslice{"127.0.0.1/32"}},
+		{acmedns.Cidrslice{"2002:c0a8::0/32", "8.8.8.8/32"}, acmedns.Cidrslice{"2002:c0a8::0/32", "8.8.8.8/32"}},
 	} {
 		ret := test.input.ValidEntries()
 		if len(ret) == len(test.output) {
