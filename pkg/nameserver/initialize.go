@@ -7,7 +7,7 @@ import (
 	"github.com/miekg/dns"
 	"go.uber.org/zap"
 
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
+	"github.com/joohoi/acme-dns/pkg/acmedns"
 )
 
 // Records is a slice of ResourceRecords

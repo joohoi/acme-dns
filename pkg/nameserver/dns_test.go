@@ -13,8 +13,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
-	"github.com/acme-dns/acme-dns/pkg/database"
+	"github.com/joohoi/acme-dns/pkg/acmedns"
+	"github.com/joohoi/acme-dns/pkg/database"
 )
 
 type resolver struct {

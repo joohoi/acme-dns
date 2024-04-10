@@ -5,7 +5,7 @@ import (
 
 	"github.com/mholt/acmez/acme"
 
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
+	"github.com/joohoi/acme-dns/pkg/acmedns"
 )
 
 // ChallengeProvider implements go-acme/lego Provider interface which is used for ACME DNS challenge handling

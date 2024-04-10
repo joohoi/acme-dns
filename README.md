@@ -339,7 +339,11 @@ use for the renewal.
 
 
 ## Changelog
-
+- v1.0 
+   - New
+      - Refactoring of the codebase to something more robust
+   - Changed
+      - Updated dependencies
 - v0.8
    - NOTE: configuration option: "api_domain" deprecated!
    - New

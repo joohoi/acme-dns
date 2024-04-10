@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"net/http"
 
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
+	"github.com/joohoi/acme-dns/pkg/acmedns"
 
 	"github.com/caddyserver/certmagic"
 	"github.com/julienschmidt/httprouter"

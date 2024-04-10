@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
+	"github.com/joohoi/acme-dns/pkg/acmedns"
 
 	"github.com/julienschmidt/httprouter"
 )

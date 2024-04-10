@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/acme-dns/acme-dns/pkg/acmedns"
-	"github.com/acme-dns/acme-dns/pkg/database"
+	"github.com/joohoi/acme-dns/pkg/acmedns"
+	"github.com/joohoi/acme-dns/pkg/database"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gavv/httpexpect"
