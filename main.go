@@ -147,17 +147,10 @@ func startHTTPAPI(errChan chan error, config DNSConfig, dnsservers []*DNSServer)
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptStagingCA
 	}
 	certmagic.DefaultACME.Email = Config.API.NotificationEmail
-	magicConf := certmagic.NewDefault()
-	magicConf.Storage = &storage
-	magicConf.DefaultServerName = Config.General.Domain
+	certmagic.Default.Storage = &storage
+	certmagic.Default.DefaultServerName = Config.General.Domain
 
-	magicCache := certmagic.NewCache(certmagic.CacheOptions{
-		GetConfigForCert: func(cert certmagic.Certificate) (*certmagic.Config, error) {
-			return magicConf, nil
-		},
-	})
-
-	magic := certmagic.New(magicCache, *magicConf)
+	magic := certmagic.NewDefault()
 	var err error
 	switch Config.API.TLS {
 	case "letsencryptstaging":
