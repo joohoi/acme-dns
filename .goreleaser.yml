@@ -5,17 +5,17 @@ builds:
     goos:
       - linux
     goarch:
-      - 386
       - amd64
 
-archive:
-  format: tar.gz
-  files:
-    - LICENSE
-    - README.md
-    - Dockerfile
-    - config.cfg
-    - acme-dns.service
+archives:
+  - id: tgz
+    format: tar.gz
+    files:
+      - LICENSE
+      - README.md
+      - Dockerfile
+      - config.cfg
+      - acme-dns.service
 
-sign:
-  artifacts: checksum
+signs:
+  - artifacts: checksum
