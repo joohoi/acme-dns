@@ -165,8 +165,8 @@ go build
 5) Run Docker, this example expects that you have `port = "80"` in your `config.cfg`:
 ```
 docker run --rm --name acmedns                 \
- -p 53:53                                      \
- -p 53:53/udp                                  \
+ -p 127.0.0.1:53:53                            \
+ -p 127.0.0.1:53:53/udp                        \
  -p 80:80                                      \
  -v /path/to/your/config:/etc/acme-dns:ro      \
  -v /path/to/your/data:/var/lib/acme-dns       \
