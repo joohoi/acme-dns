@@ -315,6 +315,10 @@ in a position where the API certificate has expired but it can't be renewed
 because the ACME client will refuse to connect to the ACME DNS API it needs to
 use for the renewal.
 
+**Attention**: The preselected option `tls = "letsencryptstaging"` in the initial `config.cfg` shall only be used during initial setup of acme-dns.
+It avoids adding to the rate limit of the productive Let's Encrypt account.
+After successful setup switch to one of the above options.
+
 ### Security
 The HTTPS API does not have to be publicly exposed, especially when its only client is on the same machine.
 Just bind it to an internal IP, typically 127.0.0.1 "localhost".
