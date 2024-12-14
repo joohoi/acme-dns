@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"github.com/mholt/acmez/acme"
+
+	"github.com/mholt/acmez/v2/acme"
 )
 
 // ChallengeProvider implements go-acme/lego Provider interface which is used for ACME DNS challenge handling
