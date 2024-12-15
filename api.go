@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
 )
@@ -17,6 +18,12 @@ type RegResponse struct {
 	Fulldomain string   `json:"fulldomain"`
 	Subdomain  string   `json:"subdomain"`
 	Allowfrom  []string `json:"allowfrom"`
+}
+
+// UnregRequest is a struct providing the data to unregister
+type UnregRequest struct {
+	Username  uuid.UUID `json:"username"`
+	Subdomain string    `json:"subdomain"`
 }
 
 func webRegisterPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -69,6 +76,32 @@ func webRegisterPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(regStatus)
 	_, _ = w.Write(reg)
+}
+
+func webUnregisterPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var unregStatus int
+	var err error
+	var upd []byte
+
+	// Get user data
+	unregData, ok := r.Context().Value(ACMETxtKey).(UnregRequest)
+	if !ok {
+		log.WithFields(log.Fields{"error": "context"}).Error("Context error")
+	}
+
+	// Delete user
+	err = DB.Unregister(unregData.Username)
+	if err != nil {
+		unregStatus = http.StatusInternalServerError
+		upd = jsonError(fmt.Sprintf("%s (%v)", "delete_error", err))
+	} else {
+		log.WithFields(log.Fields{"user": unregData.Username.String()}).Debug("Deleted user")
+		upd = []byte("{\"unregister\": \"" + unregData.Username.String() + "\"}")
+		unregStatus = http.StatusOK
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(unregStatus)
+	w.Write(upd)
 }
 
 func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
