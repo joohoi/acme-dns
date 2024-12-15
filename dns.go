@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
+	"net"
 	"strings"
 	"time"
 )
@@ -89,6 +90,7 @@ func (d *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetReply(r)
 
+	remoteAddr := w.RemoteAddr()
 	// handle edns0
 	opt := r.IsEdns0()
 	if opt != nil {
@@ -100,21 +102,21 @@ func (d *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 			// We can safely do this as we know that we're not setting other OPT RRs within acme-dns.
 			m.SetEdns0(512, false)
 			if r.Opcode == dns.OpcodeQuery {
-				d.readQuery(m)
+				d.readQuery(m, remoteAddr)
 			}
 		}
 	} else {
 		if r.Opcode == dns.OpcodeQuery {
-			d.readQuery(m)
+			d.readQuery(m, remoteAddr)
 		}
 	}
 	_ = w.WriteMsg(m)
 }
 
-func (d *DNSServer) readQuery(m *dns.Msg) {
+func (d *DNSServer) readQuery(m *dns.Msg, remoteAddr net.Addr) {
 	var authoritative = false
 	for _, que := range m.Question {
-		if rr, rc, auth, err := d.answer(que); err == nil {
+		if rr, rc, auth, err := d.answer(que, remoteAddr); err == nil {
 			if auth {
 				authoritative = auth
 			}
@@ -190,7 +192,7 @@ func (d *DNSServer) isOwnChallenge(name string) bool {
 	return false
 }
 
-func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
+func (d *DNSServer) answer(q dns.Question, remoteAddr net.Addr) ([]dns.RR, int, bool, error) {
 	var rcode int
 	var err error
 	var txtRRs []dns.RR
@@ -213,7 +215,7 @@ func (d *DNSServer) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 		// Make sure that we return NOERROR if there were dynamic records for the domain
 		rcode = dns.RcodeSuccess
 	}
-	log.WithFields(log.Fields{"qtype": dns.TypeToString[q.Qtype], "domain": q.Name, "rcode": dns.RcodeToString[rcode]}).Debug("Answering question for domain")
+	log.WithFields(log.Fields{"qtype": dns.TypeToString[q.Qtype], "remoteaddr": remoteAddr, "domain": q.Name, "rcode": dns.RcodeToString[rcode]}).Debug("Answering question for domain")
 	return r, rcode, authoritative, nil
 }
 
