@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	logrustest "github.com/sirupsen/logrus/hooks/test"
-	"io/ioutil"
+	"io"
 	"os"
 	"sync"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
+	logrustest "github.com/sirupsen/logrus/hooks/test"
 )
 
 var loghook = new(logrustest.Hook)
@@ -96,7 +97,7 @@ func setupConfig() {
 }
 
 func setupTestLogger() {
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 	log.AddHook(loghook)
 }
 
