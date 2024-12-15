@@ -4,26 +4,25 @@ on:
     tags:
       - v*
     branches:
+      - main
       - master
   pull_request:
-  schedule:
-    # Run every 12 hours, at the 15 minute mark. E.g.
-    # 2020-11-29 00:15:00 UTC, 2020-11-29 12:15:00 UTC, 2020-11-30 00:15:00 UTC
-    - cron:  '15 */12 * * *'
+
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  # pull-requests: read
+
 jobs:
   golangci:
-    name: Lint Sourcecode
+    name: lint
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: 1.18.4
-
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
+          go-version: stable
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.48
+          version: v1.60
