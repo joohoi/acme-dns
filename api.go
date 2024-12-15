@@ -107,6 +107,42 @@ func webUpdatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	_, _ = w.Write(upd)
 }
 
+func webDeletePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var delStatus int
+	var del []byte
+	// Get user
+	a, ok := r.Context().Value(ACMETxtKey).(ACMETxt)
+	if !ok {
+		log.WithFields(log.Fields{"error": "context"}).Error("Context error")
+	}
+	// NOTE: An invalid subdomain should not happen - the auth handler should
+	// reject POSTs with an invalid subdomain before this handler. Reject any
+	// invalid subdomains anyway as a matter of caution.
+	if !validSubdomain(a.Subdomain) {
+		log.WithFields(log.Fields{"error": "subdomain", "subdomain": a.Subdomain, "txt": a.Value}).Debug("Bad delete data")
+		delStatus = http.StatusBadRequest
+		del = jsonError("bad_subdomain")
+	} else if !validTXT(a.Value) {
+		log.WithFields(log.Fields{"error": "txt", "subdomain": a.Subdomain, "txt": a.Value}).Debug("Bad delete data")
+		delStatus = http.StatusBadRequest
+		del = jsonError("bad_txt")
+	} else if validSubdomain(a.Subdomain) && validTXT(a.Value) {
+		err := DB.Delete(a.ACMETxtPost)
+		if err != nil {
+			log.WithFields(log.Fields{"error": err.Error()}).Debug("Error while trying to delete record")
+			delStatus = http.StatusInternalServerError
+			del = jsonError("db_error")
+		} else {
+			log.WithFields(log.Fields{"subdomain": a.Subdomain, "txt": a.Value}).Debug("TXT deleted")
+			delStatus = http.StatusOK
+			del = []byte("{\"txt\": \"" + a.Value + "\"}")
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(delStatus)
+	_, _ = w.Write(del)
+}
+
 // Endpoint used to check the readiness and/or liveness (health) of the server.
 func healthCheck(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.WriteHeader(http.StatusOK)
