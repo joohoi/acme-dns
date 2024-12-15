@@ -25,7 +25,7 @@ For longer explanation of the underlying issue and other proposed solutions, see
 
 ## Usage
 
-A client application for acme-dns with support for Certbot authentication hooks is available at: [https://github.com/acme-dns/acme-dns-client](https://github.com/acme-dns/acme-dns-client).
+Multiple [client applications](README.md#clients) exist for acme-dns with different features and different support for Certbot and other ACME clients' authentication hooks.
 
 [![asciicast](https://asciinema.org/a/94903.png)](https://asciinema.org/a/94903)
 
@@ -121,7 +121,7 @@ See the INSTALL section for information on how to do this.
 
 1) Install [Go 1.13 or newer](https://golang.org/doc/install).
 
-2) Build acme-dns: 
+2) Build acme-dns:
 ```
 git clone https://github.com/joohoi/acme-dns
 cd acme-dns
@@ -188,7 +188,7 @@ docker run --rm --name acmedns                 \
 Note: In this documentation:
 - `auth.example.org` is the hostname of the acme-dns server
 - acme-dns will serve `*.auth.example.org` records
-- `198.51.100.1` is the **public** IP address of the system running acme-dns  
+- `198.51.100.1` is the **public** IP address of the system running acme-dns
 
 These values should be changed based on your environment.
 
@@ -240,11 +240,11 @@ protocol = "both"
 domain = "auth.example.org"
 # zone name server
 nsname = "auth.example.org"
-# admin email address, where @ is substituted with .
+# admin email address, where @ is substituted with .
 nsadmin = "admin.example.org"
 # predefined records served in addition to the TXT
 records = [
-    # domain pointing to the public IP of your acme-dns server 
+    # domain pointing to the public IP of your acme-dns server
     "auth.example.org. A 198.51.100.1",
     # specify that auth.example.org will resolve any *.auth.example.org records
     "auth.example.org. NS auth.example.org.",
@@ -315,8 +315,153 @@ in a position where the API certificate has expired but it can't be renewed
 because the ACME client will refuse to connect to the ACME DNS API it needs to
 use for the renewal.
 
+**Attention**: The preselected option `tls = "letsencryptstaging"` in the initial `config.cfg` shall only be used during initial setup of acme-dns.
+It avoids adding to the rate limit of the productive Let's Encrypt account.
+After successful setup switch to one of the above options.
+
+### Security
+The HTTPS API does not have to be publicly exposed, especially when its only client is on the same machine.
+Just bind it to an internal IP, typically 127.0.0.1 "localhost".
+Still it must be reachable via its full domain name due to the SSL certificate of acme-dns, e.g. by adding the domain to `/etc/hosts`. \
+```
+/etc/acme-dns/config.cfg:
+...
+[api]
+# listen ip eg. 127.0.0.1
+ip = "127.0.0.1"
+...
+```
+```
+/etc/hosts:
+...
+127.0.0.1 localhost ... auth.example.org ...
+...
+```
+Another way to avoid public exposure is that clients connect via VPN (wireguard, OpenVPN, IPSec, etc.).
+Still acme-dns must be reachable via its full domain name from the clients due to the SSL certificate of acme-dns, e.g. by adding the domain to the `hosts` file of the OS.
+
+### Reverse Proxy for acme-dns
+
+If the [HTTPS API](README.md#https-api) must be publicly exposed, then a reverse proxy can increase protection of it.
+
+The typical usage is to hide information to avoid abuse of an acme-dns instance:
+- Adding a custom path prefix to the standard acme-dns paths.
+  The prefix is a shared secret and should be kept private.
+- Use a different domain name for the HTTPS API plus avoiding disclosure of acme-dns API domain name via SSL certificates.
+
+#### nginx
+One of the most favored reverse proxies is the web server [nginx](https://nginx.org/).
+Check out the [nginx documentation](https://nginx.org/docs/) for details on the http_proxy and http_ssl modules used in the configuration example below.
+
+_Simple example:_
+- Adding a custom path prefix to the normal acme-dns paths.
+  - It is recommended to use a long random string, e.g. write an individual sentence, convert it to base64, take 20+ chars from it, maybe add an allowed special char ("-._~", see [RFC 3986 §2.3](https://www.rfc-editor.org/info/rfc3986)) or even percent encoded stuff. \
+    Example: `printf -- 'Outside is an oak tree which loses his leaves.' | base64 | cut -c 2-12,15-25` (do not use for production)
+  - In this example it is just `ABC/` for readability, e.g. `https://auth.example.org/ABC/update`
+- acme-dns is already set up and publicly exposed on port 1111.
+- Domain name for the API is not changed, so the certificate for acme-dns can be re-used.
+- Assuming Debian-based distro (Ubuntu, etc.) with `apt` as package manager.
+
+_Tasks:_
+- Install nginx, e.g. `apt install nginx`. Can be installed alongside Apache or any other web server.
+  - Deactivate the default example server if provided by the package, e.g. `rm /etc/nginx/sites-enabled/default`.
+- Change acme-dns configuration to listen only on 127.0.0.1 "localhost" and port 2222 (frees port 1111 for reverse proxy) eg. via `nano /etc/acme-dns/config.cfg`.
+  ```
+  ...
+  [api]
+  # listen ip eg. 127.0.0.1
+  ip = "127.0.0.1"
+  # disable registration endpoint
+  disable_registration = false
+  # listen port, eg. 443 for default HTTPS
+  port = "2222"
+  ...
+  ```
+  Restart acme-dns and check.
+  ```
+  # systemctl restart acme-dns.service
+  # ss -tulnp | grep -e 'acme-dns'
+  udp   UNCONN 0      0                                   *:53               *:*    users:...
+  tcp   LISTEN 0      4096                        127.0.0.1:2222       0.0.0.0:*    users:...
+  tcp   LISTEN 0      4096                                *:53               *:*    users:...
+  # journalctl -xe -u acme-dns.service
+  # openssl s_client -connect 127.0.0.1:2222
+  ```
+- Create nginx reverse proxy for acme-dns, e.g. via `nano /etc/nginx/sites-available/proxy-acme-dns`.
+  ```
+  ### proxy server: acme-dns
+  server {
+      listen 1111 ssl;
+      listen [::]:1111 ssl;
+      server_tokens off;
+
+      server_name auth.example.org;
+
+      root /dev/null; ### do NOT deliver any static data
+
+      ### re-use certificate from acme-dns for nginx
+      ### https://nginx.org/en/docs/http/ngx_http_ssl_module.html
+      ssl_certificate      /var/lib/acme-dns/api-certs/certificates/acme-v02.api.letsencrypt.org-directory/auth.example.org/auth.example.org.crt;
+      ssl_certificate_key  /var/lib/acme-dns/api-certs/certificates/acme-v02.api.letsencrypt.org-directory/auth.example.org/auth.example.org.key;
+      ssl_protocols TLSv1.2 TLSv1.3;
+
+      ### proxy path for acme-dns
+      ### https://nginx.org/en/docs/http/ngx_http_proxy_module.html
+      location /ABC/ {
+          proxy_http_version 1.1;
+          #
+          proxy_pass https://127.0.0.1:2222/;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto https
+          #
+          proxy_ssl_verify on;
+          proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+          proxy_ssl_name auth.example.org;
+          #
+          proxy_redirect default;
+      }
+  }
+  ```
+  Activate the proxy site for nginx, restart nginx and check.
+  ```
+  # ln -sr -t /etc/nginx/sites-enabled /etc/nginx/sites-available/proxy-acme-dns
+  # systemctl restart nginx.service
+  # ss -tulnp | grep -e 'nginx'
+  tcp   LISTEN 0      511                           0.0.0.0:1111       0.0.0.0:*    users:...
+  tcp   LISTEN 0      511                              [::]:1111          [::]:*    users:...
+  # journalctl -xe -u nginx.service
+  # less /var/log/nginx/error.log
+  # wget --method POST https://auth.example.org:1111/update ; ### should FAIL = returns 404 Not found
+  # wget --method POST https://auth.example.org:1111/ABC/update ; ### should WORK = returns 401 Unauthorized (due to missing POST data, but reached acme-dns)
+  ```
+- Check firewall settings that the port 1111 is reachable from outside.
+
+Options:
+- different domain name for the API - will require a separate certificate for that domain, e.g. via http-01 challenge.
+- additional nginx "default server" definition that returns a fake certificate for all other domains and public IPs to not disclose any correct domain name.
+  ```
+  ### default server to deliver fake certificate and code 404 "Not Found"
+  server {
+      listen 1111 ssl default_server;
+      listen [::]:1111 ssl default_server;
+      server_tokens off;
+
+      ### nginx >=1.19.4+ (untested)
+      #ssl_reject_handshake on;
+
+      ### nginx <1.19.4
+      server_name "";
+      ssl_certificate /etc/ssl/certs/fake-cert.self-signed.crt;
+      ssl_certificate_key /etc/ssl/private/fake-cert.key;
+      return 404;
+  }
+  ```
+- nginx provides additional possibilities: rate limiting, basic auth (must be supported by the [client](README.md#clients))
+
 ## Clients
 
+- acme-dns-client by joohoi (written in Go): [https://github.com/acme-dns/acme-dns-client](https://github.com/acme-dns/acme-dns-client)
+- acme-dns-client-2 by maddes-b (written in Python): [https://github.com/maddes-b/acme-dns-client-2](https://github.com/maddes-b/acme-dns-client-2)
 - acme.sh: [https://github.com/Neilpang/acme.sh](https://github.com/Neilpang/acme.sh)
 - Certify The Web: [https://github.com/webprofusion/certify](https://github.com/webprofusion/certify)
 - cert-manager: [https://github.com/jetstack/cert-manager](https://github.com/jetstack/cert-manager)
@@ -329,6 +474,7 @@ use for the renewal.
 ### Authentication hooks
 
 - acme-dns-client with Certbot authentication hook: [https://github.com/acme-dns/acme-dns-client](https://github.com/acme-dns/acme-dns-client)
+- acme-dns-client-2 with Certbot and acme.sh authentication hook: [https://github.com/maddes-b/acme-dns-client-2](https://github.com/maddes-b/acme-dns-client-2)
 - Certbot authentication hook in Python:  [https://github.com/joohoi/acme-dns-certbot-joohoi](https://github.com/joohoi/acme-dns-certbot-joohoi)
 - Certbot authentication hook in Go: [https://github.com/koesie10/acme-dns-certbot-hook](https://github.com/koesie10/acme-dns-certbot-hook)
 
@@ -336,6 +482,11 @@ use for the renewal.
 
 - Generic client library in Python ([PyPI](https://pypi.python.org/pypi/pyacmedns/)): [https://github.com/joohoi/pyacmedns](https://github.com/joohoi/pyacmedns)
 - Generic client library in Go: [https://github.com/cpu/goacmedns](https://github.com/cpu/goacmedns)
+- acme-dns-client-2 with library in Python: [https://github.com/maddes-b/acme-dns-client-2](https://github.com/maddes-b/acme-dns-client-2)
+
+### Miscellaneous
+
+- Convert Certbot LE account for acme-dns: [https://github.com/maddes-b/linux-stuff/tree/main/acme.sh](https://github.com/maddes-b/linux-stuff/tree/main/acme.sh) - do not care about the script name
 
 
 ## Changelog
