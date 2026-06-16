@@ -264,16 +264,22 @@ func TestPrepareConfig(t *testing.T) {
 		shoulderror bool
 	}{
 		{AcmeDnsConfig{
+			General:  general{Domain: "example.com"},
 			Database: dbsettings{Engine: "whatever", Connection: "whatever_too"},
 			API:      httpapi{TLS: ApiTlsProviderNone},
 		}, false},
-		{AcmeDnsConfig{Database: dbsettings{Engine: "", Connection: "whatever_too"},
-			API: httpapi{TLS: ApiTlsProviderNone},
-		}, true},
-		{AcmeDnsConfig{Database: dbsettings{Engine: "whatever", Connection: ""},
-			API: httpapi{TLS: ApiTlsProviderNone},
+		{AcmeDnsConfig{
+			General:  general{Domain: "example.com"},
+			Database: dbsettings{Engine: "", Connection: "whatever_too"},
+			API:      httpapi{TLS: ApiTlsProviderNone},
 		}, true},
 		{AcmeDnsConfig{
+			General:  general{Domain: "example.com"},
+			Database: dbsettings{Engine: "whatever", Connection: ""},
+			API:      httpapi{TLS: ApiTlsProviderNone},
+		}, true},
+		{AcmeDnsConfig{
+			General:  general{Domain: "example.com"},
 			Database: dbsettings{Engine: "whatever", Connection: "whatever_too"},
 			API:      httpapi{TLS: "whatever"},
 		}, true},
@@ -285,7 +291,7 @@ func TestPrepareConfig(t *testing.T) {
 			}
 		} else {
 			if err != nil {
-				t.Errorf("Test %d: Expected no error with prepareConfig input data [%v]", i, test.input)
+				t.Errorf("Test %d: Expected no error with prepareConfig input data [%v], got %s", i, test.input, err)
 			}
 		}
 	}
