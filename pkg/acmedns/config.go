@@ -47,6 +47,11 @@ func prepareConfig(conf AcmeDnsConfig) (AcmeDnsConfig, error) {
 		return conf, errors.New("missing database configuration option \"connection\"")
 	}
 
+	// check for txt_limit, set default to 2 if not specified or equal 0
+	if conf.General.Txtlimit == 0 {
+		conf.General.Txtlimit = 2
+	}
+
 	// Default values for options added to config to keep backwards compatibility with old config
 	if conf.API.ACMECacheDir == "" {
 		conf.API.ACMECacheDir = "api-certs"

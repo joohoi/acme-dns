@@ -224,11 +224,14 @@ func (d *acmednsdb) handleDBUpgradeTo1() error {
 
 // NewTXTValuesInTransaction creates two rows for subdomain to the txt table
 func (d *acmednsdb) NewTXTValuesInTransaction(tx *sql.Tx, subdomain string) error {
-	var err error
 	instr := fmt.Sprintf("INSERT INTO txt (Subdomain, LastUpdate) values('%s', 0)", subdomain)
-	_, _ = tx.Exec(instr)
-	_, _ = tx.Exec(instr)
-	return err
+	for i := 0; i < d.Config.General.Txtlimit; i++ {
+		_, err := tx.Exec(instr)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (d *acmednsdb) Register(afrom acmedns.Cidrslice) (acmedns.ACMETxt, error) {
@@ -320,9 +323,11 @@ func (d *acmednsdb) GetTXTForDomain(domain string) ([]string, error) {
 	defer cancel()
 	domain = acmedns.SanitizeString(domain)
 	var txts []string
-	getSQL := `
-	SELECT Value FROM txt WHERE Subdomain=$1 LIMIT 2
-	`
+
+	getSQL := fmt.Sprintf(`
+			SELECT Value FROM txt WHERE Subdomain=$1 LIMIT %d
+	`, d.Config.General.Txtlimit)
+
 	if d.Config.Database.Engine == "sqlite" {
 		getSQL = getSQLiteStmt(getSQL)
 	}

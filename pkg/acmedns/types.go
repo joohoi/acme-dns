@@ -25,6 +25,7 @@ type general struct {
 	Nsadmin       string
 	Debug         bool
 	StaticRecords []string `toml:"records"`
+	Txtlimit      int      `toml:"txt_limit"`
 }
 
 type dbsettings struct {
