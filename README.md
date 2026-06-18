@@ -140,7 +140,7 @@ go build
 
     2) Move the acme-dns executable from `~/go/bin/acme-dns` to `/usr/local/bin/acme-dns` (Any location will work, just be sure to change `acme-dns.service` to match).
 
-    3) Create a minimal acme-dns user: `sudo adduser --system --gecos "acme-dns Service" --disabled-password --group --home /var/lib/acme-dns acme-dns`.
+    3) Create a minimal acme-dns user: `sudo useradd --system --comment "acme-dns Service" --user-group --create-home --home /var/lib/acme-dns acme-dns`
 
     4) Move the systemd service unit from `acme-dns.service` to `/etc/systemd/system/acme-dns.service`.
 
