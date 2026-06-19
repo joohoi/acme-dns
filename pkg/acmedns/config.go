@@ -12,6 +12,7 @@ const (
 	ApiTlsProviderNone               = "none"
 	ApiTlsProviderLetsEncrypt        = "letsencrypt"
 	ApiTlsProviderLetsEncryptStaging = "letsencryptstaging"
+	ApiTlsProviderCustom             = "custom"
 	ApiTlsProviderCert               = "cert"
 )
 
@@ -53,10 +54,10 @@ func prepareConfig(conf AcmeDnsConfig) (AcmeDnsConfig, error) {
 	}
 
 	switch conf.API.TLS {
-	case ApiTlsProviderCert, ApiTlsProviderLetsEncrypt, ApiTlsProviderLetsEncryptStaging, ApiTlsProviderNone:
+	case ApiTlsProviderCert, ApiTlsProviderLetsEncrypt, ApiTlsProviderLetsEncryptStaging, ApiTlsProviderCustom, ApiTlsProviderNone:
 		// we have a good value
 	default:
-		return conf, fmt.Errorf("invalid value for api.tls, expected one of [%s, %s, %s, %s]", ApiTlsProviderCert, ApiTlsProviderLetsEncrypt, ApiTlsProviderLetsEncryptStaging, ApiTlsProviderNone)
+		return conf, fmt.Errorf("invalid value for api.tls, expected one of [%s, %s, %s, %s, %s]", ApiTlsProviderCert, ApiTlsProviderLetsEncrypt, ApiTlsProviderLetsEncryptStaging, ApiTlsProviderCustom, ApiTlsProviderNone)
 	}
 
 	return conf, nil

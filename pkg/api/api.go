@@ -93,7 +93,7 @@ func (a *AcmednsAPI) Start(dnsservers []acmedns.AcmednsNS) {
 	}
 
 	switch a.Config.API.TLS {
-	case acmedns.ApiTlsProviderLetsEncrypt, acmedns.ApiTlsProviderLetsEncryptStaging:
+	case acmedns.ApiTlsProviderLetsEncrypt, acmedns.ApiTlsProviderLetsEncryptStaging, acmedns.ApiTlsProviderCustom:
 		magic := a.setupTLS(dnsservers)
 		err = magic.ManageAsync(context.Background(), []string{a.Config.General.Domain})
 		if err != nil {
@@ -147,10 +147,15 @@ func (a *AcmednsAPI) setupTLS(dnsservers []acmedns.AcmednsNS) *certmagic.Config 
 	certmagic.DefaultACME.DNS01Solver = &provider
 	certmagic.DefaultACME.Agreed = true
 	certmagic.DefaultACME.Logger = a.Logger.Desugar()
-	if a.Config.API.TLS == acmedns.ApiTlsProviderLetsEncrypt {
+	switch a.Config.API.TLS {
+	case acmedns.ApiTlsProviderLetsEncrypt:
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
-	} else {
+	case acmedns.ApiTlsProviderLetsEncryptStaging:
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptStagingCA
+	case acmedns.ApiTlsProviderCustom:
+		certmagic.DefaultACME.CA = a.Config.API.ACMEDirURL
+	default:
+		a.Logger.Errorf("Setting up ACME certificate with invalid value %s", a.Config.API.TLS)
 	}
 	certmagic.DefaultACME.Email = a.Config.API.NotificationEmail
 
