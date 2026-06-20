@@ -34,8 +34,11 @@ func main() {
 	defer logger.Sync() //nolint:all
 	sugar := logger.Sugar()
 
-	sugar.Infow("Using config file",
-		"file", usedConfigFile)
+	sugar.Infow("Using config file", "file", usedConfigFile)
+	if config.Logconfig.LevelWarning != "" {
+		sugar.Warn(config.Logconfig.LevelWarning)
+		config.Logconfig.LevelWarning = ""
+	}
 	sugar.Info("Starting up")
 	db, err := database.Init(&config, sugar)
 	// Error channel for servers

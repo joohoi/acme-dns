@@ -55,10 +55,11 @@ type httpapi struct {
 
 // Logging config
 type logconfig struct {
-	Level   string `toml:"loglevel"`
-	Logtype string `toml:"logtype"`
-	File    string `toml:"logfile"`
-	Format  string `toml:"logformat"`
+	Level        string `toml:"loglevel"`
+	Logtype      string `toml:"logtype"`
+	File         string `toml:"logfile"`
+	Format       string `toml:"logformat"`
+	LevelWarning string
 }
 
 // ACMETxt is the default structure for the user controlled record
