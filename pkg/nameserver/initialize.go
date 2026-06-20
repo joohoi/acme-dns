@@ -73,7 +73,7 @@ func InitAndStart(config *acmedns.AcmeDnsConfig, db acmedns.AcmednsDB, logger *z
 
 // NewDNSServer parses the DNS records from config and returns a new DNSServer struct
 func NewDNSServer(config *acmedns.AcmeDnsConfig, db acmedns.AcmednsDB, logger *zap.SugaredLogger, proto string) acmedns.AcmednsNS {
-	//		dnsServerTCP := NewDNSServer(DB, Config.General.Listen, tcpProto, Config.General.Domain)
+	logger = logger.With("protocol", proto)
 	server := Nameserver{Config: config, DB: db, Logger: logger}
 	server.Server = &dns.Server{Addr: config.General.Listen, Net: proto}
 	domain := config.General.Domain
