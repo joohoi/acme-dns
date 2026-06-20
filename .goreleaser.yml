@@ -32,4 +32,5 @@ dockers:
     - "--label=org.opencontainers.image.name={{.ProjectName}}"
     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     - "--label=org.opencontainers.image.version={{.Version}}"
-
+    - "--label=org.opencontainers.image.source={{.GitURL}}"
+    - "--label=org.opencontainers.image.url={{.GitURL}}"
