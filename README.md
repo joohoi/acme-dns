@@ -1,5 +1,6 @@
-[![Build Status](https://travis-ci.org/joohoi/acme-dns.svg?branch=master)](https://travis-ci.org/joohoi/acme-dns) [![Coverage Status](https://coveralls.io/repos/github/joohoi/acme-dns/badge.svg?branch=master)](https://coveralls.io/github/joohoi/acme-dns?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/joohoi/acme-dns)](https://goreportcard.com/report/github.com/joohoi/acme-dns)
 # acme-dns
+
+[![Build Status](https://travis-ci.org/joohoi/acme-dns.svg?branch=master)](https://travis-ci.org/joohoi/acme-dns) [![Coverage Status](https://coveralls.io/repos/github/joohoi/acme-dns/badge.svg?branch=master)](https://coveralls.io/github/joohoi/acme-dns?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/joohoi/acme-dns)](https://goreportcard.com/report/github.com/joohoi/acme-dns)
 
 A simplified DNS server with a RESTful HTTP API to provide a simple way to automate ACME DNS challenges.
 
@@ -15,6 +16,7 @@ So basically it boils down to **accessibility** and **security**.
 For longer explanation of the underlying issue and other proposed solutions, see a blog post on the topic from EFF deeplinks blog: https://www.eff.org/deeplinks/2018/02/technical-deep-dive-securing-automation-acme-dns-challenge-validation
 
 ## Features
+
 - Simplified DNS server, serving your ACME DNS challenges (TXT)
 - Custom records (have your required A, AAAA, NS, etc. records served)
 - HTTP API automatically acquires and uses Let's Encrypt TLS certificate
@@ -46,9 +48,10 @@ With the credentials, you can update the TXT response in the service to match th
 
 **Optional:**: You can POST JSON data to limit the `/update` requests to predefined source networks using CIDR notation.
 
-```POST /register```
+`POST /register`
 
 #### OPTIONAL Example input
+
 ```json
 {
     "allowfrom": [
@@ -59,8 +62,8 @@ With the credentials, you can update the TXT response in the service to match th
 }
 ```
 
+`Status: 201 Created`
 
-```Status: 201 Created```
 ```json
 {
     "allowfrom": [
@@ -79,15 +82,17 @@ With the credentials, you can update the TXT response in the service to match th
 
 The method allows you to update the TXT answer contents of your unique subdomain. Usually carried automatically by automated ACME client.
 
-```POST /update```
+`POST /update`
 
 #### Required headers
+
 | Header name   | Description                                | Example                                               |
 | ------------- |--------------------------------------------|-------------------------------------------------------|
 | X-Api-User    | UUIDv4 username received from registration | `X-Api-User: c36f50e8-4632-44f0-83fe-e070fef28a10`    |
 | X-Api-Key     | Password received from registration        | `X-Api-Key: htB9mR9DYgcu9bX_afHF62erXaH2TS7bg9KW3F7Z` |
 
 #### Example input
+
 ```json
 {
     "subdomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a",
@@ -97,7 +102,8 @@ The method allows you to update the TXT answer contents of your unique subdomain
 
 #### Response
 
-```Status: 200 OK```
+`Status: 200 OK`
+
 ```json
 {
     "txt": "___validation_token_received_from_the_ca___"
@@ -108,7 +114,7 @@ The method allows you to update the TXT answer contents of your unique subdomain
 
 The method can be used to check readiness and/or liveness of the server. It will return status code 200 on success or won't be reachable.
 
-```GET /health```
+`GET /health`
 
 ## Self-hosted
 
@@ -116,18 +122,18 @@ You are encouraged to run your own acme-dns instance, because you are effectivel
 
 See the INSTALL section for information on how to do this.
 
-
 ## Installation
 
-1) Install [Go 1.13 or newer](https://golang.org/doc/install).
+1) Install [Go 1.14 or newer](https://golang.org/doc/install).
 
-2) Build acme-dns: 
-```
-git clone https://github.com/joohoi/acme-dns
-cd acme-dns
-export GOPATH=/tmp/acme-dns
-go build
-```
+2) Build acme-dns:  
+
+    ```sh
+    git clone https://github.com/joohoi/acme-dns
+    cd acme-dns
+    export GOPATH=/tmp/acme-dns
+    go build
+    ```
 
 3) Move the built acme-dns binary to a directory in your $PATH, for example:
 `sudo mv acme-dns /usr/local/bin`
@@ -162,16 +168,17 @@ go build
 
 4) Modify the `config.cfg` to suit your needs.
 
-5) Run Docker, this example expects that you have `port = "80"` in your `config.cfg`:
-```
-docker run --rm --name acmedns                 \
- -p 53:53                                      \
- -p 53:53/udp                                  \
- -p 80:80                                      \
- -v /path/to/your/config:/etc/acme-dns:ro      \
- -v /path/to/your/data:/var/lib/acme-dns       \
- -d joohoi/acme-dns
-```
+5) Run Docker, this example expects that you have `port = "80"` in your `config.cfg`:  
+
+    ```sh
+    docker run --rm --name acmedns                 \
+    -p 53:53                                      \
+    -p 53:53/udp                                  \
+    -p 80:80                                      \
+    -v /path/to/your/config:/etc/acme-dns:ro      \
+    -v /path/to/your/data:/var/lib/acme-dns       \
+    -d joohoi/acme-dns
+    ```
 
 ### Docker Compose
 
@@ -186,17 +193,27 @@ docker run --rm --name acmedns                 \
 ## DNS Records
 
 Note: In this documentation:
-- `auth.example.org` is the hostname of the acme-dns server
-- acme-dns will serve `*.auth.example.org` records
-- `198.51.100.1` is the **public** IP address of the system running acme-dns  
+
+- `auth.example.org` is the hostname of the acme-dns server, this is the `nsname` value;
+- acme-dns will serve `*.auth.example.org` records;
+- `198.51.100.1` is the **public** IPv4 address of the system running acme-dns.
 
 These values should be changed based on your environment.
 
 You will need to add some DNS records on your domain's regular DNS server:
+
 - `NS` record for `auth.example.org` pointing to `auth.example.org` (this means, that `auth.example.org` is responsible for any `*.auth.example.org` records)
 - `A` record for `auth.example.org` pointing to `198.51.100.1`
 - If using IPv6, an `AAAA` record pointing to the IPv6 address.
-- Each domain you will be authenticating will need a `_acme-challenge` `CNAME` subdomain added. The [client](README.md#clients) you use will explain how to do this.
+- Each domain you will be authenticating will need a `_acme-challenge` `CNAME` subdomain added. If you are authenticating `example.com`, you will need a `CNAME` record for `_acme-challenge.example.com` pointing to the value of the `fulldomain` that you received from the `/register` endpoint.
+
+You will need to update the configuration for acme-dns:
+
+- `domain` should be `auth.example.org` as acme-dns will serve answers for `*.auth.example.org`;
+- `nsame` should be `auth.example.org` as it's the domain name of the acme-dns server;
+- the `NS`, and at least one of the `A` or `AAAA` records in the `records` array should be updated match the values in your environment.
+
+It is unlikely that you'll need to specify any extra records, but you can append them as strings in the `records` array. The strings must be in [RFC1035](https://www.rfc-editor.org/rfc/rfc1035.html) format.
 
 ## Testing It Out
 
@@ -204,27 +221,30 @@ You may want to test that acme-dns is working before using it for real queries.
 
 1) Confirm that DNS lookups for the acme-dns subdomain works as expected: `dig auth.example.org`.
 
-2) Call the `/register` API endpoint to register a test domain:
-```
-$ curl -X POST https://auth.example.org/register
-{"username":"eabcdb41-d89f-4580-826f-3e62e9755ef2","password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0","fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org","subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf","allowfrom":[]}
-```
+2) Call the `/register` API endpoint to register a test domain:  
 
-3) Call the `/update` API endpoint to set a test TXT record. Pass the `username`, `password` and `subdomain` received from the `register` call performed above:
-```
-$ curl -X POST \
-  -H "X-Api-User: eabcdb41-d89f-4580-826f-3e62e9755ef2" \
-  -H "X-Api-Key: pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0" \
-  -d '{"subdomain": "d420c923-bbd7-4056-ab64-c3ca54c9b3cf", "txt": "___validation_token_received_from_the_ca___"}' \
-  https://auth.example.org/update
-```
+    ```sh
+    $ curl -X POST https://auth.example.org/register
+    {"username":"eabcdb41-d89f-4580-826f-3e62e9755ef2","password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0","fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org","subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf","allowfrom":[]}
+    ```
 
-Note: The `txt` field must be exactly 43 characters long, otherwise acme-dns will reject it
+3) Call the `/update` API endpoint to set a test TXT record. Pass the `username`, `password` and `subdomain` received from the `register` call performed above:  
 
-4) Perform a DNS lookup to the test subdomain to confirm the updated TXT record is being served:
-```
-$ dig -t txt @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org
-```
+    ```sh
+    $ curl -X POST \
+    -H "X-Api-User: eabcdb41-d89f-4580-826f-3e62e9755ef2" \
+    -H "X-Api-Key: pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0" \
+    -d '{"subdomain": "d420c923-bbd7-4056-ab64-c3ca54c9b3cf", "txt": "___validation_token_received_from_the_ca___"}' \
+    https://auth.example.org/update
+    ```
+
+    Note: The `txt` field must be exactly 43 characters long, otherwise acme-dns will reject it
+
+4) Perform a DNS lookup to the test subdomain to confirm the updated TXT record is being served:  
+
+    ```sh
+    $ dig -t txt @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.org
+    ```
 
 ## Configuration
 
@@ -236,17 +256,21 @@ $ dig -t txt @auth.example.org d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example
 listen = "127.0.0.1:53"
 # protocol, "both", "both4", "both6", "udp", "udp4", "udp6" or "tcp", "tcp4", "tcp6"
 protocol = "both"
-# domain name to serve the requests off of
+# root domain under which the challenge subdomains will be hosted
 domain = "auth.example.org"
-# zone name server
+# fully qualified domain name of the acme-dns server. Does not need to match the value of `domain`
 nsname = "auth.example.org"
-# admin email address, where @ is substituted with .
+# admin email address, where @ is substituted with .
 nsadmin = "admin.example.org"
 # predefined records served in addition to the TXT
 records = [
-    # domain pointing to the public IP of your acme-dns server 
+    # IP address for the `nsname` value. The dot after the value is important.
+    # Format is "`nsname`. A IP.ADDRESS.GOES.HERE"
     "auth.example.org. A 198.51.100.1",
-    # specify that auth.example.org will resolve any *.auth.example.org records
+    # Optionally, you can have a AAAA record for IPv6
+    # "auth.example.org. AAAA ::1",
+    # This records makes `nsname` authoritative for `domain`.
+    # Format is "`domain`. NS `nsname`."
     "auth.example.org. NS auth.example.org.",
 ]
 # debug messages from CORS etc
