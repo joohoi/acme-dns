@@ -35,19 +35,22 @@ func (n *Nameserver) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 func (n *Nameserver) readQuery(m *dns.Msg) {
 	var authoritative = false
 	for _, que := range m.Question {
-		if rr, rc, auth, err := n.answer(que); err == nil {
-			if auth {
-				authoritative = auth
-			}
-			m.Rcode = rc
-			m.Answer = append(m.Answer, rr...)
+		rr, rc, auth, err := n.answer(que)
+		if auth {
+			authoritative = true
 		}
+		if err != nil {
+			m.Rcode = dns.RcodeServerFailure
+			m.Answer = nil
+			break
+		}
+		m.Rcode = rc
+		m.Answer = append(m.Answer, rr...)
 	}
 	m.Authoritative = authoritative
-	if authoritative {
-		if m.Rcode == dns.RcodeNameError {
-			m.Ns = append(m.Ns, n.SOA)
-		}
+	if authoritative && (m.Rcode == dns.RcodeNameError ||
+		(m.Rcode == dns.RcodeSuccess && len(m.Answer) == 0)) {
+		m.Ns = append(m.Ns, n.SOA)
 	}
 }
 
@@ -57,7 +60,14 @@ func (n *Nameserver) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 	var txtRRs []dns.RR
 	loweredName := strings.ToLower(q.Name)
 	var authoritative = n.isAuthoritative(loweredName)
-	if !n.isOwnChallenge(loweredName) && !n.answeringForDomain(loweredName) {
+	nameExists := n.isOwnChallenge(loweredName) || n.answeringForDomain(loweredName)
+	if authoritative && !nameExists && q.Qtype != dns.TypeTXT {
+		nameExists, err = n.hasDynamicTXTRecord(loweredName)
+		if err != nil {
+			return nil, dns.RcodeServerFailure, authoritative, err
+		}
+	}
+	if !nameExists {
 		rcode = dns.RcodeNameError
 	}
 	r, _ := n.getRecord(loweredName, q.Qtype)
@@ -80,6 +90,26 @@ func (n *Nameserver) answer(q dns.Question) ([]dns.RR, int, bool, error) {
 		"domain", q.Name,
 		"rcode", dns.RcodeToString[rcode])
 	return r, rcode, authoritative, nil
+}
+
+func (n *Nameserver) hasDynamicTXTRecord(name string) (bool, error) {
+	subdomain, ok := strings.CutSuffix(name, "."+n.OwnDomain)
+	if !ok || subdomain == "" || strings.Contains(subdomain, ".") {
+		return false, nil
+	}
+
+	txts, err := n.DB.GetTXTForDomain(subdomain)
+	if err != nil {
+		n.Logger.Errorw("Error while trying to get record",
+			"error", err.Error())
+		return false, err
+	}
+	for _, txt := range txts {
+		if len(txt) > 0 {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (n *Nameserver) answerTXT(q dns.Question) ([]dns.RR, error) {
