@@ -277,6 +277,16 @@ func TestPrepareConfig(t *testing.T) {
 			Database: dbsettings{Engine: "whatever", Connection: "whatever_too"},
 			API:      httpapi{TLS: "whatever"},
 		}, true},
+		{AcmeDnsConfig{
+			General:  general{Proto: "tcp6"},
+			Database: dbsettings{Engine: "whatever", Connection: "whatever_too"},
+			API:      httpapi{TLS: ApiTlsProviderNone},
+		}, false},
+		{AcmeDnsConfig{
+			General:  general{Proto: "udpp"},
+			Database: dbsettings{Engine: "whatever", Connection: "whatever_too"},
+			API:      httpapi{TLS: ApiTlsProviderNone},
+		}, true},
 	} {
 		_, err := prepareConfig(test.input)
 		if test.shoulderror {
@@ -288,6 +298,22 @@ func TestPrepareConfig(t *testing.T) {
 				t.Errorf("Test %d: Expected no error with prepareConfig input data [%v]", i, test.input)
 			}
 		}
+	}
+}
+
+// TestPrepareConfigProtocolDefault makes sure that a config file without the
+// general.protocol option keeps working, instead of leaving the DNS server with
+// a protocol it can not listen on.
+func TestPrepareConfigProtocolDefault(t *testing.T) {
+	conf, err := prepareConfig(AcmeDnsConfig{
+		Database: dbsettings{Engine: "whatever", Connection: "whatever_too"},
+		API:      httpapi{TLS: ApiTlsProviderNone},
+	})
+	if err != nil {
+		t.Fatalf("Expected no error, but got: %s", err)
+	}
+	if conf.General.Proto != "both" {
+		t.Errorf("Expected protocol to default to \"both\", but got %q", conf.General.Proto)
 	}
 }
 

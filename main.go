@@ -38,14 +38,17 @@ func main() {
 		"file", usedConfigFile)
 	sugar.Info("Starting up")
 	db, err := database.Init(&config, sugar)
-	// Error channel for servers
-	errChan := make(chan error, 1)
-	api := api.Init(&config, db, sugar, errChan)
-	dnsservers := nameserver.InitAndStart(&config, db, sugar, errChan)
-	go api.Start(dnsservers)
 	if err != nil {
 		sugar.Error(err)
 	}
+	// Error channel for servers
+	errChan := make(chan error, 1)
+	api := api.Init(&config, db, sugar, errChan)
+	dnsservers, err := nameserver.InitAndStart(&config, db, sugar, errChan)
+	if err != nil {
+		sugar.Fatal(err)
+	}
+	go api.Start(dnsservers)
 	for {
 		err = <-errChan
 		if err != nil {
