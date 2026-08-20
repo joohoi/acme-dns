@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -14,6 +16,9 @@ const (
 	ApiTlsProviderLetsEncryptStaging = "letsencryptstaging"
 	ApiTlsProviderCert               = "cert"
 )
+
+// validProtocols are the accepted values for the general.protocol config option
+var validProtocols = []string{"both", "both4", "both6", "udp", "udp4", "udp6", "tcp", "tcp4", "tcp6"}
 
 func FileIsAccessible(fname string) bool {
 	_, err := os.Stat(fname)
@@ -50,6 +55,13 @@ func prepareConfig(conf AcmeDnsConfig) (AcmeDnsConfig, error) {
 	// Default values for options added to config to keep backwards compatibility with old config
 	if conf.API.ACMECacheDir == "" {
 		conf.API.ACMECacheDir = "api-certs"
+	}
+	if conf.General.Proto == "" {
+		conf.General.Proto = "both"
+	}
+
+	if !slices.Contains(validProtocols, conf.General.Proto) {
+		return conf, fmt.Errorf("invalid value for general.protocol, expected one of %s", strings.Join(validProtocols, ", "))
 	}
 
 	switch conf.API.TLS {

@@ -30,9 +30,8 @@ type Nameserver struct {
 	errChan           chan error
 }
 
-func InitAndStart(config *acmedns.AcmeDnsConfig, db acmedns.AcmednsDB, logger *zap.SugaredLogger, errChan chan error) []acmedns.AcmednsNS {
+func InitAndStart(config *acmedns.AcmeDnsConfig, db acmedns.AcmednsDB, logger *zap.SugaredLogger, errChan chan error) ([]acmedns.AcmednsNS, error) {
 	dnsservers := make([]acmedns.AcmednsNS, 0)
-	waitLock := sync.Mutex{}
 	if strings.HasPrefix(config.General.Proto, "both") {
 
 		// Handle the case where DNS server should be started for both udp and tcp
@@ -51,24 +50,40 @@ func InitAndStart(config *acmedns.AcmeDnsConfig, db acmedns.AcmednsDB, logger *z
 		dnsServerTCP := NewDNSServer(config, db, logger, tcpProto)
 		dnsservers = append(dnsservers, dnsServerTCP)
 		dnsServerTCP.ParseRecords()
-		// wait for the server to get started to proceed
-		waitLock.Lock()
-		dnsServerUDP.SetNotifyStartedFunc(waitLock.Unlock)
-		go dnsServerUDP.Start(errChan)
-		waitLock.Lock()
-		dnsServerTCP.SetNotifyStartedFunc(waitLock.Unlock)
-		go dnsServerTCP.Start(errChan)
-		waitLock.Lock()
+		// wait for the servers to get started to proceed
+		if err := startAndWait(dnsServerUDP, errChan); err != nil {
+			return dnsservers, err
+		}
+		if err := startAndWait(dnsServerTCP, errChan); err != nil {
+			return dnsservers, err
+		}
 	} else {
 		dnsServer := NewDNSServer(config, db, logger, config.General.Proto)
 		dnsservers = append(dnsservers, dnsServer)
 		dnsServer.ParseRecords()
-		waitLock.Lock()
-		dnsServer.SetNotifyStartedFunc(waitLock.Unlock)
-		go dnsServer.Start(errChan)
-		waitLock.Lock()
+		if err := startAndWait(dnsServer, errChan); err != nil {
+			return dnsservers, err
+		}
 	}
-	return dnsservers
+	return dnsservers, nil
+}
+
+// startAndWait starts a DNS server and blocks until it has either bound its
+// listener or failed to do so. A server that never binds also never calls its
+// NotifyStartedFunc, so waiting for the start signal alone would block forever
+// on an unusable listener - an unset or misspelled general.protocol, a port
+// that is already taken, or missing privileges for port 53 - leaving acme-dns
+// hung with no indication of what went wrong.
+func startAndWait(server acmedns.AcmednsNS, errChan chan error) error {
+	started := make(chan struct{})
+	server.SetNotifyStartedFunc(func() { close(started) })
+	go server.Start(errChan)
+	select {
+	case <-started:
+		return nil
+	case err := <-errChan:
+		return err
+	}
 }
 
 // NewDNSServer parses the DNS records from config and returns a new DNSServer struct

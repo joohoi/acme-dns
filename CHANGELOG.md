@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Fail with an error message instead of hanging forever when a DNS listener can not be started, for example because `general.protocol` is unset or misspelled, the port is already taken, or acme-dns lacks the privileges for port 53 (#438)
+- Default `general.protocol` to `both` when it is missing from the config file, and reject invalid values while reading the config
 - Add index on `txt(Subdomain)` so DNS lookups no longer degrade to full table scans as registrations grow (created idempotently on startup, applies to existing databases)
 - Split DB timeouts: a short read timeout on the DNS hot path so a stalled connection no longer pins a worker for 20s after the resolver has already given up
 - Recycle idle PostgreSQL connections within a minute (`SetConnMaxIdleTime`) so a silently-dropped TCP connection is retired before it stalls the next query borrowing it
