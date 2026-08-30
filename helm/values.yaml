@@ -62,6 +62,33 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
+# Gateway API HTTPRoute for the acme-dns HTTP API. Requires the Gateway API CRDs
+# and an existing Gateway to attach to. Can be used instead of, or alongside, ingress.
+httpRoute:
+  enabled: false
+  # Pin the HTTPRoute apiVersion. When empty, gateway.networking.k8s.io/v1 is used
+  # unless the cluster only serves the older gateway.networking.k8s.io/v1beta1.
+  apiVersion: ""
+  annotations: {}
+  labels: {}
+  # Gateways (and optionally listeners) this route attaches to.
+  parentRefs: []
+    # - name: my-gateway
+    #   namespace: gateway-system
+    #   sectionName: https
+  hostnames: []
+    # - auth.example.org
+  # Each rule defaults to routing to the acme-dns service on .Values.service.port
+  # unless it sets its own backendRefs.
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      # filters: []
+      # timeouts: {}
+      # backendRefs: []
+
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little

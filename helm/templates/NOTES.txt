@@ -5,6 +5,12 @@
   http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
   {{- end }}
 {{- end }}
+{{- else if and .Values.httpRoute.enabled .Values.httpRoute.hostnames }}
+{{- range $host := .Values.httpRoute.hostnames }}
+  http://{{ tpl $host $ }}/
+{{- end }}
+  NOTE: the scheme and port depend on the listener of the Gateway this HTTPRoute
+        attaches to. Check it with 'kubectl get httproute {{ include "acmedns.fullname" . }} -n {{ .Release.Namespace }}'
 {{- else if contains "NodePort" .Values.service.type }}
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "acmedns.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")

@@ -1,0 +1,60 @@
+{{- if .Values.httpRoute.enabled -}}
+{{- $fullName := include "acmedns.fullname" . -}}
+{{- $svcPort := .Values.service.port -}}
+{{- if .Values.httpRoute.apiVersion -}}
+apiVersion: {{ .Values.httpRoute.apiVersion }}
+{{- else if and (.Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1beta1") (not (.Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1")) -}}
+apiVersion: gateway.networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: gateway.networking.k8s.io/v1
+{{- end }}
+kind: HTTPRoute
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "acmedns.labels" . | nindent 4 }}
+    {{- with .Values.httpRoute.labels }}
+    {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+    {{- end }}
+  {{- with .Values.httpRoute.annotations }}
+  annotations:
+    {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.httpRoute.parentRefs }}
+  parentRefs:
+    {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+  {{- end }}
+  {{- with .Values.httpRoute.hostnames }}
+  hostnames:
+    {{- range . }}
+    - {{ tpl . $ | quote }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.httpRoute.rules }}
+    -
+      {{- with .matches }}
+      matches:
+        {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with .filters }}
+      filters:
+        {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with .timeouts }}
+      timeouts:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      backendRefs:
+        {{- if .backendRefs }}
+        {{- include "common.tplvalues.render" (dict "value" .backendRefs "context" $) | nindent 8 }}
+        {{- else }}
+        - group: ""
+          kind: Service
+          name: {{ $fullName }}
+          port: {{ $svcPort }}
+          weight: 1
+        {{- end }}
+    {{- end }}
+{{- end }}
