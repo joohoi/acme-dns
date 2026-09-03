@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Bump `golang.org/x/crypto` to v0.56.0, `golang.org/x/net` to v0.58.0 and `golang.org/x/text` to v0.41.0, and raise the minimum Go version to 1.26 and the toolchain to 1.27.1, to pick up the upstream security fixes these versions carry (see PR for the CVE list)
 - Add index on `txt(Subdomain)` so DNS lookups no longer degrade to full table scans as registrations grow (created idempotently on startup, applies to existing databases)
 - Split DB timeouts: a short read timeout on the DNS hot path so a stalled connection no longer pins a worker for 20s after the resolver has already given up
 - Recycle idle PostgreSQL connections within a minute (`SetConnMaxIdleTime`) so a silently-dropped TCP connection is retired before it stalls the next query borrowing it
