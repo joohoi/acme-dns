@@ -16,7 +16,14 @@ import (
 func main() {
 	setUmask()
 	configPtr := flag.String("c", "/etc/acme-dns/config.cfg", "config file location")
+	versionPtr := flag.Bool("v", false, "show version")
 	flag.Parse()
+
+	if *versionPtr {
+		fmt.Printf("acme-dns\nversion: %s, commit: %s, build date: %s\n", version, commit, date)
+		return
+	}
+
 	// Read global config
 	var err error
 	var logger *zap.Logger
