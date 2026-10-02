@@ -337,7 +337,11 @@ use for the renewal.
 - Generic client library in Python ([PyPI](https://pypi.python.org/pypi/pyacmedns/)): [https://github.com/joohoi/pyacmedns](https://github.com/joohoi/pyacmedns)
 - Generic client library in Go: [https://github.com/cpu/goacmedns](https://github.com/cpu/goacmedns)
 
+## Helm Charts
 
+Helm charts for running acme-dns on Kubernetes:
+
+- [acme-dns server Helm chart](https://github.com/max-pfeiffer/acme-dns-server-helm-chart) (supports SQLite or PostgreSQL as database)
 
 ## TODO
 
