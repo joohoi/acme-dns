@@ -104,6 +104,34 @@ The method allows you to update the TXT answer contents of your unique subdomain
 }
 ```
 
+### Deregister endpoint
+
+The method removes the account identified by the credentials along with its TXT records. Unlike `/update`, the `allowfrom` CIDR list is **not** enforced, since the caller is typically the provisioning backend rather than the host the account was registered for. The `subdomain` in the body must match the one belonging to the account.
+
+```POST /deregister```
+
+#### Required headers
+| Header name   | Description                                | Example                                               |
+| ------------- |--------------------------------------------|-------------------------------------------------------|
+| X-Api-User    | UUIDv4 username received from registration | `X-Api-User: c36f50e8-4632-44f0-83fe-e070fef28a10`    |
+| X-Api-Key     | Password received from registration        | `X-Api-Key: htB9mR9DYgcu9bX_afHF62erXaH2TS7bg9KW3F7Z` |
+
+#### Example input
+```json
+{
+    "subdomain": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a"
+}
+```
+
+#### Response
+
+```Status: 200 OK```
+```json
+{
+    "deregistered": "8e5700ea-a4bf-41c7-8a77-e990661dcc6a"
+}
+```
+
 ### Health check endpoint
 
 The method can be used to check readiness and/or liveness of the server. It will return status code 200 on success or won't be reachable.

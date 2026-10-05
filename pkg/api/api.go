@@ -83,6 +83,7 @@ func (a *AcmednsAPI) Start(dnsservers []acmedns.AcmednsNS) {
 		api.POST("/register", a.hstsMiddleware(a.webRegisterPost))
 	}
 	api.POST("/update", a.hstsMiddleware(a.Auth(a.webUpdatePost)))
+	api.POST("/deregister", a.hstsMiddleware(a.webDeregisterPost))
 	api.GET("/health", a.hstsMiddleware(a.healthCheck))
 
 	host := a.Config.API.IP + ":" + a.Config.API.Port

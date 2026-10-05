@@ -86,6 +86,9 @@ func setupRouter(debug bool, noauth bool) (http.Handler, AcmednsAPI, acmedns.Acm
 	} else {
 		api.POST("/update", adnsapi.Auth(adnsapi.webUpdatePost))
 	}
+	// webDeregisterPost does its own authentication via the request headers,
+	// so it is registered without the Auth middleware (as in production).
+	api.POST("/deregister", adnsapi.webDeregisterPost)
 	return c.Handler(api), adnsapi, db
 }
 
@@ -329,6 +332,98 @@ func TestApiUpdateWithCredentialsMockDB(t *testing.T) {
 		JSON().Object().
 		ContainsKey("error")
 	db.SetBackend(oldDb)
+}
+
+func TestApiDeregisterWithCredentials(t *testing.T) {
+	deregisterJSON := map[string]interface{}{
+		"subdomain": ""}
+
+	router, _, db := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	newUser, err := db.Register(acmedns.Cidrslice{})
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+	deregisterJSON["subdomain"] = newUser.Subdomain
+	e.POST("/deregister").
+		WithJSON(deregisterJSON).
+		WithHeader("X-Api-User", newUser.Username.String()).
+		WithHeader("X-Api-Key", newUser.Password).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object().
+		ContainsKey("deregistered").
+		NotContainsKey("error").
+		ValueEqual("deregistered", newUser.Subdomain)
+
+	// The account must be gone from the database
+	if _, err = db.GetByUsername(newUser.Username); err == nil {
+		t.Errorf("Expected error getting the deregistered user, but got none")
+	}
+}
+
+func TestApiDeregisterWithoutCredentials(t *testing.T) {
+	deregisterJSON := map[string]interface{}{
+		"subdomain": "a097455b-52cc-4569-90c8-7a4b97c6eba8"}
+
+	router, _, _ := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	e.POST("/deregister").
+		WithJSON(deregisterJSON).
+		Expect().
+		Status(http.StatusUnauthorized).
+		JSON().Object().
+		ContainsKey("error")
+}
+
+func TestApiDeregisterSubdomainMismatch(t *testing.T) {
+	deregisterJSON := map[string]interface{}{
+		"subdomain": "wrong-subdomain"}
+
+	router, _, db := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	newUser, err := db.Register(acmedns.Cidrslice{})
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+	e.POST("/deregister").
+		WithJSON(deregisterJSON).
+		WithHeader("X-Api-User", newUser.Username.String()).
+		WithHeader("X-Api-Key", newUser.Password).
+		Expect().
+		Status(http.StatusUnauthorized).
+		JSON().Object().
+		ContainsKey("error")
+
+	// The account must still exist after a rejected deregistration
+	if _, err = db.GetByUsername(newUser.Username); err != nil {
+		t.Errorf("Account should still exist after mismatch, got error [%v]", err)
+	}
+}
+
+func TestApiDeregisterMalformedJSON(t *testing.T) {
+	router, _, db := setupRouter(false, false)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	e := getExpect(t, server)
+	newUser, err := db.Register(acmedns.Cidrslice{})
+	if err != nil {
+		t.Errorf("Could not create new user, got error [%v]", err)
+	}
+	e.POST("/deregister").
+		WithBytes([]byte("{\"subdomain\": bad")).
+		WithHeader("X-Api-User", newUser.Username.String()).
+		WithHeader("X-Api-Key", newUser.Password).
+		Expect().
+		Status(http.StatusBadRequest).
+		JSON().Object().
+		ContainsKey("error")
 }
 
 func TestApiManyUpdateWithCredentials(t *testing.T) {
