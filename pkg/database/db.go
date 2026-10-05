@@ -379,6 +379,39 @@ func (d *acmednsdb) Update(a acmedns.ACMETxtPost) error {
 	return nil
 }
 
+// Unregister removes the user record and its TXT rows in a single transaction
+func (d *acmednsdb) Unregister(u uuid.UUID, subdomain string) (err error) {
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), dbDefaultTimeout)
+	defer cancel()
+	tx, err := d.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	// Rollback if errored, commit if not
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+			return
+		}
+		err = tx.Commit()
+	}()
+	delRecordSQL := `DELETE FROM records WHERE Username=$1 AND Subdomain=$2`
+	delTxtSQL := `DELETE FROM txt WHERE Subdomain=$1`
+	if d.Config.Database.Engine == "sqlite" {
+		delRecordSQL = getSQLiteStmt(delRecordSQL)
+		delTxtSQL = getSQLiteStmt(delTxtSQL)
+	}
+	if _, err = tx.ExecContext(ctx, delRecordSQL, u.String(), subdomain); err != nil {
+		return fmt.Errorf("failed to delete user record: %w", err)
+	}
+	if _, err = tx.ExecContext(ctx, delTxtSQL, subdomain); err != nil {
+		return fmt.Errorf("failed to delete txt records: %w", err)
+	}
+	return nil
+}
+
 func (d *acmednsdb) getModelFromRow(r *sql.Rows) (acmedns.ACMETxt, error) {
 	txt := acmedns.ACMETxt{}
 	afrom := ""

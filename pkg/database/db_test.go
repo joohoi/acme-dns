@@ -307,6 +307,60 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestUnregister(t *testing.T) {
+	DB := fakeDB()
+	// Create reg to refer to
+	reg, err := DB.Register(acmedns.Cidrslice{})
+	if err != nil {
+		t.Errorf("Registration failed, got error [%v]", err)
+	}
+
+	// Add a TXT value so we can verify it gets removed too
+	reg.Value = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	if err = DB.Update(reg.ACMETxtPost); err != nil {
+		t.Errorf("DB Update failed, got error: [%v]", err)
+	}
+
+	if err = DB.Unregister(reg.Username, reg.Subdomain); err != nil {
+		t.Errorf("Unregister failed, got error: [%v]", err)
+	}
+
+	// The user record must be gone
+	if _, err = DB.GetByUsername(reg.Username); err == nil {
+		t.Errorf("Expected error getting the deregistered user, but got none")
+	}
+
+	// The TXT rows must be gone
+	txts, err := DB.GetTXTForDomain(reg.Subdomain)
+	if err != nil {
+		t.Errorf("GetTXTForDomain failed, got error: [%v]", err)
+	}
+	if len(txts) > 0 {
+		t.Errorf("Expected no TXT records after Unregister, but got [%d]", len(txts))
+	}
+}
+
+func TestUnregisterExecError(t *testing.T) {
+	DB := fakeDB()
+	reg, _ := DB.Register(acmedns.Cidrslice{})
+
+	testdb.SetExecWithArgsFunc(func(query string, args []driver.Value) (result driver.Result, err error) {
+		return testResult{}, errors.New("error")
+	})
+	defer testdb.Reset()
+	tdb, err := sql.Open("testdb", "")
+	if err != nil {
+		t.Errorf("Got error: %v", err)
+	}
+	oldDb := DB.GetBackend()
+	DB.SetBackend(tdb)
+	defer DB.SetBackend(oldDb)
+
+	if err = DB.Unregister(reg.Username, reg.Subdomain); err == nil {
+		t.Errorf("Expected error from Unregister exec, but got none")
+	}
+}
+
 func TestTXTSubdomainIndex(t *testing.T) {
 	// The DNS hot path filters txt rows by Subdomain on every query; without this
 	// index the lookup degrades to a full table scan as registrations grow.

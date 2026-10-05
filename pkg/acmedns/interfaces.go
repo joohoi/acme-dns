@@ -11,6 +11,7 @@ type AcmednsDB interface {
 	GetByUsername(uuid.UUID) (ACMETxt, error)
 	GetTXTForDomain(string) ([]string, error)
 	Update(ACMETxtPost) error
+	Unregister(uuid.UUID, string) error
 	GetBackend() *sql.DB
 	SetBackend(*sql.DB)
 	Close()
